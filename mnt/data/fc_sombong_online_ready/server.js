@@ -58,10 +58,17 @@ app.post('/api/state', (req, res) => {
 
 app.use(express.static(__dirname));
 
-app.get('*', (_req, res) => {
+app.get('/', (_req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+app.get('/index.html', (_req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+app.get(/.*/, (_req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
 app.listen(PORT, () => {
   ensureDataFile();
   console.log(`FC Sombong League running on port ${PORT}`);
