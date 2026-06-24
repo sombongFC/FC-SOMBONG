@@ -56,6 +56,27 @@ app.post('/api/state', (req, res) => {
   res.json({ ok: true, savedKeys: Object.keys(saved) });
 });
 
+function getStoredSuperAdminPassword() {
+  const state = readState();
+  try {
+    const settingsRaw = state.competition_settings_v1;
+    const settings = typeof settingsRaw === 'string' ? JSON.parse(settingsRaw || '{}') : (settingsRaw || {});
+    return settings.superAdminPassword || process.env.SUPERADMIN_PASSWORD || 'superadmin';
+  } catch (_err) {
+    return process.env.SUPERADMIN_PASSWORD || 'superadmin';
+  }
+}
+
+app.post('/api/reset', (req, res) => {
+  const password = String((req.body && req.body.password) || '').trim();
+  if (password !== getStoredSuperAdminPassword()) {
+    return res.status(403).json({ ok: false, error: 'Password Super Admin salah.' });
+  }
+  ensureDataFile();
+  fs.writeFileSync(STATE_FILE, JSON.stringify({}, null, 2));
+  res.json({ ok: true, reset: true });
+});
+
 app.use(express.static(__dirname));
 
 app.get('/', (_req, res) => {
@@ -69,6 +90,7 @@ app.get('/index.html', (_req, res) => {
 app.get(/.*/, (_req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
+
 app.listen(PORT, () => {
   ensureDataFile();
   console.log(`FC Sombong League running on port ${PORT}`);

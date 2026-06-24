@@ -340,7 +340,7 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 
     <div class="panel dangerPanel">
       <h2>Hard Reset Data Semua</h2>
-      <p class="muted">Menghapus semua match, pemain, team, dan setting dari browser ini. Wajib password Super Admin.</p>
+      <p class="muted">Menghapus semua match, pencetak goal, history pemain, foto pemain, team, user akses, dan setting dari server serta browser. Wajib password Super Admin.</p>
       <label>Password Super Admin<input id="superAdminPassword" type="password" placeholder="Masukkan password"></label>
       <button id="hardResetAll" class="dangerBtn">Hard Reset Semua Data</button>
       <p class="muted">Password default versi test: <b>superadmin</b>. Nanti bisa diganti saat dipasang ke server asli.</p>
@@ -655,15 +655,24 @@ function collectCompetitionSettings(){
   leagueName:normalizeName($('leagueName')?.value||'Community League')
  };
 }
-function hardResetAllData(){
+async function hardResetAllData(){
  const cfg=compSettings();
  const pass=($('superAdminPassword')?.value||'').trim();
  if(pass!==cfg.superAdminPassword)return showToast('Password salah','Hard reset hanya bisa dilakukan oleh Super Admin.','error');
  if(!confirm('Yakin hard reset semua data? Match, pemain, tim, dan setting akan kembali ke default.'))return;
- ['matches_v2','team_rosters_v1','teams','competition_settings_v1','access_users_v1'].forEach(k=>localStorage.removeItem(k)); clearCurrentAccessUser();
+ ['matches_v2','team_rosters_v1','teams','competition_settings_v1','access_users_v1','player_photos_v1'].forEach(k=>localStorage.removeItem(k)); clearCurrentAccessUser();
+ try{
+  const r = await fetch('/api/reset', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({password:pass})});
+  if(!r.ok){
+   const j = await r.json().catch(()=>({}));
+   return showToast('Reset server gagal', j.error || 'Data browser sudah dihapus, tetapi server belum ter-reset.', 'error');
+  }
+ }catch(err){
+  return showToast('Reset server gagal','Koneksi ke server gagal. Coba ulangi.', 'error');
+ }
  fillSelects(); render();
  if($('superAdminPassword'))$('superAdminPassword').value='';
- showToast('Hard reset berhasil','Semua data sudah kembali ke default.');
+ showToast('Hard reset berhasil','Semua data server dan browser sudah kembali fresh.');
 }
 function generateAiText(type){
  const matches=activeMatches(load()); const ps=playerStats(); const st=standings(matches);
