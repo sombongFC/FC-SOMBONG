@@ -1,0 +1,15 @@
+{
+  "name": "fc-sombong-league-mobile-app",
+  "version": "2.0.0",
+  "description": "Mobile-first community football league website for FC Sombong.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
