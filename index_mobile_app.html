@@ -103,6 +103,14 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 .topScorerCard .topUpload,.topPhotoInput{display:none!important;}
 @media(max-width:430px){.cleanTopScorer{grid-template-columns:40px 1fr auto!important;}}
 
+
+/* Patch: Top Scorer photo + footer credit */
+.siteFooter{margin:28px auto 14px;padding:18px 20px;text-align:center;color:#065f46;font-weight:900;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:22px;box-shadow:0 14px 35px rgba(15,23,42,.06)}
+.siteFooter .footerLogo{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:999px;background:#059669;color:white;margin-right:8px;vertical-align:middle;box-shadow:0 8px 20px rgba(5,150,105,.28)}
+.siteFooter small{display:block;margin-top:5px;color:#64748b;font-weight:700}
+.rankPhoto{width:56px;height:56px;border-radius:999px;object-fit:cover;background:#e5e7eb;border:3px solid #bbf7d0;box-shadow:0 8px 18px rgba(15,23,42,.08)}
+.cleanTopScorer{grid-template-columns:64px 1fr auto!important;align-items:center}
+@media(max-width:760px){.siteFooter{margin:22px 0 84px;border-radius:18px}.rankPhoto{width:50px;height:50px}.cleanTopScorer{grid-template-columns:56px 1fr!important}.cleanTopScorer .badge{grid-column:2;margin-top:6px;justify-self:start}}
 </style>
 </head>
 <body>
@@ -346,6 +354,11 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
       <p class="muted">Password default versi test: <b>superadmin</b>. Nanti bisa diganti saat dipasang ke server asli.</p>
     </div>
   </section>
+
+  <footer class="siteFooter">
+    <span class="footerLogo">⚽</span> Website ini dibuat oleh <b>Team FC Sombong</b>
+    <small>Community League Management</small>
+  </footer>
 </main>
 
 <div id="toast" class="toast hidden"><div class="toastIcon">✓</div><div><strong id="toastTitle">Berhasil</strong><p id="toastMsg">Data tersimpan.</p></div></div>

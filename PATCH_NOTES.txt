@@ -1,0 +1,17 @@
+PATCH: Top Scorer + Upload Foto Pemain + Footer
+
+Fitur:
+1. Foto pemain di-upload dari tab Pemain.
+2. Foto otomatis muncul di Top Scorers, termasuk pemain Top 5.
+3. Footer ditambahkan: Website ini dibuat oleh Team FC Sombong.
+
+Cara deploy:
+1. Extract ZIP ini.
+2. Upload seluruh isi folder ke GitHub menggantikan file lama.
+3. Pastikan Render memakai Root Directory yang benar. Jika V2 ada di root repo, Root Directory dikosongkan.
+4. Commit changes.
+5. Render > Manual Deploy > Clear build cache & deploy.
+
+Catatan:
+- Foto maksimal disarankan sekitar 1 MB agar website tetap ringan di HP.
+- Upload foto dilakukan di tab Pemain, bukan langsung di Top Scorers.
