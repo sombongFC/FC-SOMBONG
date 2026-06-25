@@ -744,10 +744,14 @@ function clearInitialGoals(){
 
 function rankedTopScorerGroups(){
  const scorers=playerStats().filter(p=>p.goals>0).sort((a,b)=>(b.goals-a.goals)||a.name.localeCompare(b.name));
- const groups=[]; let rank=0; let prevGoals=null;
- scorers.forEach((p,idx)=>{
-  if(p.goals!==prevGoals){rank=idx+1; groups.push({rank,goals:p.goals,names:[p.name]}); prevGoals=p.goals;}
-  else groups[groups.length-1].names.push(p.name);
+ const groups=[]; let prevGoals=null;
+ scorers.forEach((p)=>{
+  if(p.goals!==prevGoals){
+   groups.push({rank:groups.length+1,goals:p.goals,names:[p.name]});
+   prevGoals=p.goals;
+  } else {
+   groups[groups.length-1].names.push(p.name);
+  }
  });
  return groups;
 }
