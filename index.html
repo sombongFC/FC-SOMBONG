@@ -84,6 +84,12 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 
 
 /* V7 top scorer photos + manual credentials */
+/* v2.01 Export Top Skor Poster */
+.topScorerTools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0 18px}
+.topScorerTools button{width:auto;padding:12px 16px;border-radius:14px}
+.topScorerTools .secondary{background:#eef2f7;color:#0b1f35}
+.topScorerTools input{width:auto;min-width:190px}
+
 .topScorerCard{display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;border-bottom:1px solid #eef2f7;padding:12px 0}.topScorerCard .rankPhoto{width:44px;height:44px;border-radius:999px;object-fit:cover;background:#e5e7eb;border:2px solid #bbf7d0}.topScorerCard .topUpload{grid-column:2 / 4;margin-top:4px}.topScorerCard .topUpload input{font-size:12px;padding:7px!important}.manualPassHint{font-size:12px;color:#64748b;margin-top:6px}.editHint{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:14px;padding:10px;margin:10px 0}
 @media(max-width:430px){.topScorerCard{grid-template-columns:40px 1fr auto}.topScorerCard .rankPhoto{width:40px;height:40px}.topScorerCard .badge{font-size:12px}}
 
@@ -282,7 +288,20 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
   </section>
 
   <section id="topscorers" class="page">
-    <div class="panel"><h2>Top Scorers Seluruh Pertandingan</h2><div id="scorerList"></div></div>
+    <div class="panel">
+      <div class="panelHead">
+        <div>
+          <h2>Top Scorers Seluruh Pertandingan</h2>
+          <p class="muted">Export otomatis menggabungkan pemain dengan jumlah goal yang sama dalam satu peringkat, seperti format poster top skor.</p>
+        </div>
+      </div>
+      <div class="topScorerTools">
+        <input id="topScorerExportDate" type="date" title="Tanggal update untuk poster">
+        <button type="button" id="exportTopScorerImage">Export Gambar Top Skor</button>
+        <button type="button" class="secondary" id="copyTopScorerWA">Copy Teks WA</button>
+      </div>
+      <div id="scorerList"></div>
+    </div>
   </section>
 
 
@@ -354,7 +373,7 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 Mulyadi,21
 Koko Lobang,21"></textarea>
       <div class="grid compact">
-        <label>Username Super Admin<input id="initialGoalsAdminUser" type="text" placeholder="superadmin" autocomplete="username"></label>
+        <label>Username Super Admin <span class="muted">(boleh kosong)</span><input id="initialGoalsAdminUser" type="text" placeholder="superadmin / kosongkan" autocomplete="username"></label>
         <label>Password Super Admin<input id="initialGoalsAdminPass" type="password" placeholder="Password Super Admin" autocomplete="current-password"></label>
       </div>
       <div class="grid compact">
@@ -656,7 +675,7 @@ function render(){applyLeagueTitle(); const matches=load(), st=standings(matches
  $('miniStandings').innerHTML=st.slice(0,5).map((r,i)=>`<div class="standingRow"><span>${i+1}. ${escapeHtml(r.team)}</span><span class="badge">${r.pts} pts</span></div>`).join('');
  renderStandingsTable(matches);
  renderTeamPlayerColumns();
- renderPlayers(); renderInitialGoalsForm(); renderAccessUsers(); updateAccessUI && false; $('scorerList').innerHTML=renderTopScorers(ps); bindTopScorerUploads(); refreshHistories();}
+ renderPlayers(); renderInitialGoalsForm(); renderAccessUsers(); updateAccessUI && false; $('scorerList').innerHTML=renderTopScorers(ps); bindTopScorerUploads(); bindTopScorerExport(); refreshHistories();}
 
 function renderStandingsTable(matches){
  const weekDate=$('weekDate')?.value || new Date().toISOString().slice(0,10);
@@ -694,14 +713,17 @@ function parseInitialGoalsText(text){
 function verifyInitialGoalsSuperAdmin(){
  const loggedIn = isSuperAdmin();
  const username = normalizeName($('initialGoalsAdminUser')?.value||'');
- const password = $('initialGoalsAdminPass')?.value||'';
- const inlineOk = username.toLowerCase()==='superadmin' && password===compSettings().superAdminPassword;
+ const password = String($('initialGoalsAdminPass')?.value||'').trim();
+ const cfgPass = String(compSettings().superAdminPassword||'').trim();
+ // Revisi: username boleh kosong. Cukup isi password Super Admin di panel Import Statistik Awal.
+ const userOk = !username || username.toLowerCase()==='superadmin';
+ const inlineOk = userOk && password && password===cfgPass;
  if(loggedIn || inlineOk){
    if(inlineOk && !loggedIn) saveCurrentAccessUser({username:'superadmin',role:'superadmin'});
    updateAccessUI();
    return true;
  }
- showToast('Akses ditolak','Isi username superadmin dan password Super Admin terlebih dahulu.','error');
+ showToast('Akses ditolak','Isi Password Super Admin di panel Import Statistik Awal, lalu klik Import lagi. Username boleh dikosongkan.','error');
  return false;
 }
 function importInitialGoals(){
@@ -717,6 +739,88 @@ function clearInitialGoals(){
  if(!confirm('Hapus semua statistik awal/top skor lama? Goal dari match baru tetap aman.'))return;
  saveInitialGoals({}); renderInitialGoalsForm(); render();
  showToast('Statistik awal dihapus','Top skor lama sudah dikosongkan.');
+}
+
+
+function rankedTopScorerGroups(){
+ const scorers=playerStats().filter(p=>p.goals>0).sort((a,b)=>(b.goals-a.goals)||a.name.localeCompare(b.name));
+ const groups=[]; let rank=0; let prevGoals=null;
+ scorers.forEach((p,idx)=>{
+  if(p.goals!==prevGoals){rank=idx+1; groups.push({rank,goals:p.goals,names:[p.name]}); prevGoals=p.goals;}
+  else groups[groups.length-1].names.push(p.name);
+ });
+ return groups;
+}
+function topScorerUpdateDateLabel(){
+ const v=$('topScorerExportDate')?.value || new Date().toISOString().slice(0,10);
+ const d=new Date(v+'T00:00:00');
+ if(Number.isNaN(d.getTime())) return v;
+ return d.toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'}).toUpperCase();
+}
+function topScorerShareText(){
+ const groups=rankedTopScorerGroups();
+ if(!groups.length) return 'Belum ada data top skor.';
+ let lines=[];
+ lines.push('🏆 TOP SKOR FC SOMBONG');
+ lines.push('UPDATE '+topScorerUpdateDateLabel());
+ lines.push('');
+ groups.forEach(g=>{
+  const names=g.names.join(', ');
+  lines.push(`${g.rank}. ${names} — ${g.goals} gol`);
+ });
+ lines.push('');
+ lines.push('Catatan: own goal tidak dicantumkan.');
+ lines.push(location.origin || 'https://fc-sombong.onrender.com');
+ return lines.join('\n');
+}
+async function copyTopScorerWA(){
+ const text=topScorerShareText();
+ try{await navigator.clipboard.writeText(text); showToast('Teks WA disalin','Silakan paste ke grup WhatsApp.');}
+ catch(e){prompt('Copy teks ini:', text);}
+}
+function wrapCanvasText(ctx,text,x,y,maxWidth,lineHeight){
+ const words=String(text).split(' '); let line=''; const lines=[];
+ words.forEach(w=>{const test=line?line+' '+w:w; if(ctx.measureText(test).width>maxWidth && line){lines.push(line); line=w;} else line=test;});
+ if(line)lines.push(line);
+ lines.forEach((ln,i)=>ctx.fillText(ln,x,y+i*lineHeight));
+ return lines.length*lineHeight;
+}
+function exportTopScorerImage(){
+ const groups=rankedTopScorerGroups();
+ if(!groups.length)return showToast('Belum ada data','Top skor masih kosong.','error');
+ const W=1080, pad=56, rowH=78, headerH=210, bottomH=118;
+ const extra=groups.reduce((s,g)=>s+Math.max(0,g.names.length-1)*26,0);
+ const H=Math.max(1350, headerH + groups.length*rowH + extra + bottomH);
+ const c=document.createElement('canvas'); c.width=W; c.height=H; const ctx=c.getContext('2d');
+ ctx.fillStyle='#050505'; ctx.fillRect(0,0,W,H);
+ // subtle green strip
+ const grad=ctx.createLinearGradient(0,0,W,0); grad.addColorStop(0,'#062b18'); grad.addColorStop(.5,'#00964a'); grad.addColorStop(1,'#062b18'); ctx.fillStyle=grad; ctx.fillRect(0,0,W,18);
+ ctx.textAlign='center'; ctx.fillStyle='#f4f4f4'; ctx.font='900 72px Arial Black, Impact, Arial'; ctx.fillText('TOP SKOR FC SOMBONG',W/2,86);
+ ctx.fillStyle='#ffd21a'; ctx.font='800 40px Arial Black, Arial'; ctx.fillText('UPDATE '+topScorerUpdateDateLabel(),W/2,140);
+ ctx.strokeStyle='#ffd21a'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(pad,158); ctx.lineTo(W-pad,158); ctx.stroke();
+ ctx.textAlign='left'; ctx.fillStyle='#ffd21a'; ctx.font='800 29px Arial'; ctx.fillText('PERINGKAT',pad+8,196); ctx.fillText('NAMA PEMAIN',265,196); ctx.textAlign='right'; ctx.fillText('JUMLAH GOL',W-pad,196);
+ ctx.strokeStyle='#efefef'; ctx.lineWidth=1.4; ctx.beginPath(); ctx.moveTo(pad,212); ctx.lineTo(W-pad,212); ctx.stroke();
+ let y=252; ctx.textBaseline='top';
+ groups.forEach(g=>{
+  const names=g.names;
+  const blockH=rowH + Math.max(0,names.length-1)*26;
+  ctx.strokeStyle='rgba(255,255,255,.72)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(pad,y+blockH-16); ctx.lineTo(W-pad,y+blockH-16); ctx.stroke();
+  ctx.fillStyle='#ffd21a'; ctx.font='900 44px Arial Black, Arial'; ctx.textAlign='center'; ctx.fillText(String(g.rank),pad+75,y+4);
+  ctx.fillStyle='#f6f6f6'; ctx.font='800 34px Arial'; ctx.textAlign='left';
+  names.forEach((n,i)=>{ctx.fillStyle=i===0?'#f6f6f6':'#f6f6f6'; const bullet=names.length>1?'• ':''; wrapCanvasText(ctx,bullet+n,265,y+i*34,560,34);});
+  ctx.fillStyle='#ffd21a'; ctx.font='900 48px Arial Black, Arial'; ctx.textAlign='right'; ctx.fillText(String(g.goals),W-pad,y+2);
+  y += blockH;
+ });
+ ctx.strokeStyle='#ffd21a'; ctx.lineWidth=2; ctx.strokeRect(pad,H-84,W-pad*2,52);
+ ctx.fillStyle='#ffd21a'; ctx.font='800 24px Arial'; ctx.textAlign='center'; ctx.fillText('CATATAN: OWN GOAL TIDAK DICANTUMKAN',W/2,H-72);
+ ctx.fillStyle='#eaeaea'; ctx.font='600 18px Arial'; ctx.fillText('Website ini dibuat oleh Team FC Sombong',W/2,H-36);
+ const a=document.createElement('a'); a.href=c.toDataURL('image/png'); a.download='top-skor-fc-sombong-'+new Date().toISOString().slice(0,10)+'.png'; document.body.appendChild(a); a.click(); a.remove();
+ showToast('Export berhasil','Gambar Top Skor sudah dibuat.');
+}
+function bindTopScorerExport(){
+ if($('topScorerExportDate') && !$('topScorerExportDate').value) $('topScorerExportDate').value=new Date().toISOString().slice(0,10);
+ if($('exportTopScorerImage')) $('exportTopScorerImage').onclick=exportTopScorerImage;
+ if($('copyTopScorerWA')) $('copyTopScorerWA').onclick=copyTopScorerWA;
 }
 
 function renderPlayers(){const q=keyName($('playerSearch').value); const photos=playerPhotos(); const rows=playerStats().filter(p=>!q||keyName(p.name).includes(q)); $('playersTable').innerHTML='<tr><th>Foto</th><th>Nama</th><th>Club History</th><th>Main/Hadir</th><th>Goal</th><th>Goal ÷ Main</th><th>Kuning</th><th>Merah</th><th>Ganti Foto</th></tr>'+rows.map(p=>{const src=photos[keyName(p.name)]||''; return `<tr><td>${src?`<img class="playerPhoto" src="${src}">`:'<div class="playerPhoto"></div>'}</td><td>${escapeHtml(p.name)}</td><td>${escapeHtml(p.teams)}</td><td>${p.appearances}</td><td>${p.goals}</td><td>${p.goalPerMatch}</td><td>${p.yellow}</td><td>${p.red}</td><td><input class="photoInput" type="file" accept="image/*" data-player="${escapeHtml(p.name)}"></td></tr>`}).join(''); document.querySelectorAll('.photoInput').forEach(inp=>inp.onchange=e=>setPlayerPhoto(inp.dataset.player,e.target.files?.[0]));}

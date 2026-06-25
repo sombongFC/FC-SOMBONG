@@ -1,8 +1,15 @@
-Patch revisi Import Top Skor Lama
+FC Sombong League v2.01
 
-Perubahan:
-- Di panel Import Top Skor Lama ditambahkan field Username Super Admin dan Password Super Admin.
-- Import statistik awal bisa dilakukan langsung dari panel tersebut tanpa harus login dari tab Input terlebih dahulu.
-- Hapus statistik awal juga memakai field Super Admin di panel yang sama.
-- Jika username/password benar, session Super Admin ikut disimpan sehingga admin tetap login.
-- Fitur sebelumnya tetap dipertahankan: foto pemain di Top Scorer dan footer Team FC Sombong.
+Fitur ditambahkan:
+- Export Gambar Top Skor berupa poster PNG hitam/kuning.
+- Copy Teks WA untuk share ke grup.
+- Peringkat otomatis digabung jika jumlah goal sama.
+- Catatan own goal tidak dicantumkan.
+- Tetap membawa fitur foto pemain, import statistik awal, dan footer Team FC Sombong.
+
+Cara deploy:
+1. Upload seluruh isi folder ini ke root repository GitHub.
+2. Render Root Directory dikosongkan.
+3. Build Command: npm install
+4. Start Command: npm start
+5. Manual Deploy -> Clear build cache & deploy.
