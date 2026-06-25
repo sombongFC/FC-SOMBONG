@@ -12,7 +12,8 @@ const SYNC_KEYS = [
   'team_rosters_v1',
   'matches_v2',
   'player_photos_v1',
-  'access_users_v1'
+  'access_users_v1',
+  'initial_goals_v1'
 ];
 
 function ensureDataFile() {

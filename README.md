@@ -1,23 +1,14 @@
-# FC Sombong League v2
+# FC Sombong Patch
 
-Versi v2 untuk pemakaian komunitas bersama.
+Patch ini menambahkan foto pemain untuk Top Scorers, footer Team FC Sombong, dan Import Top Skor Lama / Statistik Awal.
 
-## Perbaikan utama
-- Data contoh pertandingan dihapus.
-- Factory Reset benar-benar membuat match, riwayat, top scorer, dan statistik pemain kosong.
-- Rasio goal diganti menjadi Avg goal/main.
-- Password default tidak ditampilkan di halaman viewer.
-- Route Render sudah siap.
+## Cara import top skor lama
+Login sebagai Super Admin, buka Setting, paste data format:
 
-## Deploy Render
-Build Command:
 ```
-npm install
-```
-Start Command:
-```
-npm start
+Alin,29
+Mulyadi,21
+Koko Lobang,21
 ```
 
-Jika isi repo langsung di root, Root Directory dikosongkan.
-Jika masih ada folder `mnt/data/fc_sombong_online_ready`, isi Root Directory sesuai folder tersebut.
+Klik Import / Update Statistik Awal.

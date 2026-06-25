@@ -346,6 +346,20 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
       <div class="tableWrap"><table id="accessUsersTable"></table></div>
     </div>
 
+
+    <div class="panel">
+      <h2>Import Top Skor Lama / Statistik Awal</h2>
+      <p class="muted">Masukkan data top skor lama dari catatan/foto. Format: satu baris satu pemain, <b>Nama,Goal</b>. Data ini akan ditambahkan ke goal dari pertandingan baru tanpa membuat riwayat match palsu.</p>
+      <textarea id="initialGoalsInput" rows="12" placeholder="Alin,29
+Mulyadi,21
+Koko Lobang,21"></textarea>
+      <div class="grid compact">
+        <button id="importInitialGoals" type="button" class="smallBtn">Import / Update Statistik Awal</button>
+        <button id="clearInitialGoals" type="button" class="secondary">Hapus Statistik Awal</button>
+      </div>
+      <p class="muted" id="initialGoalsSummary">Belum ada statistik awal.</p>
+    </div>
+
     <div class="panel dangerPanel">
       <h2>Hard Reset Data Semua</h2>
       <p class="muted">Menghapus semua match, pemain, team, dan setting dari browser ini. Wajib password Super Admin.</p>
@@ -426,6 +440,8 @@ function load(){return JSON.parse(localStorage.getItem('matches_v2')||'null')||s
 function save(data){localStorage.setItem('matches_v2',JSON.stringify(data))}
 function playerPhotos(){return JSON.parse(localStorage.getItem('player_photos_v1')||'{}')}
 function savePlayerPhotos(obj){localStorage.setItem('player_photos_v1',JSON.stringify(obj))}
+function initialGoals(){return JSON.parse(localStorage.getItem('initial_goals_v1')||'{}')}
+function saveInitialGoals(obj){localStorage.setItem('initial_goals_v1',JSON.stringify(obj||{}))}
 function setPlayerPhoto(name,file){if(!file)return; if(file.size>1200000)return showToast('File terlalu besar','Gunakan foto di bawah 1,2 MB agar aman tersimpan di HP.','error'); const reader=new FileReader(); reader.onload=()=>{const photos=playerPhotos(); photos[keyName(name)]=reader.result; savePlayerPhotos(photos); render(); showToast('Foto pemain diganti',name);}; reader.readAsDataURL(file)}
 
 function accessUsers(){return JSON.parse(localStorage.getItem('access_users_v1')||'[]')}
@@ -477,6 +493,7 @@ function allScorers(m){return [...(m.homeScorers||m.scorers||[]),...(m.awayScore
 function allPlayers(){
  const map={};
  Object.values(loadRosters()).flat().forEach(n=>{n=normalizeName(n); if(n) map[keyName(n)]=n});
+ Object.values(initialGoals()).forEach(g=>{const n=normalizeName(g.name); if(n) map[keyName(n)]=n});
  load().forEach(m=>{[...allScorers(m),...(m.cards||[]).map(c=>c.player)].forEach(n=>{n=normalizeName(n); if(n) map[keyName(n)]=n})});
  return Object.values(map).sort((a,b)=>a.localeCompare(b));
 }
@@ -515,7 +532,8 @@ function weeklyHallOfFame(matches){
  });
 }
 function playerStats(){
- const map={}; const ensure=(name,team='')=>{name=normalizeName(name); if(!name)return null; const k=keyName(name); if(!map[k])map[k]={name,teams:new Set(),appearances:0,goals:0,yellow:0,red:0,goalRate:0}; if(team)map[k].teams.add(team); return map[k]};
+ const map={}; const ensure=(name,team='')=>{name=normalizeName(name); if(!name)return null; const k=keyName(name); if(!map[k])map[k]={name,teams:new Set(),appearances:0,goals:0,initialGoals:0,yellow:0,red:0,goalRate:0}; if(team)map[k].teams.add(team); return map[k]};
+ Object.values(initialGoals()).forEach(g=>{const s=ensure(g.name,'Statistik awal'); if(s){s.initialGoals=Number(g.goals)||0; s.goals += Number(g.goals)||0;}});
  load().forEach(m=>{
   const playedHome=new Set(), playedAway=new Set();
   (m.homeScorers||[]).forEach(n=>{const s=ensure(n,m.home); if(s){s.goals++; playedHome.add(keyName(n))}});
@@ -587,7 +605,7 @@ function render(){applyLeagueTitle(); const matches=load(), st=standings(matches
  $('miniStandings').innerHTML=st.slice(0,5).map((r,i)=>`<div class="standingRow"><span>${i+1}. ${escapeHtml(r.team)}</span><span class="badge">${r.pts} pts</span></div>`).join('');
  renderStandingsTable(matches);
  renderTeamPlayerColumns();
- renderPlayers(); renderAccessUsers(); updateAccessUI && false; $('scorerList').innerHTML=renderTopScorers(ps); bindTopScorerUploads(); refreshHistories();}
+ renderPlayers(); renderInitialGoalsForm(); renderAccessUsers(); updateAccessUI && false; $('scorerList').innerHTML=renderTopScorers(ps); bindTopScorerUploads(); refreshHistories();}
 
 function renderStandingsTable(matches){
  const weekDate=$('weekDate')?.value || new Date().toISOString().slice(0,10);
@@ -601,6 +619,40 @@ function renderStandingsTable(matches){
  $('standingsTable').innerHTML='<tr><th>#</th><th>Club</th><th>P</th><th>W</th><th>D</th><th>L</th><th>Pen W</th><th>Pen L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th></tr>'+st.map((r,i)=>{const bottom=i===st.length-1&&st.length>1; return `<tr class="${bottom?'bottomTeam':''}"><td>${i+1}</td><td>${bottom?'🍃 ':''}${escapeHtml(r.team)}${bottom?' <span class="teaBadge">Dasar klasemen</span>':''}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.penW}</td><td>${r.penL}</td><td>${r.gf}</td><td>${r.ga}</td><td>${r.gd}</td><td><b>${r.pts}</b></td></tr>`}).join('');
  const hof=weeklyHallOfFame(baseMatches);
  if($('weeklyHall'))$('weeklyHall').innerHTML='<tr><th>Periode</th><th>Juara Mingguan</th><th>Match</th><th>Point</th><th>GD</th></tr>'+hof.map(w=>`<tr><td>${escapeHtml(w.period)}</td><td><b>${escapeHtml(w.champion)}</b></td><td>${w.matches}</td><td>${w.points}</td><td>${w.gd}</td></tr>`).join('');
+}
+
+
+function renderInitialGoalsForm(){
+ const input=$('initialGoalsInput'); if(!input)return;
+ const list=Object.values(initialGoals()).sort((a,b)=>(b.goals-a.goals)||a.name.localeCompare(b.name));
+ input.value=list.map(g=>`${g.name},${g.goals}`).join('\n');
+ if($('initialGoalsSummary')) $('initialGoalsSummary').textContent=list.length?`${list.length} pemain statistik awal tersimpan. Total goal awal: ${list.reduce((s,g)=>s+(Number(g.goals)||0),0)} goal.`:'Belum ada statistik awal.';
+}
+function parseInitialGoalsText(text){
+ const out={};
+ String(text||'').split(/\r?\n/).forEach(line=>{
+  line=line.trim(); if(!line)return;
+  let name='', goals='';
+  if(line.includes(',')){const parts=line.split(','); goals=parts.pop(); name=parts.join(',');}
+  else {const m=line.match(/^(.*?)[\s;:\-]+(\d+)$/); if(m){name=m[1]; goals=m[2];}}
+  name=normalizeName(name); const g=Math.max(0,parseInt(String(goals).replace(/\D/g,''),10)||0);
+  if(name) out[keyName(name)]={name,goals:g};
+ });
+ return out;
+}
+function importInitialGoals(){
+ if(!isSuperAdmin())return showToast('Akses ditolak','Hanya Super Admin yang bisa import statistik awal.','error');
+ const data=parseInitialGoalsText($('initialGoalsInput')?.value||'');
+ if(!Object.keys(data).length)return showToast('Data kosong','Format contoh: Alin,29','error');
+ saveInitialGoals(data);
+ renderInitialGoalsForm(); render();
+ showToast('Statistik awal tersimpan',`${Object.keys(data).length} pemain berhasil diimport.`);
+}
+function clearInitialGoals(){
+ if(!isSuperAdmin())return showToast('Akses ditolak','Hanya Super Admin yang bisa hapus statistik awal.','error');
+ if(!confirm('Hapus semua statistik awal/top skor lama? Goal dari match baru tetap aman.'))return;
+ saveInitialGoals({}); renderInitialGoalsForm(); render();
+ showToast('Statistik awal dihapus','Top skor lama sudah dikosongkan.');
 }
 
 function renderPlayers(){const q=keyName($('playerSearch').value); const photos=playerPhotos(); const rows=playerStats().filter(p=>!q||keyName(p.name).includes(q)); $('playersTable').innerHTML='<tr><th>Foto</th><th>Nama</th><th>Club History</th><th>Main/Hadir</th><th>Goal</th><th>Goal ÷ Main</th><th>Kuning</th><th>Merah</th><th>Ganti Foto</th></tr>'+rows.map(p=>{const src=photos[keyName(p.name)]||''; return `<tr><td>${src?`<img class="playerPhoto" src="${src}">`:'<div class="playerPhoto"></div>'}</td><td>${escapeHtml(p.name)}</td><td>${escapeHtml(p.teams)}</td><td>${p.appearances}</td><td>${p.goals}</td><td>${p.goalRate}%</td><td>${p.yellow}</td><td>${p.red}</td><td><input class="photoInput" type="file" accept="image/*" data-player="${escapeHtml(p.name)}"></td></tr>`}).join(''); document.querySelectorAll('.photoInput').forEach(inp=>inp.onchange=e=>setPlayerPhoto(inp.dataset.player,e.target.files?.[0]));}
@@ -659,7 +711,7 @@ function copyAiOutput(){const el=$('aiOutput'); if(!el||!el.value)return showToa
 function exportCsv(){const rows=[['Tanggal','Home','Away','Skor Home','Skor Away','Scorer Home','Scorer Away','Penalty Winner','Cards']]; load().forEach(m=>rows.push([m.date,m.home,m.away,m.hs,m.as,(m.homeScorers||[]).join('; '),(m.awayScorers||[]).join('; '),m.penaltyWinner||'',(m.cards||[]).map(c=>`${c.player}-${c.team}-${c.type}`).join('; ')])); const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n'); const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='riwayat_pertandingan.csv'; a.click(); URL.revokeObjectURL(a.href)}
 function init(){document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); b.classList.add('active'); document.querySelectorAll('.page').forEach(p=>p.classList.remove('show')); $(b.dataset.page).classList.add('show');}); $('matchDate').value=new Date().toISOString().slice(0,10); if($('weekDate'))$('weekDate').value=new Date().toISOString().slice(0,10); fillSelects(); updateAccessUI(); if($('loginBtn'))$('loginBtn').onclick=loginAccessUser; if($('logoutBtn'))$('logoutBtn').onclick=()=>{clearCurrentAccessUser(); updateAccessUI(); showToast('Logout berhasil','Input match dikunci kembali.')}; if($('generateAccessUser'))$('generateAccessUser').onclick=createAccessUser; document.querySelectorAll('.scoreBtn').forEach(btn=>btn.onclick=()=>{const input=$(btn.dataset.score); const next=Math.max(0,(+input.value||0)+(+btn.dataset.delta||0)); input.value=next; input.dispatchEvent(new Event('input',{bubbles:true}));}); if($('showYearStandings'))$('showYearStandings').onclick=()=>{standingsMode='year';$('showYearStandings').classList.add('activeMode');$('showWeekStandings').classList.remove('activeMode');render()}; if($('showWeekStandings'))$('showWeekStandings').onclick=()=>{standingsMode='week';$('showWeekStandings').classList.add('activeMode');$('showYearStandings').classList.remove('activeMode');render()}; if($('weekDate'))$('weekDate').onchange=()=>{standingsMode='week';$('showWeekStandings').classList.add('activeMode');$('showYearStandings').classList.remove('activeMode');render()}; ['homeScore','awayScore','homeTeam','awayTeam'].forEach(id=>$(id).addEventListener('input',()=>{refreshHistories();syncScorerInputs()})); $('enableCards').onchange=e=>{$('cardsBlock').classList.toggle('hidden',!e.target.checked); if(e.target.checked&&!document.querySelector('.cardRow'))addCardRow()}; $('addCard').onclick=()=>addCardRow(); $('playerSearch').oninput=renderPlayers; if($('savePlayers'))$('savePlayers').onclick=()=>{saveRosters(collectRosters()); refreshHistories(); renderPlayers(); showToast('Daftar pemain tersimpan','Autocomplete scorer dan kartu sudah diperbarui.');}; $('exportCsv').onclick=exportCsv; $('exportPdf').onclick=()=>window.print();
  $('matchForm').onsubmit=e=>{e.preventDefault(); if(!canInputMatch())return showToast('Akses ditolak','Login terlebih dahulu untuk input hasil pertandingan.','error'); const m={date:$('matchDate').value,home:$('homeTeam').value,away:$('awayTeam').value,hs:+$('homeScore').value,as:+$('awayScore').value,homeScorers:collectSide('home'),awayScorers:collectSide('away'),penaltyWinner:$('penaltyWinner').value,cards:$('enableCards').checked?collectCards():[]}; if(m.home===m.away)return showToast('Input belum valid','Home dan Away tidak boleh club yang sama.','error'); if(m.homeScorers.length!==m.hs)return showToast('Pencetak goal Home belum sesuai',`Skor home ${m.hs}, maka wajib ${m.hs} nama. Terisi ${m.homeScorers.length}.`,'error'); if(m.awayScorers.length!==m.as)return showToast('Pencetak goal Away belum sesuai',`Skor away ${m.as}, maka wajib ${m.as} nama. Terisi ${m.awayScorers.length}.`,'error'); if(compSettings().drawRule==='penalty' && m.hs===m.as && !m.penaltyWinner)return showToast('Penalty winner wajib dipilih','Karena skor seri, pilih pemenang penalty untuk poin 2/1.','error'); if(compSettings().drawRule!=='penalty')m.penaltyWinner=''; save([...load(),m]); syncRostersFromMatches(); e.target.reset(); $('matchDate').value=new Date().toISOString().slice(0,10); $('awayTeam').selectedIndex=1; $('cardRows').innerHTML=''; $('cardsBlock').classList.add('hidden'); fillSelects(); render(); showToast('Match berhasil disimpan',`${m.home} ${m.hs} - ${m.as} ${m.away}`);};
- $('saveSettings').onclick=()=>{const arr=$('teamSettings').value.split('\n').map(x=>x.trim()).filter(Boolean); if(arr.length<2)return showToast('Setting belum valid','Minimal input 2 club.','error'); const cfg=collectCompetitionSettings(); if(arr.length!==cfg.teamCount)return showToast('Jumlah team belum sesuai',`Setting jumlah team adalah ${cfg.teamCount}, tetapi daftar club berisi ${arr.length}.`,'error'); const oldRosters=loadRosters(); const unique=[...new Set(arr)]; const nextRosters={}; unique.forEach(t=>nextRosters[t]=oldRosters[t]||[]); saveTeams(unique); saveRosters(nextRosters); saveCompSettings(cfg); fillSelects(); render(); showToast('Setting kompetisi tersimpan','Format liga/piala, jumlah team, home-away, dan aturan seri sudah diperbarui.')}; if($('hardResetAll'))$('hardResetAll').onclick=hardResetAllData; if($('drawRule'))$('drawRule').onchange=updatePenaltyOptions; $('resetData').onclick=()=>{localStorage.removeItem('matches_v2');render();fillSelects()}; render();}
+ $('saveSettings').onclick=()=>{const arr=$('teamSettings').value.split('\n').map(x=>x.trim()).filter(Boolean); if(arr.length<2)return showToast('Setting belum valid','Minimal input 2 club.','error'); const cfg=collectCompetitionSettings(); if(arr.length!==cfg.teamCount)return showToast('Jumlah team belum sesuai',`Setting jumlah team adalah ${cfg.teamCount}, tetapi daftar club berisi ${arr.length}.`,'error'); const oldRosters=loadRosters(); const unique=[...new Set(arr)]; const nextRosters={}; unique.forEach(t=>nextRosters[t]=oldRosters[t]||[]); saveTeams(unique); saveRosters(nextRosters); saveCompSettings(cfg); fillSelects(); render(); showToast('Setting kompetisi tersimpan','Format liga/piala, jumlah team, home-away, dan aturan seri sudah diperbarui.')}; if($('hardResetAll'))$('hardResetAll').onclick=hardResetAllData; if($('importInitialGoals'))$('importInitialGoals').onclick=importInitialGoals; if($('clearInitialGoals'))$('clearInitialGoals').onclick=clearInitialGoals; if($('drawRule'))$('drawRule').onchange=updatePenaltyOptions; $('resetData').onclick=()=>{localStorage.removeItem('matches_v2');render();fillSelects()}; render();}
 init();
 
 </script>
