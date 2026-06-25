@@ -354,6 +354,10 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 Mulyadi,21
 Koko Lobang,21"></textarea>
       <div class="grid compact">
+        <label>Username Super Admin<input id="initialGoalsAdminUser" type="text" placeholder="superadmin" autocomplete="username"></label>
+        <label>Password Super Admin<input id="initialGoalsAdminPass" type="password" placeholder="Password Super Admin" autocomplete="current-password"></label>
+      </div>
+      <div class="grid compact">
         <button id="importInitialGoals" type="button" class="smallBtn">Import / Update Statistik Awal</button>
         <button id="clearInitialGoals" type="button" class="secondary">Hapus Statistik Awal</button>
       </div>
@@ -687,8 +691,21 @@ function parseInitialGoalsText(text){
  });
  return out;
 }
+function verifyInitialGoalsSuperAdmin(){
+ const loggedIn = isSuperAdmin();
+ const username = normalizeName($('initialGoalsAdminUser')?.value||'');
+ const password = $('initialGoalsAdminPass')?.value||'';
+ const inlineOk = username.toLowerCase()==='superadmin' && password===compSettings().superAdminPassword;
+ if(loggedIn || inlineOk){
+   if(inlineOk && !loggedIn) saveCurrentAccessUser({username:'superadmin',role:'superadmin'});
+   updateAccessUI();
+   return true;
+ }
+ showToast('Akses ditolak','Isi username superadmin dan password Super Admin terlebih dahulu.','error');
+ return false;
+}
 function importInitialGoals(){
- if(!isSuperAdmin())return showToast('Akses ditolak','Hanya Super Admin yang bisa import statistik awal.','error');
+ if(!verifyInitialGoalsSuperAdmin())return;
  const data=parseInitialGoalsText($('initialGoalsInput')?.value||'');
  if(!Object.keys(data).length)return showToast('Data kosong','Format contoh: Alin,29','error');
  saveInitialGoals(data);
@@ -696,7 +713,7 @@ function importInitialGoals(){
  showToast('Statistik awal tersimpan',`${Object.keys(data).length} pemain berhasil diimport.`);
 }
 function clearInitialGoals(){
- if(!isSuperAdmin())return showToast('Akses ditolak','Hanya Super Admin yang bisa hapus statistik awal.','error');
+ if(!verifyInitialGoalsSuperAdmin())return;
  if(!confirm('Hapus semua statistik awal/top skor lama? Goal dari match baru tetap aman.'))return;
  saveInitialGoals({}); renderInitialGoalsForm(); render();
  showToast('Statistik awal dihapus','Top skor lama sudah dikosongkan.');

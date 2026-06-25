@@ -1,9 +1,8 @@
-FC Sombong Patch: Top Scorer Foto + Footer + Import Statistik Awal
+Patch revisi Import Top Skor Lama
 
 Perubahan:
-- Upload foto pemain tetap dari tab Pemain.
-- Foto otomatis muncul di Top Scorers.
-- Footer: Website ini dibuat oleh Team FC Sombong.
-- Fitur baru: Import Top Skor Lama / Statistik Awal dari menu Setting.
-- Format import: Nama,Goal satu baris satu pemain.
-- Goal awal ditambahkan ke goal match baru tanpa membuat riwayat pertandingan palsu.
+- Di panel Import Top Skor Lama ditambahkan field Username Super Admin dan Password Super Admin.
+- Import statistik awal bisa dilakukan langsung dari panel tersebut tanpa harus login dari tab Input terlebih dahulu.
+- Hapus statistik awal juga memakai field Super Admin di panel yang sama.
+- Jika username/password benar, session Super Admin ikut disimpan sehingga admin tetap login.
+- Fitur sebelumnya tetap dipertahankan: foto pemain di Top Scorer dan footer Team FC Sombong.
