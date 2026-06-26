@@ -1,7 +1,1 @@
-FC Sombong League v2.03
-1. Edit match superadmin dari Riwayat.
-2. Suggestion pencetak goal diperbaiki.
-3. Export gambar klasemen dan copy WA.
-4. Top scorer dihitung ulang dari initial goals + match baru.
-5. More > Laporan Keuangan.
-6. Sponsor upload di Setting.
+v2.06: Sponsor logo is added to exported Top Skor and Klasemen PNG footers.
