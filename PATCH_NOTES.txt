@@ -1,4 +1,1 @@
-FC Sombong League v2.10 - Sponsor Bigger
-- Logo sponsor di footer website diperbesar.
-- Logo sponsor pada export Top Skor dan Klasemen diperbesar sekitar 2x.
-- Footer export dibuat lebih tinggi agar sponsor terlihat jelas.
+v2.13: fix missing roundRect helper used by sponsor/export canvas drawing.

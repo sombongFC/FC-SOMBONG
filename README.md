@@ -1,27 +1,12 @@
-# FC Sombong League v2.03
+# FC Sombong League v2.13 - Export RoundRect Fix
 
-Update v2.03:
-- Super Admin bisa edit hasil pertandingan, skor, pencetak goal, kartu, dan penalty winner dari Riwayat.
-- Autocomplete/suggestion pencetak goal diperbaiki dengan chip nama pemain.
-- Export gambar klasemen + copy teks klasemen untuk WhatsApp.
-- Fix pencetak goal baru agar masuk ke Top Scorer setelah match disimpan/edit.
-- Tab More berisi Laporan Keuangan.
-- Sponsor bisa diupload dari Setting dan tampil di bagian depan.
+Perbaikan utama:
+- Memperbaiki error `roundRect is not defined` pada Export Gambar Klasemen dan Export Gambar Top Skor.
+- Tombol export kembali bisa membuat/download PNG.
+- Fitur v2.12 tetap dipertahankan.
 
-
-## v2.04
-- Tombol Edit dan Hapus muncul di tab Riwayat Pertandingan.
-- Edit/Hapus meminta password Super Admin bila belum login.
-- Setelah skor/pencetak goal diedit, klasemen dan Top Scorer otomatis dihitung ulang.
-
-
-## v2.05 Backup & Restore
-- Tambah menu More -> Backup & Restore.
-- Download backup JSON untuk menyimpan data website.
-- Restore backup dengan password Super Admin.
-- Restore mengirim data kembali ke server /api/state.
-
-
-## v2.08
-- Dashboard Recent Matches menampilkan 6 pertandingan terakhir.
-- Logo sponsor yang diupload tampil juga di bagian bawah website/footer.
+Cara deploy:
+1. Upload semua isi folder ini ke root GitHub repo FC-SOMBONG.
+2. Commit changes.
+3. Render -> Manual Deploy -> Clear build cache & deploy.
+4. Setelah live, buka website dengan `?v=213` lalu Ctrl+F5.
