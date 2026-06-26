@@ -13,7 +13,9 @@ const SYNC_KEYS = [
   'matches_v2',
   'player_photos_v1',
   'access_users_v1',
-  'initial_goals_v1'
+  'initial_goals_v1',
+  'sponsors_v1',
+  'finance_reports_v1'
 ];
 
 function ensureDataFile() {
@@ -57,22 +59,8 @@ app.post('/api/state', (req, res) => {
   res.json({ ok: true, savedKeys: Object.keys(saved) });
 });
 
-function getStoredSuperAdminPassword() {
-  const state = readState();
-  try {
-    const settingsRaw = state.competition_settings_v1;
-    const settings = typeof settingsRaw === 'string' ? JSON.parse(settingsRaw || '{}') : (settingsRaw || {});
-    return settings.superAdminPassword || process.env.SUPERADMIN_PASSWORD || 'superadmin';
-  } catch (_err) {
-    return process.env.SUPERADMIN_PASSWORD || 'superadmin';
-  }
-}
 
 app.post('/api/reset', (req, res) => {
-  const password = String((req.body && req.body.password) || '').trim();
-  if (password !== getStoredSuperAdminPassword()) {
-    return res.status(403).json({ ok: false, error: 'Password Super Admin salah.' });
-  }
   ensureDataFile();
   fs.writeFileSync(STATE_FILE, JSON.stringify({}, null, 2));
   res.json({ ok: true, reset: true });
@@ -83,11 +71,9 @@ app.use(express.static(__dirname));
 app.get('/', (_req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
-
 app.get('/index.html', (_req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
-
 app.get(/.*/, (_req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });

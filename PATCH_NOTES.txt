@@ -1,3 +1,7 @@
-FC Sombong League v2.02
-- Fix peringkat export Top Skor agar urut 1,2,3,4 dst meskipun ada pemain dengan jumlah gol sama.
-- Pemain dengan goal sama tetap digabung dalam satu baris peringkat.
+FC Sombong League v2.03
+1. Edit match superadmin dari Riwayat.
+2. Suggestion pencetak goal diperbaiki.
+3. Export gambar klasemen dan copy WA.
+4. Top scorer dihitung ulang dari initial goals + match baru.
+5. More > Laporan Keuangan.
+6. Sponsor upload di Setting.
