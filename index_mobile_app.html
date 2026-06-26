@@ -122,6 +122,11 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 /* v2.03 */
 .sponsorStrip{display:inline-flex;align-items:center;gap:10px;margin-top:16px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.24);padding:9px 12px;border-radius:999px;width:max-content;max-width:100%;font-weight:800}.sponsorStrip img{height:34px;max-width:140px;object-fit:contain;background:#fff;border-radius:8px;padding:3px}.sponsorPreview img{height:52px;max-width:220px;object-fit:contain;background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:5px;margin-top:10px}.editNotice{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:12px;padding:12px;margin:12px 0;font-weight:800}.financeForm{display:grid;grid-template-columns:140px 120px 1fr 160px auto;gap:8px;align-items:end}.financeForm input,.financeForm select{margin-top:0}.dangerMini{background:#fee2e2!important;color:#991b1b!important}.suggestBox{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.suggestBox button{border:1px solid #bbf7d0;background:#f0fdf4;color:#166534;border-radius:999px;padding:6px 9px;font-size:12px;cursor:pointer}@media(max-width:760px){.financeForm{grid-template-columns:1fr}.sponsorStrip{border-radius:16px;align-items:flex-start}.sponsorStrip img{height:30px}.topScorerTools,.standingsControls{display:grid!important;grid-template-columns:1fr 1fr}.standingsControls input{grid-column:1/-1;width:100%}}
 
+
+/* v2.09 Admin tab clean public history */
+.adminMatchCard{border:1px solid #e5e7eb;border-radius:18px;padding:14px 16px;margin:10px 0;background:#fff;box-shadow:0 8px 22px rgba(15,23,42,.04)}
+.adminMatchTop{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;font-weight:900}.adminMatchTop .away{text-align:right}.adminMatchMeta{margin-top:8px;color:#64748b;font-size:13px}.adminActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.adminActions button{border:0;border-radius:12px;padding:10px 14px;font-weight:900;cursor:pointer}.adminActions .editBtn{background:#dcfce7;color:#065f46}.adminActions .deleteBtn{background:#fee2e2;color:#991b1b}.adminLocked{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:16px;padding:14px;margin:12px 0;font-weight:800}.tabs button.adminOnlyTab{background:#fef3c7;color:#92400e}.tabs button.adminOnlyTab.active{background:#fff;color:#17346d}
+
 </style>
 </head>
 <body>
@@ -137,6 +142,7 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
       <button data-page="topscorers">Top Scorers</button>
       <button data-page="ai">AI</button>
       <button data-page="more">More</button>
+      <button data-page="admin" class="adminOnlyTab hidden">Admin</button>
       <button data-page="settings">Setting</button>
     </div>
   </nav>
@@ -251,9 +257,33 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
   <section id="history" class="page">
     <div class="panel">
       <div class="panelHead"><h2>Riwayat Pertandingan</h2><div><button class="smallBtn" id="exportCsv">Export Excel</button><button class="smallBtn" id="exportPdf">Export PDF</button></div></div>
-      <div class="superOnlyNote">Di bawah setiap pertandingan tersedia tombol <b>Edit</b> dan <b>Hapus</b>. Aksi ini hanya bisa dilakukan dengan password <b>Super Admin</b>. Login Super Admin dari tab Input dengan user <b>superadmin</b>.</div><div id="matchList"></div>
+      <div class="superOnlyNote">Riwayat pertandingan untuk viewer dibuat bersih tanpa tombol edit/hapus. Untuk mengelola pertandingan, login sebagai <b>superadmin</b>, lalu buka tab <b>Admin</b>.</div><div id="matchList"></div>
     </div>
   </section>
+
+
+
+  <section id="admin" class="page">
+    <div class="panel">
+      <div class="panelHead">
+        <div>
+          <h2>Admin Panel</h2>
+          <p class="muted">Menu ini hanya muncul setelah login sebagai Super Admin. Gunakan untuk edit/hapus pertandingan tanpa mengganggu halaman publik.</p>
+        </div>
+      </div>
+      <div id="adminLocked" class="adminLocked hidden">Login sebagai <b>superadmin</b> dari tab Input untuk membuka menu admin.</div>
+    </div>
+    <div class="panel">
+      <div class="panelHead">
+        <div>
+          <h2>Kelola Pertandingan</h2>
+          <p class="muted">Edit skor, pencetak goal, penalty, dan kartu. Hapus match jika salah input.</p>
+        </div>
+      </div>
+      <div id="adminMatchList"></div>
+    </div>
+  </section>
+
 
   <section id="standings" class="page">
     <div class="panel">
@@ -623,11 +653,15 @@ function randomPassword(){const chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqr
 function canInputMatch(){return !!currentAccessUser()}
 function updateAccessUI(){
  const user=currentAccessUser();
+ const superOn=isSuperAdmin();
  if($('matchForm')) $('matchForm').classList.toggle('hidden',!user);
  if($('resetData')) $('resetData').classList.toggle('hidden',!user);
  if($('loginPanel')) $('loginPanel').classList.toggle('hidden',!!user);
  if($('currentUserPanel')) $('currentUserPanel').classList.toggle('hidden',!user);
  if($('currentUserName')) $('currentUserName').textContent=user?.username||'';
+ document.querySelectorAll('.adminOnlyTab').forEach(el=>el.classList.toggle('hidden',!superOn));
+ if($('adminLocked')) $('adminLocked').classList.toggle('hidden',superOn);
+ if($('adminMatchList')) $('adminMatchList').innerHTML=renderAdminMatches(load());
  renderAccessUsers();
 }
 function renderAccessUsers(){
@@ -759,6 +793,16 @@ function fmtShortDate(dateStr){
  return d.toLocaleDateString('id-ID',{day:'2-digit',month:'short'}).replace('.', '');
 }
 function renderMatches(matches, showActions=false){const all=load(); const reversed=matches.slice().reverse(); return reversed.map((m,revIdx)=>{let idx=-1; if(showActions && matches.length===all.length){idx=all.length-1-revIdx;} else if(showActions){idx=all.findIndex(x=>x.date===m.date&&x.home===m.home&&x.away===m.away&&+x.hs===+m.hs&&+x.as===+m.as&&JSON.stringify(x.homeScorers||[])===JSON.stringify(m.homeScorers||[])&&JSON.stringify(x.awayScorers||[])===JSON.stringify(m.awayScorers||[]));} const cards=(m.cards||[]).map(c=>`${escapeHtml(c.player)} (${c.type==='red'?'M':'K'})`).join(', ')||'-'; const meta=`${fmtShortDate(m.date)} • H: ${(m.homeScorers||[]).map(escapeHtml).join(', ')||'-'} • A: ${(m.awayScorers||[]).map(escapeHtml).join(', ')||'-'}${m.penaltyWinner?` • Pen: ${escapeHtml(m.penaltyWinner)}`:''} • Kartu: ${cards}`; const actions=showActions&&idx>-1?`<div class="adminActions"><button type="button" onclick="editMatch(${idx})">✏️ Edit</button><button type="button" class="dangerMini" onclick="deleteMatch(${idx})">🗑 Hapus</button></div>`:''; return `<div class="match compactMatch"><div class="matchMain"><div class="matchLine"><span class="teamName">${escapeHtml(m.home)}</span><span class="scoreInline">${m.hs} - ${m.as}</span><span class="teamName">${escapeHtml(m.away)}</span></div><div class="matchMeta">${meta}</div>${actions}</div></div>`}).join('')||'<p class="muted">Belum ada match.</p>'}
+function renderAdminMatches(matches){
+ if(!isSuperAdmin()) return '<div class="adminLocked">Login sebagai <b>superadmin</b> untuk melihat tombol edit dan hapus pertandingan.</div>';
+ const all=load();
+ return matches.slice().reverse().map((m,revIdx)=>{
+  const idx=all.length-1-revIdx;
+  const cards=(m.cards||[]).map(c=>`${escapeHtml(c.player)} (${c.type==='red'?'M':'K'})`).join(', ')||'-';
+  const meta=`${fmtShortDate(m.date)} • H: ${(m.homeScorers||[]).map(escapeHtml).join(', ')||'-'} • A: ${(m.awayScorers||[]).map(escapeHtml).join(', ')||'-'}${m.penaltyWinner?` • Pen: ${escapeHtml(m.penaltyWinner)}`:''} • Kartu: ${cards}`;
+  return `<div class="adminMatchCard"><div class="adminMatchTop"><span>${escapeHtml(m.home)}</span><span class="scoreInline">${m.hs} - ${m.as}</span><span class="away">${escapeHtml(m.away)}</span></div><div class="adminMatchMeta">${meta}</div><div class="adminActions"><button type="button" class="editBtn" onclick="editMatch(${idx})">✏️ Edit Pertandingan</button><button type="button" class="deleteBtn" onclick="deleteMatch(${idx})">🗑 Hapus Pertandingan</button></div></div>`;
+ }).join('')||'<p class="muted">Belum ada match.</p>';
+}
 function resetMatchEditMode(){editingMatchIndex=null; if($('editMatchIndex'))$('editMatchIndex').value=''; if($('editNotice'))$('editNotice').classList.add('hidden'); if($('cancelEditMatch'))$('cancelEditMatch').classList.add('hidden'); if($('saveMatchBtn'))$('saveMatchBtn').textContent='Save Match';}
 function editMatch(idx){
  if(!ensureSuperAdminForAction('edit match'))return;
@@ -790,7 +834,7 @@ function renderTopScorers(ps){
  }).join('');
 }
 function bindTopScorerUploads(){}
-function render(){applyLeagueTitle(); const matches=load(), st=standings(matches), ps=playerStats(); $('statTeams').textContent=activeTeams().length; $('statMatches').textContent=matches.length; $('statGoals').textContent=matches.reduce((s,m)=>s+m.hs+m.as,0); $('statTop').textContent=ps[0]?`${ps[0].name} (${ps[0].goals})`:'-'; $('recentMatches').innerHTML=renderMatches(matches.slice(-6), false); $('matchList').innerHTML=renderMatches(matches, true);
+function render(){applyLeagueTitle(); const matches=load(), st=standings(matches), ps=playerStats(); $('statTeams').textContent=activeTeams().length; $('statMatches').textContent=matches.length; $('statGoals').textContent=matches.reduce((s,m)=>s+m.hs+m.as,0); $('statTop').textContent=ps[0]?`${ps[0].name} (${ps[0].goals})`:'-'; $('recentMatches').innerHTML=renderMatches(matches.slice(-6), false); $('matchList').innerHTML=renderMatches(matches, false); if($('adminMatchList')) $('adminMatchList').innerHTML=renderAdminMatches(matches);
  $('miniStandings').innerHTML=st.slice(0,5).map((r,i)=>`<div class="standingRow"><span>${i+1}. ${escapeHtml(r.team)}</span><span class="badge">${r.pts} pts</span></div>`).join('');
  renderStandingsTable(matches);
  renderTeamPlayerColumns();
@@ -1030,7 +1074,7 @@ function collectCompetitionSettings(){
 function backupDataPayload(){
  const data={};
  (window.__FC_SYNC_KEYS||[]).forEach(k=>{data[k]=localStorage.getItem(k);});
- return {app:'FC Sombong League',version:'v2.08',type:'backup',createdAt:new Date().toISOString(),data};
+ return {app:'FC Sombong League',version:'v2.09',type:'backup',createdAt:new Date().toISOString(),data};
 }
 function downloadBackupData(){
  try{
@@ -1114,7 +1158,7 @@ function generateAiText(type){
 function copyAiOutput(){const el=$('aiOutput'); if(!el||!el.value)return showToast('Belum ada teks','Generate AI terlebih dahulu.','error'); navigator.clipboard?.writeText(el.value); showToast('Berhasil disalin','Teks AI siap ditempel ke WhatsApp.')}
 
 function exportCsv(){const rows=[['Tanggal','Home','Away','Skor Home','Skor Away','Scorer Home','Scorer Away','Penalty Winner','Cards']]; load().forEach(m=>rows.push([m.date,m.home,m.away,m.hs,m.as,(m.homeScorers||[]).join('; '),(m.awayScorers||[]).join('; '),m.penaltyWinner||'',(m.cards||[]).map(c=>`${c.player}-${c.team}-${c.type}`).join('; ')])); const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n'); const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='riwayat_pertandingan.csv'; a.click(); URL.revokeObjectURL(a.href)}
-function init(){document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); b.classList.add('active'); document.querySelectorAll('.page').forEach(p=>p.classList.remove('show')); $(b.dataset.page).classList.add('show');}); $('matchDate').value=new Date().toISOString().slice(0,10); if($('weekDate'))$('weekDate').value=new Date().toISOString().slice(0,10); fillSelects(); updateAccessUI(); if($('loginBtn'))$('loginBtn').onclick=loginAccessUser; if($('logoutBtn'))$('logoutBtn').onclick=()=>{clearCurrentAccessUser(); updateAccessUI(); showToast('Logout berhasil','Input match dikunci kembali.')}; if($('generateAccessUser'))$('generateAccessUser').onclick=createAccessUser; document.querySelectorAll('.scoreBtn').forEach(btn=>btn.onclick=()=>{const input=$(btn.dataset.score); const next=Math.max(0,(+input.value||0)+(+btn.dataset.delta||0)); input.value=next; input.dispatchEvent(new Event('input',{bubbles:true}));}); if($('showYearStandings'))$('showYearStandings').onclick=()=>{standingsMode='year';$('showYearStandings').classList.add('activeMode');$('showWeekStandings').classList.remove('activeMode');render()}; if($('showWeekStandings'))$('showWeekStandings').onclick=()=>{standingsMode='week';$('showWeekStandings').classList.add('activeMode');$('showYearStandings').classList.remove('activeMode');render()}; if($('weekDate'))$('weekDate').onchange=()=>{standingsMode='week';$('showWeekStandings').classList.add('activeMode');$('showYearStandings').classList.remove('activeMode');render()}; if($('exportStandingsImage'))$('exportStandingsImage').onclick=exportStandingsImage; if($('copyStandingsWA'))$('copyStandingsWA').onclick=copyStandingsWA; ['homeScore','awayScore','homeTeam','awayTeam'].forEach(id=>$(id).addEventListener('input',()=>{refreshHistories();syncScorerInputs()})); $('enableCards').onchange=e=>{$('cardsBlock').classList.toggle('hidden',!e.target.checked); if(e.target.checked&&!document.querySelector('.cardRow'))addCardRow()}; $('addCard').onclick=()=>addCardRow(); $('playerSearch').oninput=renderPlayers; if($('savePlayers'))$('savePlayers').onclick=()=>{saveRosters(collectRosters()); refreshHistories(); renderPlayers(); showToast('Daftar pemain tersimpan','Autocomplete scorer dan kartu sudah diperbarui.');}; if($('cancelEditMatch'))$('cancelEditMatch').onclick=()=>{resetMatchEditMode(); $('matchForm').reset(); fillSelects();}; if($('saveSponsor'))$('saveSponsor').onclick=saveSponsorFromForm; if($('clearSponsor'))$('clearSponsor').onclick=clearSponsor; if($('addFinance'))$('addFinance').onclick=addFinance; if($('financeDate'))$('financeDate').value=new Date().toISOString().slice(0,10); if($('moreExportStandings'))$('moreExportStandings').onclick=exportStandingsImage; if($('moreCopyStandings'))$('moreCopyStandings').onclick=copyStandingsWA; if($('moreCopyTopScorer'))$('moreCopyTopScorer').onclick=copyTopScorerWA; if($('downloadBackupData'))$('downloadBackupData').onclick=downloadBackupData; if($('restoreBackupData'))$('restoreBackupData').onclick=restoreBackupData; $('exportCsv').onclick=exportCsv; $('exportPdf').onclick=()=>window.print();
+function init(){document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); b.classList.add('active'); document.querySelectorAll('.page').forEach(p=>p.classList.remove('show')); $(b.dataset.page).classList.add('show');}); $('matchDate').value=new Date().toISOString().slice(0,10); if($('weekDate'))$('weekDate').value=new Date().toISOString().slice(0,10); fillSelects(); updateAccessUI(); if($('loginBtn'))$('loginBtn').onclick=loginAccessUser; if($('logoutBtn'))$('logoutBtn').onclick=()=>{clearCurrentAccessUser(); updateAccessUI(); const active=document.querySelector('.page.show'); if(active?.id==='admin'){document.querySelector('.tabs button[data-page="dashboard"]')?.click();} showToast('Logout berhasil','Input match dikunci kembali.')}; if($('generateAccessUser'))$('generateAccessUser').onclick=createAccessUser; document.querySelectorAll('.scoreBtn').forEach(btn=>btn.onclick=()=>{const input=$(btn.dataset.score); const next=Math.max(0,(+input.value||0)+(+btn.dataset.delta||0)); input.value=next; input.dispatchEvent(new Event('input',{bubbles:true}));}); if($('showYearStandings'))$('showYearStandings').onclick=()=>{standingsMode='year';$('showYearStandings').classList.add('activeMode');$('showWeekStandings').classList.remove('activeMode');render()}; if($('showWeekStandings'))$('showWeekStandings').onclick=()=>{standingsMode='week';$('showWeekStandings').classList.add('activeMode');$('showYearStandings').classList.remove('activeMode');render()}; if($('weekDate'))$('weekDate').onchange=()=>{standingsMode='week';$('showWeekStandings').classList.add('activeMode');$('showYearStandings').classList.remove('activeMode');render()}; if($('exportStandingsImage'))$('exportStandingsImage').onclick=exportStandingsImage; if($('copyStandingsWA'))$('copyStandingsWA').onclick=copyStandingsWA; ['homeScore','awayScore','homeTeam','awayTeam'].forEach(id=>$(id).addEventListener('input',()=>{refreshHistories();syncScorerInputs()})); $('enableCards').onchange=e=>{$('cardsBlock').classList.toggle('hidden',!e.target.checked); if(e.target.checked&&!document.querySelector('.cardRow'))addCardRow()}; $('addCard').onclick=()=>addCardRow(); $('playerSearch').oninput=renderPlayers; if($('savePlayers'))$('savePlayers').onclick=()=>{saveRosters(collectRosters()); refreshHistories(); renderPlayers(); showToast('Daftar pemain tersimpan','Autocomplete scorer dan kartu sudah diperbarui.');}; if($('cancelEditMatch'))$('cancelEditMatch').onclick=()=>{resetMatchEditMode(); $('matchForm').reset(); fillSelects();}; if($('saveSponsor'))$('saveSponsor').onclick=saveSponsorFromForm; if($('clearSponsor'))$('clearSponsor').onclick=clearSponsor; if($('addFinance'))$('addFinance').onclick=addFinance; if($('financeDate'))$('financeDate').value=new Date().toISOString().slice(0,10); if($('moreExportStandings'))$('moreExportStandings').onclick=exportStandingsImage; if($('moreCopyStandings'))$('moreCopyStandings').onclick=copyStandingsWA; if($('moreCopyTopScorer'))$('moreCopyTopScorer').onclick=copyTopScorerWA; if($('downloadBackupData'))$('downloadBackupData').onclick=downloadBackupData; if($('restoreBackupData'))$('restoreBackupData').onclick=restoreBackupData; $('exportCsv').onclick=exportCsv; $('exportPdf').onclick=()=>window.print();
  $('matchForm').onsubmit=e=>{e.preventDefault(); if(!canInputMatch())return showToast('Akses ditolak','Login terlebih dahulu untuk input hasil pertandingan.','error'); const m={date:$('matchDate').value,home:$('homeTeam').value,away:$('awayTeam').value,hs:+$('homeScore').value,as:+$('awayScore').value,homeScorers:collectSide('home'),awayScorers:collectSide('away'),penaltyWinner:$('penaltyWinner').value,cards:$('enableCards').checked?collectCards():[]}; if(m.home===m.away)return showToast('Input belum valid','Home dan Away tidak boleh club yang sama.','error'); if(m.homeScorers.length!==m.hs)return showToast('Pencetak goal Home belum sesuai',`Skor home ${m.hs}, maka wajib ${m.hs} nama. Terisi ${m.homeScorers.length}.`,'error'); if(m.awayScorers.length!==m.as)return showToast('Pencetak goal Away belum sesuai',`Skor away ${m.as}, maka wajib ${m.as} nama. Terisi ${m.awayScorers.length}.`,'error'); if(compSettings().drawRule==='penalty' && m.hs===m.as && !m.penaltyWinner)return showToast('Penalty winner wajib dipilih','Karena skor seri, pilih pemenang penalty untuk poin 2/1.','error'); if(compSettings().drawRule!=='penalty')m.penaltyWinner=''; const data=load(); const editIdx=editingMatchIndex!==null?editingMatchIndex:($('editMatchIndex')?.value!==''?+$('editMatchIndex').value:null); if(editIdx!==null && isSuperAdmin() && data[editIdx]){data[editIdx]=m; save(data); showToast('Match diperbarui',`${m.home} ${m.hs} - ${m.as} ${m.away}`);} else {save([...data,m]); showToast('Match berhasil disimpan',`${m.home} ${m.hs} - ${m.as} ${m.away}`);} syncRostersFromMatches(); e.target.reset(); resetMatchEditMode(); $('matchDate').value=new Date().toISOString().slice(0,10); $('awayTeam').selectedIndex=1; $('cardRows').innerHTML=''; $('cardsBlock').classList.add('hidden'); fillSelects(); render();};
  $('saveSettings').onclick=()=>{const arr=$('teamSettings').value.split('\n').map(x=>x.trim()).filter(Boolean); if(arr.length<2)return showToast('Setting belum valid','Minimal input 2 club.','error'); const cfg=collectCompetitionSettings(); if(arr.length!==cfg.teamCount)return showToast('Jumlah team belum sesuai',`Setting jumlah team adalah ${cfg.teamCount}, tetapi daftar club berisi ${arr.length}.`,'error'); const oldRosters=loadRosters(); const unique=[...new Set(arr)]; const nextRosters={}; unique.forEach(t=>nextRosters[t]=oldRosters[t]||[]); saveTeams(unique); saveRosters(nextRosters); saveCompSettings(cfg); fillSelects(); render(); showToast('Setting kompetisi tersimpan','Format liga/piala, jumlah team, home-away, dan aturan seri sudah diperbarui.')}; if($('hardResetAll'))$('hardResetAll').onclick=hardResetAllData; if($('importInitialGoals'))$('importInitialGoals').onclick=importInitialGoals; if($('clearInitialGoals'))$('clearInitialGoals').onclick=clearInitialGoals; if($('drawRule'))$('drawRule').onchange=updatePenaltyOptions; $('resetData').onclick=()=>{localStorage.removeItem('matches_v2');render();fillSelects()}; render();}
 window.__stateReady.then(init).catch(init);
