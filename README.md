@@ -20,3 +20,8 @@ Update v2.03:
 - Download backup JSON untuk menyimpan data website.
 - Restore backup dengan password Super Admin.
 - Restore mengirim data kembali ke server /api/state.
+
+
+## v2.08
+- Dashboard Recent Matches menampilkan 6 pertandingan terakhir.
+- Logo sponsor yang diupload tampil juga di bagian bawah website/footer.

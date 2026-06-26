@@ -113,6 +113,7 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 /* Patch: Top Scorer photo + footer credit */
 .siteFooter{margin:28px auto 14px;padding:18px 20px;text-align:center;color:#065f46;font-weight:900;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:22px;box-shadow:0 14px 35px rgba(15,23,42,.06)}
 .siteFooter .footerLogo{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:999px;background:#059669;color:white;margin-right:8px;vertical-align:middle;box-shadow:0 8px 20px rgba(5,150,105,.28)}
+.siteFooterSponsor{margin-top:12px;display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}.siteFooterSponsor img{height:42px;max-width:170px;object-fit:contain;background:#fff;border:1px solid #d1fae5;border-radius:10px;padding:5px}.siteFooterSponsor span{font-weight:900;color:#065f46}
 .siteFooter small{display:block;margin-top:5px;color:#64748b;font-weight:700}
 .rankPhoto{width:56px;height:56px;border-radius:999px;object-fit:cover;background:#e5e7eb;border:3px solid #bbf7d0;box-shadow:0 8px 18px rgba(15,23,42,.08)}
 .cleanTopScorer{grid-template-columns:64px 1fr auto!important;align-items:center}
@@ -454,6 +455,7 @@ Koko Lobang,21"></textarea>
 
   <footer class="siteFooter">
     <span class="footerLogo">⚽</span> Website ini dibuat oleh <b>Team FC Sombong</b>
+    <div id="sponsorFooter" class="siteFooterSponsor hidden"></div>
     <small>Community League Management</small>
   </footer>
 </main>
@@ -579,8 +581,9 @@ function financeReports(){return JSON.parse(localStorage.getItem('finance_report
 function saveFinanceReports(arr){localStorage.setItem('finance_reports_v1',JSON.stringify(arr||[]))}
 function rupiah(n){return 'Rp'+(Number(n)||0).toLocaleString('id-ID')}
 function renderSponsor(){
- const sp=sponsors(); const box=$('sponsorStrip'); const prev=$('sponsorPreview');
+ const sp=sponsors(); const box=$('sponsorStrip'); const prev=$('sponsorPreview'); const foot=$('sponsorFooter');
  if(box){ if(sp.logo){box.classList.remove('hidden'); box.innerHTML=`<span>Sponsor:</span><img src="${sp.logo}" alt="${escapeHtml(sp.name||'Sponsor')}">${sp.name?`<span>${escapeHtml(sp.name)}</span>`:''}`;} else {box.classList.add('hidden'); box.innerHTML='';}}
+ if(foot){ if(sp.logo){foot.classList.remove('hidden'); foot.innerHTML=`<span>Sponsor:</span><img src="${sp.logo}" alt="${escapeHtml(sp.name||'Sponsor')}">${sp.name?`<span>${escapeHtml(sp.name)}</span>`:''}`;} else {foot.classList.add('hidden'); foot.innerHTML='';}}
  if(prev){prev.innerHTML=sp.logo?`<p class="muted">Sponsor aktif:</p><img src="${sp.logo}" alt="${escapeHtml(sp.name||'Sponsor')}"><div><b>${escapeHtml(sp.name||'Sponsor')}</b></div>`:'<p class="muted">Belum ada sponsor.</p>';}
 }
 function saveSponsorFromForm(){
@@ -787,7 +790,7 @@ function renderTopScorers(ps){
  }).join('');
 }
 function bindTopScorerUploads(){}
-function render(){applyLeagueTitle(); const matches=load(), st=standings(matches), ps=playerStats(); $('statTeams').textContent=activeTeams().length; $('statMatches').textContent=matches.length; $('statGoals').textContent=matches.reduce((s,m)=>s+m.hs+m.as,0); $('statTop').textContent=ps[0]?`${ps[0].name} (${ps[0].goals})`:'-'; $('recentMatches').innerHTML=renderMatches(matches.slice(-5), false); $('matchList').innerHTML=renderMatches(matches, true);
+function render(){applyLeagueTitle(); const matches=load(), st=standings(matches), ps=playerStats(); $('statTeams').textContent=activeTeams().length; $('statMatches').textContent=matches.length; $('statGoals').textContent=matches.reduce((s,m)=>s+m.hs+m.as,0); $('statTop').textContent=ps[0]?`${ps[0].name} (${ps[0].goals})`:'-'; $('recentMatches').innerHTML=renderMatches(matches.slice(-6), false); $('matchList').innerHTML=renderMatches(matches, true);
  $('miniStandings').innerHTML=st.slice(0,5).map((r,i)=>`<div class="standingRow"><span>${i+1}. ${escapeHtml(r.team)}</span><span class="badge">${r.pts} pts</span></div>`).join('');
  renderStandingsTable(matches);
  renderTeamPlayerColumns();
@@ -1027,7 +1030,7 @@ function collectCompetitionSettings(){
 function backupDataPayload(){
  const data={};
  (window.__FC_SYNC_KEYS||[]).forEach(k=>{data[k]=localStorage.getItem(k);});
- return {app:'FC Sombong League',version:'v2.05',type:'backup',createdAt:new Date().toISOString(),data};
+ return {app:'FC Sombong League',version:'v2.08',type:'backup',createdAt:new Date().toISOString(),data};
 }
 function downloadBackupData(){
  try{

@@ -1,1 +1,1 @@
-v2.06: Sponsor logo is added to exported Top Skor and Klasemen PNG footers.
+v2.08: Recent Matches dashboard tampil 6 pertandingan dan logo sponsor tampil di footer website.
