@@ -1,1 +1,1 @@
-v2.13: fix missing roundRect helper used by sponsor/export canvas drawing.
+v2.14: Klasemen Bulanan + export/copy WA mengikuti mode Mingguan/Bulanan/Tahunan.

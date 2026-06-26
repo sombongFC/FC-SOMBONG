@@ -123,12 +123,12 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 .sponsorStrip{display:inline-flex;align-items:center;gap:14px;margin-top:16px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.24);padding:12px 16px;border-radius:999px;width:max-content;max-width:100%;font-weight:900}.sponsorStrip img{height:64px;max-width:260px;object-fit:contain;background:#fff;border-radius:10px;padding:6px}.sponsorPreview img{height:52px;max-width:220px;object-fit:contain;background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:5px;margin-top:10px}.editNotice{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:12px;padding:12px;margin:12px 0;font-weight:800}.financeForm{display:grid;grid-template-columns:140px 120px 1fr 160px auto;gap:8px;align-items:end}.financeForm input,.financeForm select{margin-top:0}.dangerMini{background:#fee2e2!important;color:#991b1b!important}.suggestBox{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.suggestBox button{border:1px solid #bbf7d0;background:#f0fdf4;color:#166534;border-radius:999px;padding:6px 9px;font-size:12px;cursor:pointer}@media(max-width:760px){.financeForm{grid-template-columns:1fr}.sponsorStrip{border-radius:16px;align-items:center}.sponsorStrip img{height:52px;max-width:210px}.siteFooterSponsor img{height:70px;max-width:260px}.topScorerTools,.standingsControls{display:grid!important;grid-template-columns:1fr 1fr}.standingsControls input{grid-column:1/-1;width:100%}}
 
 
-/* v2.13 Admin tab clean public history */
+/* v2.14 Admin tab clean public history */
 .adminMatchCard{border:1px solid #e5e7eb;border-radius:18px;padding:14px 16px;margin:10px 0;background:#fff;box-shadow:0 8px 22px rgba(15,23,42,.04)}
 .adminMatchTop{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;font-weight:900}.adminMatchTop .away{text-align:right}.adminMatchMeta{margin-top:8px;color:#64748b;font-size:13px}.adminActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.adminActions button{border:0;border-radius:12px;padding:10px 14px;font-weight:900;cursor:pointer}.adminActions .editBtn{background:#dcfce7;color:#065f46}.adminActions .deleteBtn{background:#fee2e2;color:#991b1b}.adminLocked{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:16px;padding:14px;margin:12px 0;font-weight:800}.tabs button.adminOnlyTab{background:#fef3c7;color:#92400e}.tabs button.adminOnlyTab.active{background:#fff;color:#17346d}
 
 
-/* v2.13 export click fix */
+/* v2.14 export click fix */
 #exportStandingsImage,#exportTopScorerImage,#moreExportStandings,#copyStandingsWA,#copyTopScorerWA,#moreCopyStandings,#moreCopyTopScorer{pointer-events:auto!important;position:relative;z-index:50;cursor:pointer!important}
 </style>
 </head>
@@ -293,10 +293,11 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
       <div class="panelHead">
         <div>
           <h2>Klasemen Otomatis</h2>
-          <p class="muted">Mingguan ditampilkan lebih dulu. Tahunan tetap menghitung akumulasi semua pertandingan.</p>
+          <p class="muted">Klasemen tersedia Mingguan, Bulanan, dan Tahunan. Mingguan ditampilkan lebih dulu.</p>
         </div>
         <div class="standingsControls">
           <button class="smallBtn activeMode" id="showWeekStandings">Mingguan</button>
+          <button class="smallBtn" id="showMonthStandings">Bulanan</button>
           <button class="smallBtn" id="showYearStandings">Tahunan</button>
           <button class="smallBtn" id="exportStandingsImage">Export Gambar</button>
           <button class="smallBtn" id="copyStandingsWA">Copy WA</button>
@@ -308,7 +309,7 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
     </div>
     <div class="panel">
       <h2>Hall of Fame Mingguan</h2>
-      <p class="muted">Arsip juara tiap periode mingguan. Klasemen tahunan tetap menghitung semua pertandingan.</p>
+      <p class="muted">Arsip juara tiap periode mingguan. Klasemen bulanan dan tahunan tetap tersedia di filter atas.</p>
       <div class="tableWrap"><table id="weeklyHall"></table></div>
     </div>
   </section>
@@ -566,6 +567,14 @@ function weekPeriod(dateStr){
  return {start:dateIso(start),end:dateIso(end),label:`${dateIso(start)} s/d ${dateIso(end)}`};
 }
 function matchesInWeek(matches,dateStr){const p=weekPeriod(dateStr); return matches.filter(m=>m.date>=p.start && m.date<=p.end)}
+function monthPeriod(dateStr){
+ const d=parseLocalDate(dateStr||new Date().toISOString().slice(0,10));
+ const start=new Date(d.getFullYear(),d.getMonth(),1);
+ const end=new Date(d.getFullYear(),d.getMonth()+1,0);
+ const monthName=d.toLocaleDateString('id-ID',{month:'long',year:'numeric'});
+ return {start:dateIso(start),end:dateIso(end),label:`${dateIso(start)} s/d ${dateIso(end)}`, name:monthName};
+}
+function matchesInMonth(matches,dateStr){const p=monthPeriod(dateStr); return matches.filter(m=>m.date>=p.start && m.date<=p.end)}
 function matchPoints(m){
  const cfg=compSettings();
  if(m.hs>m.as)return {[m.home]:3,[m.away]:0};
@@ -847,12 +856,15 @@ function render(){applyLeagueTitle(); const matches=load(), st=standings(matches
 function renderStandingsTable(matches){
  const weekDate=$('weekDate')?.value || new Date().toISOString().slice(0,10);
  const period=weekPeriod(weekDate);
+ const month=monthPeriod(weekDate);
  const baseMatches=activeMatches(matches);
- const filtered=standingsMode==='week'?matchesInWeek(baseMatches,weekDate):baseMatches;
+ const filtered=standingsMode==='week'?matchesInWeek(baseMatches,weekDate):(standingsMode==='month'?matchesInMonth(baseMatches,weekDate):baseMatches);
  const st=standings(filtered);
  if($('standingsTitle')) $('standingsTitle').innerHTML=standingsMode==='week'
   ? `<b>Klasemen Minggu</b> periode ${period.label} (reset Jumat malam).`
-  : `<b>Klasemen Tahunan</b> dari semua pertandingan team aktif yang tersimpan. Total match aktif: ${baseMatches.length}. Team posisi dasar diberi highlight greentea 🍃.`;
+  : standingsMode==='month'
+    ? `<b>Klasemen Bulanan</b> ${month.name} (${month.label}). Team posisi dasar diberi highlight greentea 🍃.`
+    : `<b>Klasemen Tahunan</b> dari semua pertandingan team aktif yang tersimpan. Total match aktif: ${baseMatches.length}. Team posisi dasar diberi highlight greentea 🍃.`;
  $('standingsTable').innerHTML='<tr><th>#</th><th>Club</th><th>P</th><th>W</th><th>D</th><th>L</th><th>Pen W</th><th>Pen L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th></tr>'+st.map((r,i)=>{const bottom=i===st.length-1&&st.length>1; return `<tr class="${bottom?'bottomTeam':''}"><td>${i+1}</td><td>${bottom?'🍃 ':''}${escapeHtml(r.team)}${bottom?' <span class="teaBadge">Dasar klasemen</span>':''}</td><td>${r.p}</td><td>${r.w}</td><td>${r.d}</td><td>${r.l}</td><td>${r.penW}</td><td>${r.penL}</td><td>${r.gf}</td><td>${r.ga}</td><td>${r.gd}</td><td><b>${r.pts}</b></td></tr>`}).join('');
  const hof=weeklyHallOfFame(baseMatches);
  if($('weeklyHall'))$('weeklyHall').innerHTML='<tr><th>Periode</th><th>Juara Mingguan</th><th>Match</th><th>Point</th><th>GD</th></tr>'+hof.map(w=>`<tr><td>${escapeHtml(w.period)}</td><td><b>${escapeHtml(w.champion)}</b></td><td>${w.matches}</td><td>${w.points}</td><td>${w.gd}</td></tr>`).join('');
@@ -1090,8 +1102,14 @@ function bindTopScorerExport(){
 
 function currentStandingsForExport(){
  const weekDate=$('weekDate')?.value || new Date().toISOString().slice(0,10);
- const base=activeMatches(load()); const data=standingsMode==='week'?matchesInWeek(base,weekDate):base;
- return {title: standingsMode==='week'?'KLASEMEN MINGGUAN':'KLASEMEN TAHUNAN', subtitle: standingsMode==='week'?weekPeriod(weekDate).label:'Semua pertandingan', rows:standings(data)};
+ const base=activeMatches(load());
+ const data=standingsMode==='week'?matchesInWeek(base,weekDate):(standingsMode==='month'?matchesInMonth(base,weekDate):base);
+ const mp=monthPeriod(weekDate);
+ return {
+  title: standingsMode==='week'?'KLASEMEN MINGGUAN':(standingsMode==='month'?'KLASEMEN BULANAN':'KLASEMEN TAHUNAN'),
+  subtitle: standingsMode==='week'?weekPeriod(weekDate).label:(standingsMode==='month'?`${mp.name} • ${mp.label}`:'Semua pertandingan'),
+  rows:standings(data)
+ };
 }
 function standingsShareText(){
  const x=currentStandingsForExport(); if(!x.rows.length)return 'Belum ada klasemen.';
@@ -1133,7 +1151,7 @@ function collectCompetitionSettings(){
 function backupDataPayload(){
  const data={};
  (window.__FC_SYNC_KEYS||[]).forEach(k=>{data[k]=localStorage.getItem(k);});
- return {app:'FC Sombong League',version:'v2.13',type:'backup',createdAt:new Date().toISOString(),data};
+ return {app:'FC Sombong League',version:'v2.14',type:'backup',createdAt:new Date().toISOString(),data};
 }
 function downloadBackupData(){
  try{
@@ -1217,7 +1235,7 @@ function generateAiText(type){
 function copyAiOutput(){const el=$('aiOutput'); if(!el||!el.value)return showToast('Belum ada teks','Generate AI terlebih dahulu.','error'); navigator.clipboard?.writeText(el.value); showToast('Berhasil disalin','Teks AI siap ditempel ke WhatsApp.')}
 
 function exportCsv(){const rows=[['Tanggal','Home','Away','Skor Home','Skor Away','Scorer Home','Scorer Away','Penalty Winner','Cards']]; load().forEach(m=>rows.push([m.date,m.home,m.away,m.hs,m.as,(m.homeScorers||[]).join('; '),(m.awayScorers||[]).join('; '),m.penaltyWinner||'',(m.cards||[]).map(c=>`${c.player}-${c.team}-${c.type}`).join('; ')])); const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n'); const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='riwayat_pertandingan.csv'; a.click(); URL.revokeObjectURL(a.href)}
-function init(){document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); b.classList.add('active'); document.querySelectorAll('.page').forEach(p=>p.classList.remove('show')); $(b.dataset.page).classList.add('show');}); $('matchDate').value=new Date().toISOString().slice(0,10); if($('weekDate'))$('weekDate').value=new Date().toISOString().slice(0,10); fillSelects(); updateAccessUI(); if($('loginBtn'))$('loginBtn').onclick=loginAccessUser; if($('logoutBtn'))$('logoutBtn').onclick=()=>{clearCurrentAccessUser(); updateAccessUI(); const active=document.querySelector('.page.show'); if(active?.id==='admin'){document.querySelector('.tabs button[data-page="dashboard"]')?.click();} showToast('Logout berhasil','Input match dikunci kembali.')}; if($('generateAccessUser'))$('generateAccessUser').onclick=createAccessUser; document.querySelectorAll('.scoreBtn').forEach(btn=>btn.onclick=()=>{const input=$(btn.dataset.score); const next=Math.max(0,(+input.value||0)+(+btn.dataset.delta||0)); input.value=next; input.dispatchEvent(new Event('input',{bubbles:true}));}); if($('showYearStandings'))$('showYearStandings').onclick=()=>{standingsMode='year';$('showYearStandings').classList.add('activeMode');$('showWeekStandings').classList.remove('activeMode');render()}; if($('showWeekStandings'))$('showWeekStandings').onclick=()=>{standingsMode='week';$('showWeekStandings').classList.add('activeMode');$('showYearStandings').classList.remove('activeMode');render()}; if($('weekDate'))$('weekDate').onchange=()=>{standingsMode='week';$('showWeekStandings').classList.add('activeMode');$('showYearStandings').classList.remove('activeMode');render()}; if($('exportStandingsImage'))$('exportStandingsImage').onclick=exportStandingsImage; if($('copyStandingsWA'))$('copyStandingsWA').onclick=copyStandingsWA; ['homeScore','awayScore','homeTeam','awayTeam'].forEach(id=>$(id).addEventListener('input',()=>{refreshHistories();syncScorerInputs()})); $('enableCards').onchange=e=>{$('cardsBlock').classList.toggle('hidden',!e.target.checked); if(e.target.checked&&!document.querySelector('.cardRow'))addCardRow()}; $('addCard').onclick=()=>addCardRow(); $('playerSearch').oninput=renderPlayers; if($('savePlayers'))$('savePlayers').onclick=()=>{saveRosters(collectRosters()); refreshHistories(); renderPlayers(); showToast('Daftar pemain tersimpan','Autocomplete scorer dan kartu sudah diperbarui.');}; if($('cancelEditMatch'))$('cancelEditMatch').onclick=()=>{resetMatchEditMode(); $('matchForm').reset(); fillSelects();}; if($('saveSponsor'))$('saveSponsor').onclick=saveSponsorFromForm; if($('clearSponsor'))$('clearSponsor').onclick=clearSponsor; if($('addFinance'))$('addFinance').onclick=addFinance; if($('financeDate'))$('financeDate').value=new Date().toISOString().slice(0,10); if($('moreExportStandings'))$('moreExportStandings').onclick=exportStandingsImage; if($('moreCopyStandings'))$('moreCopyStandings').onclick=copyStandingsWA; if($('moreCopyTopScorer'))$('moreCopyTopScorer').onclick=copyTopScorerWA; if($('downloadBackupData'))$('downloadBackupData').onclick=downloadBackupData; if($('restoreBackupData'))$('restoreBackupData').onclick=restoreBackupData; $('exportCsv').onclick=exportCsv; $('exportPdf').onclick=()=>window.print(); bindExportButtonsForce();
+function init(){document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); b.classList.add('active'); document.querySelectorAll('.page').forEach(p=>p.classList.remove('show')); $(b.dataset.page).classList.add('show');}); $('matchDate').value=new Date().toISOString().slice(0,10); if($('weekDate'))$('weekDate').value=new Date().toISOString().slice(0,10); fillSelects(); updateAccessUI(); if($('loginBtn'))$('loginBtn').onclick=loginAccessUser; if($('logoutBtn'))$('logoutBtn').onclick=()=>{clearCurrentAccessUser(); updateAccessUI(); const active=document.querySelector('.page.show'); if(active?.id==='admin'){document.querySelector('.tabs button[data-page="dashboard"]')?.click();} showToast('Logout berhasil','Input match dikunci kembali.')}; if($('generateAccessUser'))$('generateAccessUser').onclick=createAccessUser; document.querySelectorAll('.scoreBtn').forEach(btn=>btn.onclick=()=>{const input=$(btn.dataset.score); const next=Math.max(0,(+input.value||0)+(+btn.dataset.delta||0)); input.value=next; input.dispatchEvent(new Event('input',{bubbles:true}));}); if($('showYearStandings'))$('showYearStandings').onclick=()=>{standingsMode='year';$('showYearStandings').classList.add('activeMode');$('showWeekStandings')?.classList.remove('activeMode');$('showMonthStandings')?.classList.remove('activeMode');render()}; if($('showMonthStandings'))$('showMonthStandings').onclick=()=>{standingsMode='month';$('showMonthStandings').classList.add('activeMode');$('showWeekStandings')?.classList.remove('activeMode');$('showYearStandings')?.classList.remove('activeMode');render()}; if($('showWeekStandings'))$('showWeekStandings').onclick=()=>{standingsMode='week';$('showWeekStandings').classList.add('activeMode');$('showMonthStandings')?.classList.remove('activeMode');$('showYearStandings')?.classList.remove('activeMode');render()}; if($('weekDate'))$('weekDate').onchange=()=>{if(standingsMode==='year')standingsMode='week';$('showWeekStandings')?.classList.toggle('activeMode',standingsMode==='week');$('showMonthStandings')?.classList.toggle('activeMode',standingsMode==='month');$('showYearStandings')?.classList.remove('activeMode');render()}; if($('exportStandingsImage'))$('exportStandingsImage').onclick=exportStandingsImage; if($('copyStandingsWA'))$('copyStandingsWA').onclick=copyStandingsWA; ['homeScore','awayScore','homeTeam','awayTeam'].forEach(id=>$(id).addEventListener('input',()=>{refreshHistories();syncScorerInputs()})); $('enableCards').onchange=e=>{$('cardsBlock').classList.toggle('hidden',!e.target.checked); if(e.target.checked&&!document.querySelector('.cardRow'))addCardRow()}; $('addCard').onclick=()=>addCardRow(); $('playerSearch').oninput=renderPlayers; if($('savePlayers'))$('savePlayers').onclick=()=>{saveRosters(collectRosters()); refreshHistories(); renderPlayers(); showToast('Daftar pemain tersimpan','Autocomplete scorer dan kartu sudah diperbarui.');}; if($('cancelEditMatch'))$('cancelEditMatch').onclick=()=>{resetMatchEditMode(); $('matchForm').reset(); fillSelects();}; if($('saveSponsor'))$('saveSponsor').onclick=saveSponsorFromForm; if($('clearSponsor'))$('clearSponsor').onclick=clearSponsor; if($('addFinance'))$('addFinance').onclick=addFinance; if($('financeDate'))$('financeDate').value=new Date().toISOString().slice(0,10); if($('moreExportStandings'))$('moreExportStandings').onclick=exportStandingsImage; if($('moreCopyStandings'))$('moreCopyStandings').onclick=copyStandingsWA; if($('moreCopyTopScorer'))$('moreCopyTopScorer').onclick=copyTopScorerWA; if($('downloadBackupData'))$('downloadBackupData').onclick=downloadBackupData; if($('restoreBackupData'))$('restoreBackupData').onclick=restoreBackupData; $('exportCsv').onclick=exportCsv; $('exportPdf').onclick=()=>window.print(); bindExportButtonsForce();
  $('matchForm').onsubmit=e=>{e.preventDefault(); if(!canInputMatch())return showToast('Akses ditolak','Login terlebih dahulu untuk input hasil pertandingan.','error'); const m={date:$('matchDate').value,home:$('homeTeam').value,away:$('awayTeam').value,hs:+$('homeScore').value,as:+$('awayScore').value,homeScorers:collectSide('home'),awayScorers:collectSide('away'),penaltyWinner:$('penaltyWinner').value,cards:$('enableCards').checked?collectCards():[]}; if(m.home===m.away)return showToast('Input belum valid','Home dan Away tidak boleh club yang sama.','error'); if(m.homeScorers.length!==m.hs)return showToast('Pencetak goal Home belum sesuai',`Skor home ${m.hs}, maka wajib ${m.hs} nama. Terisi ${m.homeScorers.length}.`,'error'); if(m.awayScorers.length!==m.as)return showToast('Pencetak goal Away belum sesuai',`Skor away ${m.as}, maka wajib ${m.as} nama. Terisi ${m.awayScorers.length}.`,'error'); if(compSettings().drawRule==='penalty' && m.hs===m.as && !m.penaltyWinner)return showToast('Penalty winner wajib dipilih','Karena skor seri, pilih pemenang penalty untuk poin 2/1.','error'); if(compSettings().drawRule!=='penalty')m.penaltyWinner=''; const data=load(); const editIdx=editingMatchIndex!==null?editingMatchIndex:($('editMatchIndex')?.value!==''?+$('editMatchIndex').value:null); if(editIdx!==null && isSuperAdmin() && data[editIdx]){data[editIdx]=m; save(data); showToast('Match diperbarui',`${m.home} ${m.hs} - ${m.as} ${m.away}`);} else {save([...data,m]); showToast('Match berhasil disimpan',`${m.home} ${m.hs} - ${m.as} ${m.away}`);} syncRostersFromMatches(); e.target.reset(); resetMatchEditMode(); $('matchDate').value=new Date().toISOString().slice(0,10); $('awayTeam').selectedIndex=1; $('cardRows').innerHTML=''; $('cardsBlock').classList.add('hidden'); fillSelects(); render();};
  $('saveSettings').onclick=()=>{const arr=$('teamSettings').value.split('\n').map(x=>x.trim()).filter(Boolean); if(arr.length<2)return showToast('Setting belum valid','Minimal input 2 club.','error'); const cfg=collectCompetitionSettings(); if(arr.length!==cfg.teamCount)return showToast('Jumlah team belum sesuai',`Setting jumlah team adalah ${cfg.teamCount}, tetapi daftar club berisi ${arr.length}.`,'error'); const oldRosters=loadRosters(); const unique=[...new Set(arr)]; const nextRosters={}; unique.forEach(t=>nextRosters[t]=oldRosters[t]||[]); saveTeams(unique); saveRosters(nextRosters); saveCompSettings(cfg); fillSelects(); render(); showToast('Setting kompetisi tersimpan','Format liga/piala, jumlah team, home-away, dan aturan seri sudah diperbarui.')}; if($('hardResetAll'))$('hardResetAll').onclick=hardResetAllData; if($('importInitialGoals'))$('importInitialGoals').onclick=importInitialGoals; if($('clearInitialGoals'))$('clearInitialGoals').onclick=clearInitialGoals; if($('drawRule'))$('drawRule').onchange=updatePenaltyOptions; $('resetData').onclick=()=>{localStorage.removeItem('matches_v2');render();fillSelects()}; render();}
 window.__stateReady.then(init).catch(init);
