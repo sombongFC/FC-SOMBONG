@@ -1,4 +1,4 @@
-FC Sombong League v2.10 - Sponsor Bigger
-- Logo sponsor di footer website diperbesar.
-- Logo sponsor pada export Top Skor dan Klasemen diperbesar sekitar 2x.
-- Footer export dibuat lebih tinggi agar sponsor terlihat jelas.
+v2.11 Sponsor Watermark Export
+- Sponsor pada export Top Skor dan Klasemen dibuat sebagai watermark transparan di background.
+- Footer sponsor dibuat lebih elegan dan tidak terlalu mendominasi.
+- Ditambahkan logo/badge FC Sombong di header export.
