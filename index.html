@@ -670,7 +670,33 @@ function addFinance(){
 }
 function deleteFinance(idx){if(!isSuperAdmin())return; const rows=financeReports(); if(!rows[idx])return; if(!confirm('Hapus laporan keuangan ini?'))return; rows.splice(idx,1); saveFinanceReports(rows); renderFinance(); showToast('Laporan dihapus','Data keuangan sudah diperbarui.')}
 
-function setPlayerPhoto(name,file){if(!file)return; if(file.size>1200000)return showToast('File terlalu besar','Gunakan foto di bawah 1,2 MB agar aman tersimpan di HP.','error'); const reader=new FileReader(); reader.onload=()=>{const photos=playerPhotos(); photos[keyName(name)]=reader.result; savePlayerPhotos(photos); render(); showToast('Foto pemain diganti',name);}; reader.readAsDataURL(file)}
+function resizeImageFile(file,maxW,maxH,quality){
+ return new Promise((resolve,reject)=>{
+  const reader=new FileReader();
+  reader.onload=()=>{
+   const img=new Image();
+   img.onload=()=>{
+    let w=img.width,h=img.height;
+    if(w>maxW||h>maxH){const ratio=Math.min(maxW/w,maxH/h); w=Math.round(w*ratio); h=Math.round(h*ratio);}
+    const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h;
+    const ctx=canvas.getContext('2d'); ctx.drawImage(img,0,0,w,h);
+    resolve(canvas.toDataURL('image/jpeg',quality));
+   };
+   img.onerror=()=>reject(new Error('Gagal membaca gambar'));
+   img.src=reader.result;
+  };
+  reader.onerror=()=>reject(new Error('Gagal membaca file'));
+  reader.readAsDataURL(file);
+ });
+}
+function setPlayerPhoto(name,file){
+ if(!file)return;
+ if(file.size>15000000)return showToast('File terlalu besar','Gunakan foto di bawah 15 MB.','error');
+ resizeImageFile(file,700,700,0.8).then(dataUrl=>{
+  const photos=playerPhotos(); photos[keyName(name)]=dataUrl; savePlayerPhotos(photos); render();
+  showToast('Foto pemain diganti',name);
+ }).catch(()=>showToast('Gagal proses foto','Coba pilih foto lain.','error'));
+}
 
 function accessUsers(){return JSON.parse(localStorage.getItem('access_users_v1')||'[]')}
 function saveAccessUsers(users){localStorage.setItem('access_users_v1',JSON.stringify(users))}
@@ -1078,35 +1104,90 @@ function bindExportButtonsForce(){
  });
 }
 
+function drawPlayerAvatar(ctx,name,cx,cy,r,img){
+ ctx.save();
+ ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.closePath(); ctx.clip();
+ if(img){
+  const scale=Math.max((r*2)/img.width,(r*2)/img.height);
+  const iw=img.width*scale, ih=img.height*scale;
+  ctx.drawImage(img,cx-iw/2,cy-ih/2,iw,ih);
+ } else {
+  ctx.fillStyle='#1c2b24'; ctx.fillRect(cx-r,cy-r,r*2,r*2);
+  ctx.fillStyle='#3a4a42';
+  ctx.beginPath(); ctx.arc(cx,cy-r*0.28,r*0.36,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(cx,cy+r*0.95,r*0.62,Math.PI,0); ctx.fill();
+ }
+ ctx.restore();
+ ctx.strokeStyle='#ffd21a'; ctx.lineWidth=3;
+ ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
+}
+function regroupFlatByRank(flatItems){
+ const groups=[];
+ flatItems.forEach(item=>{
+  const last=groups[groups.length-1];
+  if(last && last.rank===item.rank) last.names.push(item.name);
+  else groups.push({rank:item.rank,goals:item.goals,names:[item.name]});
+ });
+ return groups;
+}
 async function exportTopScorerImage(){
  const groups=rankedTopScorerGroups();
  if(!groups.length)return showToast('Belum ada data','Top skor masih kosong.','error');
- const W=1080, pad=56, rowH=78, headerH=210, bottomH=250;
- const extra=groups.reduce((s,g)=>s+Math.max(0,g.names.length-1)*26,0);
- const H=Math.max(1350, headerH + groups.length*rowH + extra + bottomH);
+ const flat=[]; groups.forEach(g=>g.names.forEach(n=>flat.push({rank:g.rank,goals:g.goals,name:n})));
+ const topFlat=flat.slice(0,5);
+ const restGroups=regroupFlatByRank(flat.slice(5));
+ const photos=playerPhotos();
+ const topImgs=await Promise.all(topFlat.map(p=>loadCanvasImage(photos[keyName(p.name)]||null)));
+ const W=1080, pad=56;
+ const headerH=200, topRowH=118, restRowH=72;
+ const restExtra=restGroups.reduce((s,g)=>s+Math.max(0,g.names.length-1)*26,0);
+ const restHeaderH=restGroups.length?70:0;
+ const H=headerH + topFlat.length*topRowH + restHeaderH + restGroups.length*restRowH + restExtra + 210;
  const c=document.createElement('canvas'); c.width=W; c.height=H; const ctx=c.getContext('2d');
  ctx.fillStyle='#050505'; ctx.fillRect(0,0,W,H);
- // subtle green strip
  const grad=ctx.createLinearGradient(0,0,W,0); grad.addColorStop(0,'#062b18'); grad.addColorStop(.5,'#00964a'); grad.addColorStop(1,'#062b18'); ctx.fillStyle=grad; ctx.fillRect(0,0,W,18);
- ctx.textAlign='center'; ctx.fillStyle='#f4f4f4'; ctx.font='900 72px Arial Black, Impact, Arial'; ctx.fillText('TOP SKOR FC SOMBONG',W/2,86);
- ctx.fillStyle='#ffd21a'; ctx.font='800 40px Arial Black, Arial'; ctx.fillText('UPDATE '+topScorerUpdateDateLabel(),W/2,140);
+ ctx.textAlign='center'; ctx.fillStyle='#f4f4f4'; ctx.font='900 68px Arial Black, Impact, Arial'; ctx.fillText('TOP SKOR FC SOMBONG',W/2,84);
+ ctx.fillStyle='#ffd21a'; ctx.font='800 36px Arial Black, Arial'; ctx.fillText('UPDATE '+topScorerUpdateDateLabel(),W/2,136);
  ctx.strokeStyle='#ffd21a'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(pad,158); ctx.lineTo(W-pad,158); ctx.stroke();
- ctx.textAlign='left'; ctx.fillStyle='#ffd21a'; ctx.font='800 29px Arial'; ctx.fillText('PERINGKAT',pad+8,196); ctx.fillText('NAMA PEMAIN',265,196); ctx.textAlign='right'; ctx.fillText('JUMLAH GOL',W-pad,196);
- ctx.strokeStyle='#efefef'; ctx.lineWidth=1.4; ctx.beginPath(); ctx.moveTo(pad,212); ctx.lineTo(W-pad,212); ctx.stroke();
- let y=252; ctx.textBaseline='top';
- groups.forEach(g=>{
-  const names=g.names;
-  const blockH=rowH + Math.max(0,names.length-1)*26;
-  ctx.strokeStyle='rgba(255,255,255,.72)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(pad,y+blockH-16); ctx.lineTo(W-pad,y+blockH-16); ctx.stroke();
-  ctx.fillStyle='#ffd21a'; ctx.font='900 44px Arial Black, Arial'; ctx.textAlign='center'; ctx.fillText(String(g.rank),pad+75,y+4);
-  ctx.fillStyle='#f6f6f6'; ctx.font='800 34px Arial'; ctx.textAlign='left';
-  names.forEach((n,i)=>{ctx.fillStyle=i===0?'#f6f6f6':'#f6f6f6'; const bullet=names.length>1?'• ':''; wrapCanvasText(ctx,bullet+n,265,y+i*34,560,34);});
-  ctx.fillStyle='#ffd21a'; ctx.font='900 48px Arial Black, Arial'; ctx.textAlign='right'; ctx.fillText(String(g.goals),W-pad,y+2);
-  y += blockH;
+ let y=headerH;
+ // Top 5 dengan foto
+ topFlat.forEach((p,i)=>{
+  const cy=y+topRowH/2, r=44;
+  if(i%2===1){ctx.fillStyle='rgba(255,255,255,.04)'; ctx.fillRect(0,y,W,topRowH);}
+  drawPlayerAvatar(ctx,p.name,pad+r,cy,r,topImgs[i]);
+  ctx.fillStyle='#ffd21a'; ctx.font='900 26px Arial Black, Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(String(p.rank),pad+r,cy+r+18);
+  ctx.fillStyle='#f6f6f6'; ctx.font='800 38px Arial'; ctx.textAlign='left';
+  ctx.fillText(p.name,pad+2*r+34,cy);
+  ctx.fillStyle='#ffd21a'; ctx.font='900 52px Arial Black, Arial'; ctx.textAlign='right';
+  ctx.fillText(String(p.goals),W-pad,cy+2);
+  ctx.textBaseline='alphabetic';
+  ctx.strokeStyle='rgba(255,255,255,.18)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(pad,y+topRowH-2); ctx.lineTo(W-pad,y+topRowH-2); ctx.stroke();
+  y+=topRowH;
  });
- ctx.strokeStyle='#ffd21a'; ctx.lineWidth=2; ctx.strokeRect(pad,H-160,W-pad*2,44);
- ctx.fillStyle='#ffd21a'; ctx.font='800 24px Arial'; ctx.textAlign='center'; ctx.fillText('CATATAN: OWN GOAL TIDAK DICANTUMKAN',W/2,H-148);
- await drawSponsorFooter(ctx,W,H,{footerH:150});
+ if(restGroups.length){
+  y+=24;
+  ctx.fillStyle='rgba(255,255,255,.6)'; ctx.font='800 24px Arial'; ctx.textAlign='left'; ctx.fillText('PEMAIN LAINNYA',pad,y+24);
+  ctx.strokeStyle='#ffd21a'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(pad,y+40); ctx.lineTo(W-pad,y+40); ctx.stroke();
+  y+=restHeaderH;
+  ctx.textBaseline='top';
+  restGroups.forEach(g=>{
+   const names=g.names;
+   const blockH=restRowH + Math.max(0,names.length-1)*26;
+   ctx.strokeStyle='rgba(255,255,255,.16)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(pad,y+blockH-14); ctx.lineTo(W-pad,y+blockH-14); ctx.stroke();
+   ctx.fillStyle='#ffd21a'; ctx.font='900 34px Arial Black, Arial'; ctx.textAlign='center'; ctx.fillText(String(g.rank),pad+30,y+4);
+   ctx.fillStyle='#e5e7eb'; ctx.font='800 28px Arial'; ctx.textAlign='left';
+   names.forEach((n,i)=>{const bullet=names.length>1?'• ':''; wrapCanvasText(ctx,bullet+n,pad+72,y+i*28,720,28);});
+   ctx.fillStyle='#ffd21a'; ctx.font='900 36px Arial Black, Arial'; ctx.textAlign='right'; ctx.fillText(String(g.goals),W-pad,y+2);
+   y+=blockH;
+  });
+  ctx.textBaseline='alphabetic';
+ }
+ y+=20;
+ ctx.strokeStyle='#ffd21a'; ctx.lineWidth=2; ctx.strokeRect(pad,y,W-pad*2,44);
+ ctx.fillStyle='#ffd21a'; ctx.font='800 22px Arial'; ctx.textAlign='center'; ctx.fillText('CATATAN: OWN GOAL TIDAK DICANTUMKAN',W/2,y+28);
+ y+=44+20;
+ await drawSponsorFooter(ctx,W,H,{footerH:H-y});
  if(safeDownloadCanvas(c,'top-skor-fc-sombong-'+new Date().toISOString().slice(0,10)+'.png')) showToast('Export berhasil','Gambar Top Skor sudah dibuat.');
 }
 function bindTopScorerExport(){
@@ -1124,7 +1205,8 @@ function currentStandingsForExport(){
  return {
   title: standingsMode==='week'?'KLASEMEN MINGGUAN':(standingsMode==='month'?'KLASEMEN BULANAN':'KLASEMEN TAHUNAN'),
   subtitle: standingsMode==='week'?weekPeriod(weekDate).label:(standingsMode==='month'?`${mp.name} • ${mp.label}`:'Semua pertandingan'),
-  rows:standings(data)
+  rows:standings(data),
+  data
  };
 }
 function standingsShareText(){
@@ -1132,16 +1214,81 @@ function standingsShareText(){
  return ['🏆 '+x.title, x.subtitle, '', ...x.rows.map((r,i)=>`${i+1}. ${r.team} — ${r.pts} pts | M ${r.p} | GD ${r.gd}`), '', location.origin||'https://fc-sombong.onrender.com'].join('\n');
 }
 async function copyStandingsWA(){const text=standingsShareText(); try{await navigator.clipboard.writeText(text); showToast('Teks klasemen disalin','Silakan paste ke grup WhatsApp.');}catch(e){prompt('Copy teks ini:',text)}}
+function teamBadgeColor(name){
+ const colors=['#0f766e','#7c3aed','#db2777','#2563eb','#ea580c','#16a34a','#0891b2','#b91c1c','#4d7c0f','#9333ea'];
+ let h=0; for(let i=0;i<String(name).length;i++)h=(h*31+name.charCodeAt(i))>>>0;
+ return colors[h%colors.length];
+}
+function teamForm(matches,team,limit=5){
+ const list=(matches||[]).filter(m=>m.home===team||m.away===team).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+ return list.slice(-limit).map(m=>{
+  const isHome=m.home===team; const gf=isHome?m.hs:m.as, ga=isHome?m.as:m.hs;
+  if(gf>ga)return 'W'; if(gf<ga)return 'L'; return 'D';
+ });
+}
+function drawFormPill(ctx,letter,cx,cy,r){
+ const colors={W:'#16a34a',D:'#9ca3af',L:'#dc2626'};
+ ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fillStyle=colors[letter]||'#9ca3af'; ctx.fill();
+ ctx.fillStyle='#fff'; ctx.font='800 '+Math.round(r*1.05)+'px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(letter,cx,cy+1);
+ ctx.textBaseline='alphabetic';
+}
 async function exportStandingsImage(){
  const x=currentStandingsForExport(); if(!x.rows.length)return showToast('Belum ada data','Klasemen masih kosong.','error');
- const W=1080, pad=58, rowH=58, headerH=210, H=Math.max(1040, headerH+x.rows.length*rowH+240);
+ const W=1080, pad=50, rowH=76, headerH=232, footerH=170;
+ const H=headerH+x.rows.length*rowH+footerH+24;
  const c=document.createElement('canvas'); c.width=W; c.height=H; const ctx=c.getContext('2d');
- ctx.fillStyle='#061b12'; ctx.fillRect(0,0,W,H); const g=ctx.createLinearGradient(0,0,W,0); g.addColorStop(0,'#04391f'); g.addColorStop(.5,'#00964a'); g.addColorStop(1,'#04391f'); ctx.fillStyle=g; ctx.fillRect(0,0,W,92);
- ctx.textAlign='center'; ctx.fillStyle='#fff'; ctx.font='900 58px Arial Black, Arial'; ctx.fillText(x.title,W/2,64); ctx.fillStyle='#ffd21a'; ctx.font='800 32px Arial'; ctx.fillText(x.subtitle,W/2,138);
- ctx.strokeStyle='#ffd21a'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(pad,164); ctx.lineTo(W-pad,164); ctx.stroke();
- ctx.fillStyle='#ffd21a'; ctx.font='800 26px Arial'; ctx.textAlign='left'; ctx.fillText('PERINGKAT',pad,198); ctx.fillText('CLUB',250,198); ctx.textAlign='right'; ctx.fillText('PTS',W-pad,198); ctx.fillText('GD',W-pad-130,198); ctx.fillText('MAIN',W-pad-260,198);
- let y=226; x.rows.forEach((r,i)=>{ctx.strokeStyle='rgba(255,255,255,.35)'; ctx.beginPath(); ctx.moveTo(pad,y+44); ctx.lineTo(W-pad,y+44); ctx.stroke(); ctx.fillStyle=i===x.rows.length-1&&x.rows.length>1?'#9ef5c7':'#fff'; ctx.font='900 30px Arial'; ctx.textAlign='center'; ctx.fillText(String(i+1),pad+65,y+4); ctx.textAlign='left'; ctx.fillText((i===x.rows.length-1&&x.rows.length>1?'🍃 ':'')+r.team,250,y+4); ctx.textAlign='right'; ctx.fillStyle='#ffd21a'; ctx.fillText(String(r.pts),W-pad,y+4); ctx.fillStyle='#fff'; ctx.fillText(String(r.gd),W-pad-130,y+4); ctx.fillText(String(r.p),W-pad-260,y+4); y+=rowH;});
- await drawSponsorFooter(ctx,W,H,{footerH:150});
+ // clean light background, Premier-League-style table
+ ctx.fillStyle='#f3f5f4'; ctx.fillRect(0,0,W,H);
+ const grad=ctx.createLinearGradient(0,0,W,0); grad.addColorStop(0,'#04391f'); grad.addColorStop(.5,'#00964a'); grad.addColorStop(1,'#04391f');
+ ctx.fillStyle=grad; ctx.fillRect(0,0,W,150);
+ ctx.textAlign='center'; ctx.fillStyle='#fff'; ctx.font='900 52px Arial Black, Arial'; ctx.fillText(x.title,W/2,68);
+ ctx.fillStyle='#ffd21a'; ctx.font='800 30px Arial'; ctx.fillText(x.subtitle,W/2,112);
+ // column layout: P | CLUB | M W D L G+ G- GD PTS | FORM
+ const colX={m:pad+470,w:pad+515,d:pad+555,l:pad+595,gf:pad+645,ga:pad+690,gd:pad+745,pts:pad+810};
+ const colY=headerH-40;
+ ctx.fillStyle='#0f2e1d'; ctx.font='800 20px Arial'; ctx.textAlign='left';
+ ctx.fillText('P',pad,colY);
+ ctx.fillText('CLUB',pad+70,colY);
+ ctx.textAlign='center';
+ ctx.fillText('M',colX.m,colY);
+ ctx.fillText('W',colX.w,colY);
+ ctx.fillText('D',colX.d,colY);
+ ctx.fillText('L',colX.l,colY);
+ ctx.fillText('G+',colX.gf,colY);
+ ctx.fillText('G-',colX.ga,colY);
+ ctx.fillText('GD',colX.gd,colY);
+ ctx.fillText('PTS',colX.pts,colY);
+ ctx.textAlign='right';
+ ctx.fillText('FORM',W-pad,colY);
+ ctx.strokeStyle='#0f2e1d'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(pad,headerH-16); ctx.lineTo(W-pad,headerH-16); ctx.stroke();
+ let y=headerH;
+ x.rows.forEach((r,i)=>{
+  if(i%2===1){ctx.fillStyle='#e7ede9'; ctx.fillRect(0,y,W,rowH);}
+  const cy=y+rowH/2;
+  ctx.fillStyle='#0f2e1d'; ctx.font='900 26px Arial'; ctx.textAlign='left'; ctx.textBaseline='middle';
+  ctx.fillText(String(i+1),pad+8,cy);
+  const bx=pad+70, br=19;
+  ctx.beginPath(); ctx.arc(bx+br,cy,br,0,Math.PI*2); ctx.fillStyle=teamBadgeColor(r.team); ctx.fill();
+  ctx.fillStyle='#fff'; ctx.font='800 19px Arial'; ctx.textAlign='center'; ctx.fillText(String(r.team).charAt(0).toUpperCase(),bx+br,cy+1);
+  ctx.fillStyle='#0f2e1d'; ctx.font='800 25px Arial'; ctx.textAlign='left'; ctx.fillText(r.team,bx+2*br+16,cy);
+  ctx.textAlign='center'; ctx.font='700 22px Arial'; ctx.fillStyle='#0f2e1d';
+  ctx.fillText(String(r.p),colX.m,cy);
+  ctx.fillText(String(r.w),colX.w,cy);
+  ctx.fillText(String(r.d),colX.d,cy);
+  ctx.fillText(String(r.l),colX.l,cy);
+  ctx.fillText(String(r.gf),colX.gf,cy);
+  ctx.fillText(String(r.ga),colX.ga,cy);
+  ctx.font='800 22px Arial'; ctx.fillStyle=r.gd>0?'#16a34a':(r.gd<0?'#dc2626':'#374151');
+  ctx.fillText((r.gd>0?'+':'')+r.gd,colX.gd,cy);
+  ctx.fillStyle='#0f2e1d'; ctx.font='900 26px Arial'; ctx.fillText(String(r.pts),colX.pts,cy);
+  const form=teamForm(x.data,r.team,5);
+  const pr=13, gap=6; let fx=W-pad-pr;
+  for(let k=form.length-1;k>=0;k--){ drawFormPill(ctx,form[k],fx,cy,pr); fx-=(pr*2+gap); }
+  ctx.textBaseline='alphabetic';
+  y+=rowH;
+ });
+ ctx.strokeStyle='#0f2e1d'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke();
+ await drawSponsorFooter(ctx,W,H,{footerH});
  if(safeDownloadCanvas(c,'klasemen-fc-sombong-'+new Date().toISOString().slice(0,10)+'.png')) showToast('Export berhasil','Gambar klasemen sudah dibuat.');
 }
 function renderPlayers(){const q=keyName($('playerSearch').value); const photos=playerPhotos(); const rows=playerStats().filter(p=>!q||keyName(p.name).includes(q)); $('playersTable').innerHTML='<tr><th>Foto</th><th>Nama</th><th>Club History</th><th>Main/Hadir</th><th>Goal</th><th>Goal ÷ Main</th><th>Kuning</th><th>Merah</th><th>Ganti Foto</th></tr>'+rows.map(p=>{const src=photos[keyName(p.name)]||''; return `<tr><td>${src?`<img class="playerPhoto" src="${src}">`:'<div class="playerPhoto"></div>'}</td><td>${escapeHtml(p.name)}</td><td>${escapeHtml(p.teams)}</td><td>${p.appearances}</td><td>${p.goals}</td><td>${p.goalPerMatch}</td><td>${p.yellow}</td><td>${p.red}</td><td><input class="photoInput" type="file" accept="image/*" data-player="${escapeHtml(p.name)}"></td></tr>`}).join(''); document.querySelectorAll('.photoInput').forEach(inp=>inp.onchange=e=>setPlayerPhoto(inp.dataset.player,e.target.files?.[0]));}
