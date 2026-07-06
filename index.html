@@ -3,15 +3,23 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="theme-color" content="#138a3d" />
+<meta name="theme-color" content="#15181C" />
 <title>Community League</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@600;700&display=swap" rel="stylesheet">
 <style>
-*{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;background:#f5f7fb;color:#132033}.hero{background:linear-gradient(135deg,#0f172a,#1e3a8a);color:#fff;padding:24px 6vw 46px}nav{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}.brand{font-size:22px}.tabs{display:flex;gap:8px;flex-wrap:wrap}.tabs button,.smallBtn{border:0;border-radius:999px;padding:10px 14px;background:rgba(255,255,255,.12);color:#fff;cursor:pointer}.tabs button.active,.tabs button:hover{background:#fff;color:#17346d}.hero section{max-width:780px;margin-top:42px}.eyebrow{text-transform:uppercase;letter-spacing:.14em;color:#bfdbfe}h1{font-size:42px;margin:8px 0}main{padding:28px 6vw}.page{display:none}.page.show{display:block}.stats{display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:16px;margin-bottom:22px}.card,.panel{background:#fff;border-radius:18px;padding:20px;box-shadow:0 10px 30px rgba(15,23,42,.08)}.card small{color:#6b7280}.card strong{display:block;font-size:30px;margin-top:8px}.grid{display:grid;gap:18px}.grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}.grid.compact{gap:12px}.panelHead{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}.panelHead .smallBtn{background:#17346d}.match,.player,.standingRow{display:flex;justify-content:space-between;gap:12px;align-items:center;border-bottom:1px solid #eef2f7;padding:13px 0}.teamName{font-weight:700}.score{font-size:24px;font-weight:800}.muted{color:#6b7280;font-size:13px}.badge{background:#e8f0ff;color:#17346d;border-radius:999px;padding:6px 10px;font-weight:700}.badge.yellow{background:#fff7cc;color:#765600}.badge.red{background:#ffe2e2;color:#9b1c1c}.form label{display:block;font-weight:700;margin-bottom:8px}input,select,textarea{width:100%;border:1px solid #d8dee9;border-radius:12px;padding:12px;margin-top:6px;font:inherit;background:#fff}button[type=submit],#saveSettings{border:0;background:#17346d;color:#fff;border-radius:12px;padding:13px 18px;font-weight:800;cursor:pointer}.secondary{margin-top:12px;border:0;background:#e5e7eb;color:#111827;border-radius:12px;padding:11px 14px;cursor:pointer}.goalInputBlock,.cardsBlock{border:1px solid #e5e7eb;background:#fafafa;border-radius:16px;padding:16px;margin:14px 0}.goalInputHeader{display:flex;justify-content:space-between;align-items:center;gap:10px}.scorerRow,.cardRow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin:8px 0}.cardRow{grid-template-columns:1fr 150px 150px auto}.removeScorer,.removeCard{border:0;background:#fee2e2;color:#991b1b;border-radius:10px;padding:10px 13px;cursor:pointer}.checkLine{display:flex!important;gap:10px;align-items:center;margin:16px 0}.checkLine input{width:auto;margin:0}.hidden{display:none}.notice{background:#eef6ff;border:1px solid #bfdbfe;color:#17346d;border-radius:14px;padding:12px;margin:10px 0 18px}.tableWrap{overflow:auto}table{width:100%;border-collapse:collapse}th,td{padding:11px;border-bottom:1px solid #eef2f7;text-align:left;white-space:nowrap}th{background:#f8fafc}.searchBox{margin-bottom:14px}.smallBtn{background:#17346d;color:#fff;margin:2px}textarea{min-height:220px}@media(max-width:850px){.stats,.grid.two{grid-template-columns:1fr}.cardRow{grid-template-columns:1fr}.hero h1{font-size:32px}}
+:root{--ink:#15181C;--paper:#FAFAF9;--paper-alt:#fff;--pitch:#0F5132;--pitch-dark:#0A3A24;--gold:#C9A227;--gold-soft:#F3E9C9;--line:#E4E4E0}
+*{box-sizing:border-box}body{margin:0;font-family:'Inter',Arial,sans-serif;background:var(--paper);color:var(--ink);letter-spacing:.01em}
+h1,h2,h3,.brand,.tabs button,nav.bottomNav button{font-family:'Oswald',Arial,sans-serif;text-transform:uppercase;letter-spacing:.03em}
+.score,.card strong,.miniTopGoals,.badge{font-family:'Roboto Mono','Inter',monospace}
+.tickerRule{height:14px;background-image:repeating-linear-gradient(90deg,var(--gold) 0 2px,transparent 2px 14px);opacity:.7;margin:0}
+.brandMark{display:inline-flex;align-items:center;justify-content:center;width:34px;height:38px;margin-right:8px;background:var(--ink);color:var(--gold);font-family:'Oswald',Arial,sans-serif;font-weight:700;font-size:13px;clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);vertical-align:middle}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;background:#f5f7fb;color:#132033}.hero{background:var(--paper-alt);color:var(--ink);padding:20px 6vw 30px;border-bottom:1px solid var(--line)}nav{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}.brand{font-size:19px;color:var(--ink);font-weight:600;display:flex;align-items:center}.tabs{display:flex;gap:6px;flex-wrap:wrap}.tabs button,.smallBtn{border:0;border-radius:6px;padding:9px 14px;background:transparent;color:#6b7280;cursor:pointer;font-size:13px;font-weight:600}.tabs button.active,.tabs button:hover{background:var(--ink);color:#fff}.hero section{max-width:780px;margin-top:28px}.eyebrow{text-transform:uppercase;letter-spacing:.18em;color:var(--gold);font-weight:700;font-size:12px}h1{font-size:38px;margin:8px 0;color:var(--ink);font-weight:700}main{padding:28px 6vw}.page{display:none}.page.show{display:block}.stats{display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:16px;margin-bottom:22px}.card,.panel{background:var(--paper-alt);border-radius:10px;padding:20px;border:1px solid var(--line);box-shadow:none}.card small{color:#6b7280;font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.05em}.card strong{display:block;font-size:30px;margin-top:8px;color:var(--ink)}.grid{display:grid;gap:18px}.grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}.grid.compact{gap:12px}.panelHead{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}.panelHead .smallBtn{background:var(--pitch)}.match,.player,.standingRow{display:flex;justify-content:space-between;gap:12px;align-items:center;border-bottom:1px solid #eef2f7;padding:13px 0}.teamName{font-weight:700}.score{font-size:24px;font-weight:800}.muted{color:#6b7280;font-size:13px}.badge{background:var(--gold-soft);color:var(--pitch-dark);border-radius:6px;padding:6px 10px;font-weight:700}.badge.yellow{background:#fff7cc;color:#765600}.badge.red{background:#ffe2e2;color:#9b1c1c}.form label{display:block;font-weight:700;margin-bottom:8px}input,select,textarea{width:100%;border:1px solid #d8dee9;border-radius:12px;padding:12px;margin-top:6px;font:inherit;background:#fff}button[type=submit],#saveSettings{border:0;background:var(--pitch);color:#fff;border-radius:12px;padding:13px 18px;font-weight:800;cursor:pointer}.secondary{margin-top:12px;border:0;background:#e5e7eb;color:#111827;border-radius:12px;padding:11px 14px;cursor:pointer}.goalInputBlock,.cardsBlock{border:1px solid #e5e7eb;background:#fafafa;border-radius:16px;padding:16px;margin:14px 0}.goalInputHeader{display:flex;justify-content:space-between;align-items:center;gap:10px}.scorerRow,.cardRow{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;margin:8px 0}.cardRow{grid-template-columns:1fr 150px 150px auto}.removeScorer,.removeCard{border:0;background:#fee2e2;color:#991b1b;border-radius:10px;padding:10px 13px;cursor:pointer}.checkLine{display:flex!important;gap:10px;align-items:center;margin:16px 0}.checkLine input{width:auto;margin:0}.hidden{display:none}.notice{background:#eef6ff;border:1px solid #bfdbfe;color:#17346d;border-radius:14px;padding:12px;margin:10px 0 18px}.tableWrap{overflow:auto}table{width:100%;border-collapse:collapse}th,td{padding:11px;border-bottom:1px solid #eef2f7;text-align:left;white-space:nowrap}th{background:#f8fafc}.searchBox{margin-bottom:14px}.smallBtn{background:var(--pitch);color:#fff;margin:2px}textarea{min-height:220px}@media(max-width:850px){.stats,.grid.two{grid-template-columns:1fr}.cardRow{grid-template-columns:1fr}.hero h1{font-size:32px}}
 @media print{header,.tabs,#input,#settings,#exportCsv,#exportPdf,.secondary{display:none!important}main{padding:0}.page{display:block}.panel{box-shadow:none;border:1px solid #ddd;margin-bottom:16px}}
 .standingsControls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.standingsControls input{width:auto;min-width:165px;margin:0}.smallBtn.activeMode{background:#0f172a;color:#fff;box-shadow:0 0 0 3px rgba(23,52,109,.12)}
 
 /* Mobile-first green match input redesign */
-:root{--green:#138a3d;--green-dark:#076b2b;--green-soft:#e9f9ef;--green-border:#b9ebc8}
+:root{--green:#0F5132;--green-dark:#0A3A24;--green-soft:#F3E9C9;--green-border:#E4E4E0}
 .grid.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
 @media(max-width:900px){.grid.three{grid-template-columns:1fr}}
 .miniTopRow{display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid #eef2f0}
@@ -24,11 +32,10 @@
 .standingRow{display:flex;align-items:center;justify-content:space-between;padding:7px 4px;border-bottom:1px solid #eef2f0}
 .standingRow:last-child{border-bottom:none}
 .standingRow .rankDot{display:inline-block;width:8px;height:8px;border-radius:999px;margin-right:8px}
-.hero{background:linear-gradient(135deg,#075c27,#16a34a)}
-.tabs button.active,.tabs button:hover{color:#075c27}.panelHead .smallBtn,.smallBtn,button[type=submit],#saveSettings{background:var(--green)}
+.tabs button.active,.tabs button:hover{color:#fff}.panelHead .smallBtn,.smallBtn,button[type=submit],#saveSettings{background:var(--green)}
 button[type=submit]{width:100%;font-size:17px;padding:16px;margin-top:8px;box-shadow:0 10px 20px rgba(19,138,61,.22)}
 .matchInputMobile{max-width:980px;margin:0 auto}.matchInputMobile .dateField{max-width:260px}.matchVsCard{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:stretch;margin:14px 0}.teamSide{border:2px solid var(--green-border);background:linear-gradient(180deg,#fff,#f7fff9);border-radius:22px;padding:16px}.teamSide label{margin:0}.vsDivider{align-self:center;background:var(--green);color:#fff;font-weight:900;border-radius:999px;width:54px;height:54px;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(19,138,61,.25)}.scoreStepper{display:grid;grid-template-columns:56px 1fr 56px;gap:8px;align-items:center;margin-top:14px}.scoreStepper input{text-align:center;font-size:34px;font-weight:900;color:var(--green-dark);height:58px;margin:0;padding:6px;border:2px solid var(--green-border)}.scoreBtn{border:0;border-radius:16px;background:var(--green);color:#fff;font-size:32px;font-weight:900;height:58px;cursor:pointer;line-height:1}.scoreBtn:active{transform:scale(.96)}.scoreLabel{text-align:center;color:var(--green-dark);font-size:12px;font-weight:800;margin-top:7px;text-transform:uppercase;letter-spacing:.08em}.greenNotice{background:var(--green-soft);border-color:var(--green-border);color:var(--green-dark)}.scorerSplit{display:grid;grid-template-columns:1fr 1fr;gap:14px}.goalInputBlock{background:#fff;border:2px solid #e5f6eb}.homeGoalBlock{border-left:6px solid var(--green)}.awayGoalBlock{border-left:6px solid #0f766e}.scorerRow{grid-template-columns:1fr 44px}.scorerRow input{font-size:16px}.removeScorer{border-radius:14px;font-size:20px;font-weight:900;padding:10px 0}.penaltyBox{background:#f8fafc;border:1px dashed var(--green-border);border-radius:18px;padding:14px;margin:12px 0 8px}.checkLine{background:#fff;border:1px solid var(--green-border);border-radius:16px;padding:14px;color:var(--green-dark)}.toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:9999;background:#062b16;color:#fff;border-radius:20px;padding:16px 18px;box-shadow:0 20px 50px rgba(0,0,0,.24);display:flex;align-items:center;gap:12px;min-width:min(430px,calc(100vw - 28px));animation:toastIn .22s ease-out}.toast.hidden{display:none}.toastIcon{width:38px;height:38px;background:#22c55e;border-radius:999px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:22px}.toast p{margin:2px 0 0;color:#c8f7d7}.toast.error{background:#3f1111}.toast.error .toastIcon{background:#ef4444}@keyframes toastIn{from{opacity:0;transform:translate(-50%,18px)}to{opacity:1;transform:translate(-50%,0)}}
-@media(max-width:850px){body{background:#eef8f0}.hero{padding:16px 4vw 24px}.hero section{margin-top:20px}.hero h1{font-size:28px}.tabs{overflow:auto;flex-wrap:nowrap;width:100%;padding-bottom:4px}.tabs button{white-space:nowrap;padding:10px 12px}main{padding:16px 4vw}.panel{border-radius:20px;padding:16px}.matchVsCard{grid-template-columns:1fr;gap:10px}.vsDivider{width:44px;height:44px;justify-self:center;margin:-2px 0}.teamSide{padding:14px;border-radius:20px}.scoreStepper{grid-template-columns:58px 1fr 58px}.scoreStepper input{font-size:38px;height:64px}.scoreBtn{height:64px}.scorerSplit{grid-template-columns:1fr}.goalInputBlock{margin:6px 0}.matchInputMobile .dateField{max-width:none}.cardRow{gap:8px}.toast{bottom:16px}.stats{grid-template-columns:1fr 1fr}}
+@media(max-width:850px){body{background:var(--paper)}.hero{padding:16px 4vw 24px}.hero section{margin-top:20px}.hero h1{font-size:28px}.tabs{overflow:auto;flex-wrap:nowrap;width:100%;padding-bottom:4px}.tabs button{white-space:nowrap;padding:10px 12px}main{padding:16px 4vw}.panel{border-radius:20px;padding:16px}.matchVsCard{grid-template-columns:1fr;gap:10px}.vsDivider{width:44px;height:44px;justify-self:center;margin:-2px 0}.teamSide{padding:14px;border-radius:20px}.scoreStepper{grid-template-columns:58px 1fr 58px}.scoreStepper input{font-size:38px;height:64px}.scoreBtn{height:64px}.scorerSplit{grid-template-columns:1fr}.goalInputBlock{margin:6px 0}.matchInputMobile .dateField{max-width:none}.cardRow{gap:8px}.toast{bottom:16px}.stats{grid-template-columns:1fr 1fr}}
 
 /* Player roster columns */
 .teamPlayerColumns{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:16px}.teamRosterCard{border:2px solid var(--green-border);background:linear-gradient(180deg,#ffffff,#f4fff7);border-radius:20px;padding:16px}.teamRosterCard h3{margin:0 0 10px;color:var(--green-dark)}.teamRosterCard textarea{min-height:210px;resize:vertical}.teamRosterCard label{font-weight:800;color:#12321f}
@@ -91,7 +98,7 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 /* ===== V5 revisions: green header, compact top nav, admin edit, photos ===== */
 .hero{background:linear-gradient(135deg,#047857,#16a34a)!important;color:#fff!important;border-bottom:0!important}
 .brand,#appTitle,.hero h1,.hero p{color:#fff!important}.eyebrow{color:#dcfce7!important}.hero .tabs button{background:rgba(255,255,255,.14)!important;color:#fff!important}.hero .tabs button.active{background:#fff!important;color:#047857!important}
-@media(max-width:760px){.hero{padding:calc(10px + env(safe-area-inset-top)) 16px 12px!important;background:linear-gradient(135deg,#047857,#16a34a)!important}.hero nav{gap:8px!important}.brand{font-size:18px!important}.hero section{margin-top:10px!important}.hero h1{font-size:22px!important;margin:3px 0!important}.hero section p:last-child{font-size:12px!important;margin:0;opacity:.9}.eyebrow{font-size:10px!important;margin:0}.tabs{display:none!important}.bottomNav{grid-template-columns:repeat(5,1fr)!important}.bottomNav button{min-height:56px!important}.fabInput{bottom:calc(86px + env(safe-area-inset-bottom))!important}}
+@media(max-width:760px){.hero{padding:calc(10px + env(safe-area-inset-top)) 16px 12px!important;background:var(--paper-alt)!important}.hero nav{gap:8px!important}.brand{font-size:18px!important}.hero section{margin-top:10px!important}.hero h1{font-size:22px!important;margin:3px 0!important}.hero section p:last-child{font-size:12px!important;margin:0;opacity:.9}.eyebrow{font-size:10px!important;margin:0}.tabs{display:none!important}.bottomNav{grid-template-columns:repeat(5,1fr)!important}.bottomNav button{min-height:56px!important}.fabInput{bottom:calc(86px + env(safe-area-inset-bottom))!important}}
 .moreSheetBackdrop{position:fixed;inset:0;z-index:89;background:rgba(15,23,42,.28);display:none}.moreSheetBackdrop.show,.moreSheet.show{display:block!important}.moreSheet{display:none}.moreSheet h3{margin:4px 6px 10px;color:#064e3b}.moreSheet .moreGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.moreSheet button{border:0;border-radius:16px;background:#f0fdf4;color:#065f46;padding:14px 12px;font-weight:900;text-align:left}.adminActions{display:flex;gap:6px;margin-top:8px}.adminActions button{border:0;border-radius:10px;padding:7px 9px;font-weight:800;background:#dcfce7;color:#166534}.adminActions .dangerMini{background:#fee2e2;color:#991b1b}.playerPhoto{width:42px;height:42px;border-radius:999px;object-fit:cover;background:#e5e7eb;border:2px solid #dcfce7}.photoInput{font-size:11px;max-width:130px;padding:6px!important}.superOnlyNote{background:#f0fdf4;border:1px solid #86efac;border-radius:14px;padding:10px;color:#166534;margin:10px 0}
 
 
@@ -123,7 +130,7 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 
 
 /* Patch: Top Scorer photo + footer credit */
-.siteFooter{margin:28px auto 14px;padding:18px 20px;text-align:center;color:#065f46;font-weight:900;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:22px;box-shadow:0 14px 35px rgba(15,23,42,.06)}
+.siteFooter{margin:28px auto 14px;padding:18px 20px;text-align:center;color:var(--ink);font-weight:700;background:var(--paper-alt);border:1px solid var(--line);border-radius:10px;box-shadow:none;font-family:'Oswald',Arial,sans-serif;text-transform:uppercase;letter-spacing:.04em}
 .siteFooter .footerLogo{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:999px;background:#059669;color:white;margin-right:8px;vertical-align:middle;box-shadow:0 8px 20px rgba(5,150,105,.28)}
 .siteFooterSponsor{margin-top:18px;display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;padding:14px 16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:18px}.siteFooterSponsor img{height:88px;max-width:320px;object-fit:contain;background:#fff;border:1px solid #d1fae5;border-radius:14px;padding:8px;box-shadow:0 8px 20px rgba(0,0,0,.08)}.siteFooterSponsor span{font-weight:1000;color:#065f46;font-size:18px}
 .siteFooter small{display:block;margin-top:5px;color:#64748b;font-weight:700}
@@ -147,7 +154,7 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 <body>
 <header class="hero">
   <nav>
-    <div class="brand"><span>⚽</span> <b id="appTitle">Community League</b></div>
+    <div class="brand"><span class="brandMark">FCS</span> <b id="appTitle">Community League</b></div>
     <div class="tabs">
       <button data-page="dashboard" class="active">Dashboard</button>
       <button data-page="input">Input Match</button>
@@ -168,6 +175,7 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
     <div id="sponsorStrip" class="sponsorStrip hidden"></div>
   </section>
 </header>
+<div class="tickerRule"></div>
 
 <main>
   <section id="dashboard" class="page show">
@@ -373,6 +381,10 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
         <button class="smallBtn" type="button" onclick="generateAiText('week')">AI Weekly Recap</button>
         <button class="smallBtn" type="button" onclick="generateAiText('top')">AI Top Scorer Analysis</button>
         <button class="smallBtn" type="button" onclick="generateAiText('caption')">AI Caption WhatsApp</button>
+      </div>
+      <div class="loginGrid" style="margin-top:14px">
+        <label>Tanggal pertandingan<input type="date" id="aiTodayDate"></label>
+        <button class="smallBtn" type="button" onclick="generateAiText('today')">AI Top Skor Hari Ini</button>
       </div>
       <textarea id="aiOutput" readonly placeholder="Hasil AI akan muncul di sini..."></textarea>
       <button class="secondary" type="button" onclick="copyAiOutput()">Copy Text</button>
@@ -1207,6 +1219,7 @@ async function exportTopScorerImage(){
 }
 function bindTopScorerExport(){
  if($('topScorerExportDate') && !$('topScorerExportDate').value) $('topScorerExportDate').value=new Date().toISOString().slice(0,10);
+ if($('aiTodayDate') && !$('aiTodayDate').value) $('aiTodayDate').value=new Date().toISOString().slice(0,10);
  if($('exportTopScorerImage')) $('exportTopScorerImage').onclick=exportTopScorerImage;
  if($('copyTopScorerWA')) $('copyTopScorerWA').onclick=copyTopScorerWA;
  bindExportButtonsForce && bindExportButtonsForce();
@@ -1407,6 +1420,33 @@ function generateAiText(type){
  if(type==='caption'){
   const list=ps.slice(0,5).map((p,i)=>`${i+1}. ${p.name} — ${p.goals} ⚽`).join('\n');
   text=`🔥 TOP SKOR UPDATE 🔥\n\n${list||'Belum ada pencetak gol.'}\n\nSiapa yang akan naik peringkat di match berikutnya?`;
+ }
+ if(type==='today'){
+  const dateStr=$('aiTodayDate')?.value || new Date().toISOString().slice(0,10);
+  const todays=matches.filter(m=>m.date===dateStr);
+  if(!todays.length){
+   text=`Belum ada pertandingan yang tercatat pada tanggal ${dateStr}.`;
+  } else {
+   const goalCount={};
+   todays.forEach(m=>{
+    (m.homeScorers||[]).forEach(n=>{n=normalizeName(n); if(!n)return; goalCount[n]=(goalCount[n]||0)+1});
+    (m.awayScorers||[]).forEach(n=>{n=normalizeName(n); if(!n)return; goalCount[n]=(goalCount[n]||0)+1});
+   });
+   const ranked=Object.entries(goalCount).map(([name,goals])=>({name,goals})).sort((a,b)=>b.goals-a.goals||a.name.localeCompare(b.name));
+   const dateLabel=parseLocalDate(dateStr).toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'});
+   const scoreLines=todays.map(m=>`${m.home} ${m.hs}-${m.as} ${m.away}`).join(', ');
+   let narrative=`Rekap ${todays.length} pertandingan tanggal ${dateLabel} (${scoreLines}). `;
+   if(ranked.length){
+    narrative+=`Pencetak gol terbanyak hari ini adalah ${ranked[0].name} dengan ${ranked[0].goals} gol`;
+    if(ranked[1]) narrative+=`, disusul ${ranked[1].name} dengan ${ranked[1].goals} gol`;
+    if(ranked[2]) narrative+=`, kemudian ${ranked[2].name} dengan ${ranked[2].goals} gol`;
+    narrative+='.';
+   } else {
+    narrative+='Tidak ada gol tercatat pada pertandingan hari ini.';
+   }
+   const list=ranked.map((r,i)=>`${i+1}. ${r.name}`).join('\n');
+   text=ranked.length?`${narrative}\n\nDaftar pencetak gol hari ini:\n${list}`:narrative;
+  }
  }
  if($('aiOutput')) $('aiOutput').value=text;
 }
