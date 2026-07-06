@@ -26,7 +26,9 @@ const SYNC_KEYS = [
   'access_users_v1',
   'initial_goals_v1',
   'sponsors_v1',
-  'finance_reports_v1'
+  'finance_reports_v1',
+  'club_logo_v1',
+  'dashboard_banner_v1'
 ];
 
 async function readState() {
