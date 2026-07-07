@@ -153,6 +153,7 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 .adminMatchTop{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;font-weight:900}.adminMatchTop .away{text-align:right}.adminMatchMeta{margin-top:8px;color:#64748b;font-size:13px}.adminActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.adminActions button{border:0;border-radius:12px;padding:10px 14px;font-weight:900;cursor:pointer}.adminActions .editBtn{background:#dcfce7;color:#065f46}.adminActions .deleteBtn{background:#fee2e2;color:#991b1b}.adminLocked{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:16px;padding:14px;margin:12px 0;font-weight:800}.tabs button.adminOnlyTab{background:#fef3c7;color:#92400e}.tabs button.adminOnlyTab.active{background:#fff;color:#17346d}
 
 
+/* v2.15 banner upload fix */
 /* v2.14 export click fix */
 #exportStandingsImage,#exportTopScorerImage,#moreExportStandings,#copyStandingsWA,#copyTopScorerWA,#moreCopyStandings,#moreCopyTopScorer{pointer-events:auto!important;position:relative;z-index:50;cursor:pointer!important}
 </style>
@@ -744,11 +745,27 @@ function uploadBannerSlot(i){
  if(pass!==compSettings().superAdminPassword)return showToast('Password salah','Banner hanya bisa diubah oleh Super Admin.','error');
  const file=$('bannerFile'+i)?.files?.[0];
  if(!file)return showToast('Gambar belum dipilih',`Upload file untuk Banner ${i+1} terlebih dahulu.`,'error');
+ if(!file.type || !file.type.startsWith('image/'))return showToast('Format salah','File harus berupa gambar JPG/PNG/WebP.','error');
  if(file.size>15000000)return showToast('File terlalu besar','Gunakan gambar di bawah 15 MB.','error');
- resizeImageFile(file,1600,900,0.85).then(dataUrl=>{
-  const {slots}=bannerImages(); while(slots.length<3)slots.push(null); slots[i]=dataUrl; saveBannerSlots(slots); renderBanner();
+
+ showToast('Memproses banner',`Banner ${i+1} sedang dikompres...`);
+
+ // Banner dikompres lebih kecil supaya aman disimpan di localStorage dan dikirim ke server.
+ resizeImageFile(file,1280,720,0.72).then(dataUrl=>{
+  const {slots}=bannerImages();
+  while(slots.length<3)slots.push(null);
+  slots[i]=dataUrl;
+  saveBannerSlots(slots);
+  renderBanner();
+
+  const input=$('bannerFile'+i);
+  if(input)input.value='';
+
   showToast('Banner tersimpan',`Banner ${i+1} berhasil diperbarui.`);
- }).catch(()=>showToast('Gagal proses gambar','Coba pilih gambar lain.','error'));
+ }).catch((err)=>{
+  console.error('UPLOAD BANNER ERROR:',err);
+  showToast('Gagal proses gambar',err?.message || String(err) || 'Coba pilih gambar lain.','error');
+ });
 }
 function clearBannerSlot(i){
  const pass=String($('bannerAdminPass')?.value||'').trim();
@@ -827,20 +844,76 @@ function deleteFinance(idx){if(!isSuperAdmin())return; const rows=financeReports
 
 function resizeImageFile(file,maxW,maxH,quality){
  return new Promise((resolve,reject)=>{
+  if(!file){reject(new Error('File kosong')); return;}
+
   const reader=new FileReader();
-  reader.onload=()=>{
+
+  reader.onload=function(e){
    const img=new Image();
-   img.onload=()=>{
-    let w=img.width,h=img.height;
-    if(w>maxW||h>maxH){const ratio=Math.min(maxW/w,maxH/h); w=Math.round(w*ratio); h=Math.round(h*ratio);}
-    const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h;
-    const ctx=canvas.getContext('2d'); ctx.drawImage(img,0,0,w,h);
-    resolve(canvas.toDataURL('image/jpeg',quality));
+
+   img.onload=function(){
+    try{
+     let w=img.naturalWidth || img.width;
+     let h=img.naturalHeight || img.height;
+
+     if(!w || !h){
+      reject(new Error('Dimensi gambar tidak terbaca'));
+      return;
+     }
+
+     const ratio=Math.min(maxW/w,maxH/h,1);
+     const newW=Math.max(1,Math.round(w*ratio));
+     const newH=Math.max(1,Math.round(h*ratio));
+
+     const canvas=document.createElement('canvas');
+     canvas.width=newW;
+     canvas.height=newH;
+
+     const ctx=canvas.getContext('2d');
+     if(!ctx){
+      reject(new Error('Canvas tidak didukung browser'));
+      return;
+     }
+
+     // Background putih supaya PNG transparan tetap aman saat dikonversi ke JPG
+     ctx.fillStyle='#ffffff';
+     ctx.fillRect(0,0,newW,newH);
+     ctx.drawImage(img,0,0,newW,newH);
+
+     if(canvas.toBlob){
+      canvas.toBlob(function(blob){
+       if(!blob){
+        reject(new Error('Gagal convert gambar'));
+        return;
+       }
+       const reader2=new FileReader();
+       reader2.onloadend=function(){resolve(reader2.result);};
+       reader2.onerror=function(){reject(new Error('Gagal membaca hasil kompres'));};
+       reader2.readAsDataURL(blob);
+      },'image/jpeg',quality || 0.82);
+     }else{
+      try{
+       resolve(canvas.toDataURL('image/jpeg',quality || 0.82));
+      }catch(err){
+       reject(err);
+      }
+     }
+    }catch(err){
+     reject(err);
+    }
    };
-   img.onerror=()=>reject(new Error('Gagal membaca gambar'));
-   img.src=reader.result;
+
+   img.onerror=function(){
+    reject(new Error('Format gambar tidak bisa dibaca browser'));
+   };
+
+   img.src=e.target.result;
   };
-  reader.onerror=()=>reject(new Error('Gagal membaca file'));
+
+  reader.onerror=function(){
+   reject(new Error('File tidak bisa dibaca'));
+  };
+
   reader.readAsDataURL(file);
  });
 }
