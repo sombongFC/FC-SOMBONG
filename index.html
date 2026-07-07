@@ -580,12 +580,21 @@ Koko Lobang,21"></textarea>
 <script>
 window.__FC_SYNC_KEYS = ['competition_settings_v1','teams','team_rosters_v1','matches_v2','player_photos_v1','access_users_v1','initial_goals_v1','sponsors_v1','finance_reports_v1','club_logo_v1','dashboard_banner_v1'];
 window.__syncTimer = null;
+window.__FC_MEM_STATE = {};
 window.__stateReady = fetch('/api/state', { cache: 'no-store' })
   .then(r => r.ok ? r.json() : {})
   .then(state => {
     if (state && typeof state === 'object') {
       window.__FC_SYNC_KEYS.forEach(k => {
-        if (Object.prototype.hasOwnProperty.call(state, k)) localStorage.setItem(k, state[k]);
+        if (Object.prototype.hasOwnProperty.call(state, k)) {
+          if (k === 'dashboard_banner_v1') {
+            // Banner bisa besar, jangan dipaksa masuk localStorage agar tidak kena quota browser.
+            window.__FC_MEM_STATE[k] = state[k];
+          } else {
+            try { localStorage.setItem(k, state[k]); }
+            catch(_e) { console.warn('STATE LOAD SKIPPED:', k, _e); }
+          }
+        }
       });
     }
   })
@@ -596,8 +605,12 @@ window.__stateReady = fetch('/api/state', { cache: 'no-store' })
   function collectState(){
     const out = {};
     window.__FC_SYNC_KEYS.forEach(k => {
-      const v = localStorage.getItem(k);
-      if (v !== null) out[k] = v;
+      if (k === 'dashboard_banner_v1' && window.__FC_MEM_STATE && window.__FC_MEM_STATE[k]) {
+        out[k] = window.__FC_MEM_STATE[k];
+      } else {
+        const v = localStorage.getItem(k);
+        if (v !== null) out[k] = v;
+      }
     });
     return out;
   }
@@ -611,6 +624,7 @@ window.__stateReady = fetch('/api/state', { cache: 'no-store' })
       }).catch(() => {});
     }, 350);
   }
+  window.__scheduleFcStateSync = scheduleSync;
   localStorage.setItem = function(key, value){
     originalSetItem(key, value);
     if (window.__FC_SYNC_KEYS.includes(key)) scheduleSync();
@@ -634,6 +648,7 @@ window.__stateReady = fetch('/api/state', { cache: 'no-store' })
     }
   }
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushSyncNow(); });
+  window.__flushFcStateSyncNow = flushSyncNow;
   window.addEventListener('pagehide', flushSyncNow);
 })();
 </script>
@@ -718,8 +733,20 @@ function sponsors(){return JSON.parse(localStorage.getItem('sponsors_v1')||'{}')
 function saveSponsors(obj){localStorage.setItem('sponsors_v1',JSON.stringify(obj||{}))}
 function clubLogo(){return JSON.parse(localStorage.getItem('club_logo_v1')||'{}')}
 function saveClubLogo(obj){localStorage.setItem('club_logo_v1',JSON.stringify(obj||{}))}
-function bannerImages(){const d=JSON.parse(localStorage.getItem('dashboard_banner_v1')||'{}'); return {slots:Array.isArray(d.slots)?d.slots:[d.image||null,null,null].filter((_,i)=>i<3)}}
-function saveBannerSlots(slots){localStorage.setItem('dashboard_banner_v1',JSON.stringify({slots:slots.slice(0,3),updatedAt:new Date().toISOString()}))}
+function bannerImages(){
+ let raw=(window.__FC_MEM_STATE&&window.__FC_MEM_STATE.dashboard_banner_v1) || localStorage.getItem('dashboard_banner_v1') || '{}';
+ let d={};
+ try{d=JSON.parse(raw)||{}}catch(_e){d={}}
+ return {slots:Array.isArray(d.slots)?d.slots:[d.image||null,null,null].filter((_,i)=>i<3)}
+}
+function saveBannerSlots(slots){
+ const payload=JSON.stringify({slots:slots.slice(0,3),updatedAt:new Date().toISOString()});
+ // Simpan banner di memory + server sync, bukan localStorage, untuk menghindari error quota browser.
+ if(!window.__FC_MEM_STATE)window.__FC_MEM_STATE={};
+ window.__FC_MEM_STATE.dashboard_banner_v1=payload;
+ try{localStorage.removeItem('dashboard_banner_v1')}catch(_e){}
+ if(typeof window.__scheduleFcStateSync==='function')window.__scheduleFcStateSync();
+}
 function renderBanner(){
  const {slots}=bannerImages(); const filled=(slots||[]).filter(Boolean);
  const box=$('dashboardBanner'); const wrap=$('bannerSlides');
@@ -751,7 +778,7 @@ function uploadBannerSlot(i){
  showToast('Memproses banner',`Banner ${i+1} sedang dikompres...`);
 
  // Banner dikompres lebih kecil supaya aman disimpan di localStorage dan dikirim ke server.
- resizeImageFile(file,1280,720,0.72).then(dataUrl=>{
+ resizeImageFile(file,900,506,0.55).then(dataUrl=>{
   const {slots}=bannerImages();
   while(slots.length<3)slots.push(null);
   slots[i]=dataUrl;
@@ -760,6 +787,8 @@ function uploadBannerSlot(i){
 
   const input=$('bannerFile'+i);
   if(input)input.value='';
+
+  if(typeof window.__flushFcStateSyncNow==='function')window.__flushFcStateSyncNow();
 
   showToast('Banner tersimpan',`Banner ${i+1} berhasil diperbarui.`);
  }).catch((err)=>{
