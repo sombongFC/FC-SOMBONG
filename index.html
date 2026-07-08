@@ -153,9 +153,22 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 .adminMatchTop{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;font-weight:900}.adminMatchTop .away{text-align:right}.adminMatchMeta{margin-top:8px;color:#64748b;font-size:13px}.adminActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.adminActions button{border:0;border-radius:12px;padding:10px 14px;font-weight:900;cursor:pointer}.adminActions .editBtn{background:#dcfce7;color:#065f46}.adminActions .deleteBtn{background:#fee2e2;color:#991b1b}.adminLocked{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:16px;padding:14px;margin:12px 0;font-weight:800}.tabs button.adminOnlyTab{background:#fef3c7;color:#92400e}.tabs button.adminOnlyTab.active{background:#fff;color:#17346d}
 
 
-/* v2.15 banner upload fix */
 /* v2.14 export click fix */
 #exportStandingsImage,#exportTopScorerImage,#moreExportStandings,#copyStandingsWA,#copyTopScorerWA,#moreCopyStandings,#moreCopyTopScorer{pointer-events:auto!important;position:relative;z-index:50;cursor:pointer!important}
+
+
+/* v2.15 Banner slot clarity + sponsor PNG transparent */
+.bannerUploadGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.bannerSlotBox{border:2px solid #e5e7eb;background:#fff;border-radius:20px;padding:14px;position:relative}
+.bannerSlotBox .slotTitle{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-weight:900;color:#064e3b}
+.bannerSlotBox .slotBadge{background:#dcfce7;color:#166534;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:900}
+.bannerSlotPreview{min-height:120px;border:1px dashed #bbf7d0;background:#f8fafc;border-radius:16px;display:flex;align-items:center;justify-content:center;overflow:hidden;margin-top:10px}
+.bannerSlotPreview img{width:100%;height:130px!important;max-width:none!important;object-fit:cover!important;border:0!important;border-radius:12px!important;padding:0!important;margin:0!important;background:#000!important}
+.bannerSlotPreview .muted{text-align:center;margin:0;padding:14px}
+.sponsorPreview{min-height:78px;border:1px dashed #e5e7eb;border-radius:16px;padding:10px;margin-top:10px;background:linear-gradient(45deg,#f8fafc 25%,#fff 25%,#fff 50%,#f8fafc 50%,#f8fafc 75%,#fff 75%,#fff);background-size:18px 18px}
+.sponsorPreview img{background:transparent!important;object-fit:contain!important}
+@media(max-width:850px){.bannerUploadGrid{grid-template-columns:1fr}.bannerSlotPreview img{height:170px!important}}
+
 </style>
 </head>
 <body>
@@ -481,21 +494,24 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
       <h2>Banner Dashboard</h2>
       <p class="muted">Upload sampai 3 gambar. Kalau lebih dari satu terisi, banner akan otomatis berganti tiap 4 detik di halaman Dashboard. Khusus Super Admin.</p>
       <label>Password Super Admin<input id="bannerAdminPass" type="password" placeholder="Password Super Admin"></label>
-      <div class="grid two">
-        <div>
-          <label>Banner 1<input id="bannerFile0" type="file" accept="image/*"></label>
+      <div class="bannerUploadGrid">
+        <div class="bannerSlotBox">
+          <div class="slotTitle">Banner Utama <span class="slotBadge">Slot 1</span></div>
+          <label>Upload Banner Utama<input id="bannerFile0" type="file" accept="image/*"></label>
           <div class="grid compact"><button class="smallBtn" type="button" onclick="uploadBannerSlot(0)">Simpan Banner 1</button><button class="secondary" type="button" onclick="clearBannerSlot(0)">Hapus</button></div>
-          <div id="bannerSlotPreview0" class="sponsorPreview"></div>
+          <div id="bannerSlotPreview0" class="bannerSlotPreview"></div>
         </div>
-        <div>
-          <label>Banner 2<input id="bannerFile1" type="file" accept="image/*"></label>
+        <div class="bannerSlotBox">
+          <div class="slotTitle">Banner Kedua <span class="slotBadge">Slot 2</span></div>
+          <label>Upload Banner Kedua<input id="bannerFile1" type="file" accept="image/*"></label>
           <div class="grid compact"><button class="smallBtn" type="button" onclick="uploadBannerSlot(1)">Simpan Banner 2</button><button class="secondary" type="button" onclick="clearBannerSlot(1)">Hapus</button></div>
-          <div id="bannerSlotPreview1" class="sponsorPreview"></div>
+          <div id="bannerSlotPreview1" class="bannerSlotPreview"></div>
         </div>
-        <div>
-          <label>Banner 3<input id="bannerFile2" type="file" accept="image/*"></label>
+        <div class="bannerSlotBox">
+          <div class="slotTitle">Banner Ketiga <span class="slotBadge">Slot 3</span></div>
+          <label>Upload Banner Ketiga<input id="bannerFile2" type="file" accept="image/*"></label>
           <div class="grid compact"><button class="smallBtn" type="button" onclick="uploadBannerSlot(2)">Simpan Banner 3</button><button class="secondary" type="button" onclick="clearBannerSlot(2)">Hapus</button></div>
-          <div id="bannerSlotPreview2" class="sponsorPreview"></div>
+          <div id="bannerSlotPreview2" class="bannerSlotPreview"></div>
         </div>
       </div>
     </div>
@@ -512,7 +528,7 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 
     <div class="panel">
       <h2>Sponsor Website</h2>
-      <p class="muted">Upload sampai 4 logo sponsor. Semua akan tampil dengan ukuran seragam dan warna hitam-putih (grayscale) di footer, selaras dengan desain website. Khusus Super Admin.</p>
+      <p class="muted">Upload sampai 4 logo sponsor. Semua akan tampil dengan ukuran seragam. File akan dikonversi otomatis menjadi PNG, dan background putih polos akan dicoba dibuat transparan otomatis. Khusus Super Admin.</p>
       <label>Password Super Admin<input id="sponsorAdminPass" type="password" placeholder="Password Super Admin"></label>
       <div class="grid two">
         <div>
@@ -580,21 +596,12 @@ Koko Lobang,21"></textarea>
 <script>
 window.__FC_SYNC_KEYS = ['competition_settings_v1','teams','team_rosters_v1','matches_v2','player_photos_v1','access_users_v1','initial_goals_v1','sponsors_v1','finance_reports_v1','club_logo_v1','dashboard_banner_v1'];
 window.__syncTimer = null;
-window.__FC_MEM_STATE = {};
 window.__stateReady = fetch('/api/state', { cache: 'no-store' })
   .then(r => r.ok ? r.json() : {})
   .then(state => {
     if (state && typeof state === 'object') {
       window.__FC_SYNC_KEYS.forEach(k => {
-        if (Object.prototype.hasOwnProperty.call(state, k)) {
-          if (k === 'dashboard_banner_v1') {
-            // Banner bisa besar, jangan dipaksa masuk localStorage agar tidak kena quota browser.
-            window.__FC_MEM_STATE[k] = state[k];
-          } else {
-            try { localStorage.setItem(k, state[k]); }
-            catch(_e) { console.warn('STATE LOAD SKIPPED:', k, _e); }
-          }
-        }
+        if (Object.prototype.hasOwnProperty.call(state, k)) localStorage.setItem(k, state[k]);
       });
     }
   })
@@ -605,12 +612,8 @@ window.__stateReady = fetch('/api/state', { cache: 'no-store' })
   function collectState(){
     const out = {};
     window.__FC_SYNC_KEYS.forEach(k => {
-      if (k === 'dashboard_banner_v1' && window.__FC_MEM_STATE && window.__FC_MEM_STATE[k]) {
-        out[k] = window.__FC_MEM_STATE[k];
-      } else {
-        const v = localStorage.getItem(k);
-        if (v !== null) out[k] = v;
-      }
+      const v = localStorage.getItem(k);
+      if (v !== null) out[k] = v;
     });
     return out;
   }
@@ -624,7 +627,6 @@ window.__stateReady = fetch('/api/state', { cache: 'no-store' })
       }).catch(() => {});
     }, 350);
   }
-  window.__scheduleFcStateSync = scheduleSync;
   localStorage.setItem = function(key, value){
     originalSetItem(key, value);
     if (window.__FC_SYNC_KEYS.includes(key)) scheduleSync();
@@ -648,7 +650,6 @@ window.__stateReady = fetch('/api/state', { cache: 'no-store' })
     }
   }
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushSyncNow(); });
-  window.__flushFcStateSyncNow = flushSyncNow;
   window.addEventListener('pagehide', flushSyncNow);
 })();
 </script>
@@ -734,73 +735,71 @@ function saveSponsors(obj){localStorage.setItem('sponsors_v1',JSON.stringify(obj
 function clubLogo(){return JSON.parse(localStorage.getItem('club_logo_v1')||'{}')}
 function saveClubLogo(obj){localStorage.setItem('club_logo_v1',JSON.stringify(obj||{}))}
 function bannerImages(){
- let raw=(window.__FC_MEM_STATE&&window.__FC_MEM_STATE.dashboard_banner_v1) || localStorage.getItem('dashboard_banner_v1') || '{}';
  let d={};
- try{d=JSON.parse(raw)||{}}catch(_e){d={}}
- return {slots:Array.isArray(d.slots)?d.slots:[d.image||null,null,null].filter((_,i)=>i<3)}
+ try{d=JSON.parse(localStorage.getItem('dashboard_banner_v1')||'{}')||{};}catch(_e){d={};}
+ let slots=Array.isArray(d.slots)?d.slots.slice(0,3):[d.image||null,null,null];
+ while(slots.length<3)slots.push(null);
+ return {slots};
 }
 function saveBannerSlots(slots){
- const payload=JSON.stringify({slots:slots.slice(0,3),updatedAt:new Date().toISOString()});
- // Simpan banner di memory + server sync, bukan localStorage, untuk menghindari error quota browser.
- if(!window.__FC_MEM_STATE)window.__FC_MEM_STATE={};
- window.__FC_MEM_STATE.dashboard_banner_v1=payload;
- try{localStorage.removeItem('dashboard_banner_v1')}catch(_e){}
- if(typeof window.__scheduleFcStateSync==='function')window.__scheduleFcStateSync();
+ const payload={slots:slots.slice(0,3),updatedAt:new Date().toISOString()};
+ try{
+  localStorage.setItem('dashboard_banner_v1',JSON.stringify(payload));
+  return true;
+ }catch(err){
+  console.error('SAVE BANNER ERROR:',err);
+  showToast('Storage penuh','Banner sudah dikompres, tapi browser masih penuh. Hapus banner/foto lama atau gunakan backup lalu reset data gambar.','error');
+  return false;
+ }
 }
 function renderBanner(){
- const {slots}=bannerImages(); const filled=(slots||[]).filter(Boolean);
+ const {slots}=bannerImages();
  const box=$('dashboardBanner'); const wrap=$('bannerSlides');
  clearInterval(window.__bannerTimer);
  if(box&&wrap){
-  if(!filled.length){box.classList.add('hidden'); wrap.innerHTML='';}
+  const slides=slots.map((src,slotIndex)=>({src,slotIndex})).filter(x=>!!x.src);
+  if(!slides.length){box.classList.add('hidden'); wrap.innerHTML='';}
   else{
    box.classList.remove('hidden');
-   wrap.innerHTML=filled.map((src,i)=>`<img class="bannerSlide${i===0?' active':''}" src="${src}" alt="Banner ${i+1}">`).join('');
-   if(filled.length>1){
+   wrap.innerHTML=slides.map((x,i)=>`<img class="bannerSlide${i===0?' active':''}" src="${x.src}" alt="Banner Slot ${x.slotIndex+1}" data-slot="${x.slotIndex+1}">`).join('');
+   if(slides.length>1){
     let idx=0;
     window.__bannerTimer=setInterval(()=>{
      const imgs=wrap.querySelectorAll('.bannerSlide'); if(!imgs.length)return;
-     imgs[idx].classList.remove('active'); idx=(idx+1)%imgs.length; imgs[idx].classList.add('active');
+     imgs.forEach(img=>img.classList.remove('active'));
+     idx=(idx+1)%imgs.length; imgs[idx].classList.add('active');
     },4000);
    }
   }
  }
- for(let i=0;i<3;i++){const prev=$('bannerSlotPreview'+i); if(prev)prev.innerHTML=slots[i]?`<img src="${slots[i]}" alt="Banner ${i+1}">`:'<p class="muted">Slot kosong.</p>';}
+ for(let i=0;i<3;i++){
+  const prev=$('bannerSlotPreview'+i);
+  if(prev)prev.innerHTML=slots[i]?`<img src="${slots[i]}" alt="Preview Banner Slot ${i+1}">`:`<p class="muted">Slot ${i+1} kosong.</p>`;
+ }
 }
 function uploadBannerSlot(i){
  const pass=String($('bannerAdminPass')?.value||'').trim();
  if(pass!==compSettings().superAdminPassword)return showToast('Password salah','Banner hanya bisa diubah oleh Super Admin.','error');
- const file=$('bannerFile'+i)?.files?.[0];
- if(!file)return showToast('Gambar belum dipilih',`Upload file untuk Banner ${i+1} terlebih dahulu.`,'error');
- if(!file.type || !file.type.startsWith('image/'))return showToast('Format salah','File harus berupa gambar JPG/PNG/WebP.','error');
+ const input=$('bannerFile'+i);
+ const file=input?.files?.[0];
+ if(!file)return showToast('Gambar belum dipilih',`Upload file untuk Banner Slot ${i+1} terlebih dahulu.`,'error');
  if(file.size>15000000)return showToast('File terlalu besar','Gunakan gambar di bawah 15 MB.','error');
-
- showToast('Memproses banner',`Banner ${i+1} sedang dikompres...`);
-
- // Banner dikompres lebih kecil supaya aman disimpan di localStorage dan dikirim ke server.
- resizeImageFile(file,900,506,0.55).then(dataUrl=>{
-  const {slots}=bannerImages();
-  while(slots.length<3)slots.push(null);
-  slots[i]=dataUrl;
-  saveBannerSlots(slots);
+ resizeImageFile(file,960,540,0.58).then(dataUrl=>{
+  const {slots}=bannerImages(); while(slots.length<3)slots.push(null); slots[i]=dataUrl;
+  if(!saveBannerSlots(slots))return;
   renderBanner();
-
-  const input=$('bannerFile'+i);
   if(input)input.value='';
-
-  if(typeof window.__flushFcStateSyncNow==='function')window.__flushFcStateSyncNow();
-
-  showToast('Banner tersimpan',`Banner ${i+1} berhasil diperbarui.`);
+  showToast('Banner tersimpan',`Banner Slot ${i+1} berhasil diperbarui.`);
  }).catch((err)=>{
   console.error('UPLOAD BANNER ERROR:',err);
-  showToast('Gagal proses gambar',err?.message || String(err) || 'Coba pilih gambar lain.','error');
+  showToast('Gagal proses gambar',err?.message||String(err)||'Coba pilih gambar lain.','error');
  });
 }
 function clearBannerSlot(i){
  const pass=String($('bannerAdminPass')?.value||'').trim();
  if(pass!==compSettings().superAdminPassword)return showToast('Password salah','Banner hanya bisa dihapus oleh Super Admin.','error');
  const {slots}=bannerImages(); while(slots.length<3)slots.push(null); slots[i]=null; saveBannerSlots(slots); renderBanner();
- showToast('Banner dihapus',`Banner ${i+1} sudah dikosongkan.`);
+ showToast('Banner dihapus',`Banner Slot ${i+1} sudah dikosongkan.`);
 }
 function renderClubLogo(){
  const logo=clubLogo(); const mark=document.querySelector('.brandMark'); const prev=$('clubLogoPreview');
@@ -844,13 +843,17 @@ function saveSponsorsList(list){saveSponsors({list:list.slice(0,4),updatedAt:new
 function saveSponsorSlot(i){
  const pass=String($('sponsorAdminPass')?.value||'').trim();
  if(pass!==compSettings().superAdminPassword)return showToast('Password salah','Sponsor hanya bisa diubah oleh Super Admin.','error');
- const name=normalizeName($('sponsorName'+i)?.value||'Sponsor'); const file=$('sponsorLogo'+i)?.files?.[0];
+ const name=normalizeName($('sponsorName'+i)?.value||'Sponsor'); const input=$('sponsorLogo'+i); const file=input?.files?.[0];
  if(!file)return showToast('Logo belum dipilih',`Upload logo untuk Sponsor ${i+1} terlebih dahulu.`,'error');
- if(file.size>1200000)return showToast('File terlalu besar','Gunakan logo di bawah 1,2 MB.','error');
- const reader=new FileReader(); reader.onload=()=>{
-  const list=sponsorsList(); while(list.length<4)list.push({}); list[i]={name,logo:reader.result}; saveSponsorsList(list); renderSponsor();
-  if($('sponsorAdminPass'))$('sponsorAdminPass').value=''; showToast('Sponsor tersimpan',`Sponsor ${i+1} berhasil diperbarui.`);
- }; reader.readAsDataURL(file);
+ if(file.size>5000000)return showToast('File terlalu besar','Gunakan logo di bawah 5 MB. Sistem akan otomatis kompres ke PNG.','error');
+ resizeImageFilePngTransparent(file,700,350).then(dataUrl=>{
+  const list=sponsorsList(); while(list.length<4)list.push({}); list[i]={name,logo:dataUrl,format:'png-transparent'}; saveSponsorsList(list); renderSponsor();
+  if(input)input.value='';
+  if($('sponsorAdminPass'))$('sponsorAdminPass').value=''; showToast('Sponsor tersimpan',`Sponsor ${i+1} dikonversi ke PNG. Background putih polos dicoba dibuat transparan.`);
+ }).catch((err)=>{
+  console.error('UPLOAD SPONSOR ERROR:',err);
+  showToast('Gagal proses sponsor',err?.message||String(err)||'Coba pilih logo lain.','error');
+ });
 }
 function clearSponsorSlot(i){
  const pass=String($('sponsorAdminPass')?.value||'').trim();
@@ -873,76 +876,64 @@ function deleteFinance(idx){if(!isSuperAdmin())return; const rows=financeReports
 
 function resizeImageFile(file,maxW,maxH,quality){
  return new Promise((resolve,reject)=>{
-  if(!file){reject(new Error('File kosong')); return;}
-
+  if(!file)return reject(new Error('File kosong'));
   const reader=new FileReader();
-
-  reader.onload=function(e){
+  reader.onload=(e)=>{
    const img=new Image();
-
-   img.onload=function(){
+   img.onload=()=>{
     try{
-     let w=img.naturalWidth || img.width;
-     let h=img.naturalHeight || img.height;
-
-     if(!w || !h){
-      reject(new Error('Dimensi gambar tidak terbaca'));
-      return;
-     }
-
+     let w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+     if(!w||!h)return reject(new Error('Dimensi gambar tidak terbaca'));
      const ratio=Math.min(maxW/w,maxH/h,1);
-     const newW=Math.max(1,Math.round(w*ratio));
-     const newH=Math.max(1,Math.round(h*ratio));
-
-     const canvas=document.createElement('canvas');
-     canvas.width=newW;
-     canvas.height=newH;
-
-     const ctx=canvas.getContext('2d');
-     if(!ctx){
-      reject(new Error('Canvas tidak didukung browser'));
-      return;
-     }
-
-     // Background putih supaya PNG transparan tetap aman saat dikonversi ke JPG
-     ctx.fillStyle='#ffffff';
-     ctx.fillRect(0,0,newW,newH);
-     ctx.drawImage(img,0,0,newW,newH);
-
-     if(canvas.toBlob){
-      canvas.toBlob(function(blob){
-       if(!blob){
-        reject(new Error('Gagal convert gambar'));
-        return;
-       }
-       const reader2=new FileReader();
-       reader2.onloadend=function(){resolve(reader2.result);};
-       reader2.onerror=function(){reject(new Error('Gagal membaca hasil kompres'));};
-       reader2.readAsDataURL(blob);
-      },'image/jpeg',quality || 0.82);
-     }else{
-      try{
-       resolve(canvas.toDataURL('image/jpeg',quality || 0.82));
-      }catch(err){
-       reject(err);
-      }
-     }
-    }catch(err){
-     reject(err);
-    }
+     w=Math.max(1,Math.round(w*ratio)); h=Math.max(1,Math.round(h*ratio));
+     const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h;
+     const ctx=canvas.getContext('2d'); if(!ctx)return reject(new Error('Canvas tidak didukung browser'));
+     ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,w,h); ctx.drawImage(img,0,0,w,h);
+     canvas.toBlob(blob=>{
+      if(!blob)return reject(new Error('Gagal convert gambar'));
+      const r2=new FileReader(); r2.onloadend=()=>resolve(r2.result); r2.onerror=()=>reject(new Error('Gagal membaca hasil kompres')); r2.readAsDataURL(blob);
+     },'image/jpeg',quality||0.7);
+    }catch(err){reject(err);}
    };
-
-   img.onerror=function(){
-    reject(new Error('Format gambar tidak bisa dibaca browser'));
-   };
-
+   img.onerror=()=>reject(new Error('Format gambar tidak bisa dibaca browser'));
    img.src=e.target.result;
   };
-
-  reader.onerror=function(){
-   reject(new Error('File tidak bisa dibaca'));
+  reader.onerror=()=>reject(new Error('File tidak bisa dibaca'));
+  reader.readAsDataURL(file);
+ });
+}
+function resizeImageFilePngTransparent(file,maxW,maxH){
+ return new Promise((resolve,reject)=>{
+  if(!file)return reject(new Error('File kosong'));
+  const reader=new FileReader();
+  reader.onload=(e)=>{
+   const img=new Image();
+   img.onload=()=>{
+    try{
+     let w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+     if(!w||!h)return reject(new Error('Dimensi logo tidak terbaca'));
+     const ratio=Math.min(maxW/w,maxH/h,1);
+     w=Math.max(1,Math.round(w*ratio)); h=Math.max(1,Math.round(h*ratio));
+     const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h;
+     const ctx=canvas.getContext('2d',{willReadFrequently:true}); if(!ctx)return reject(new Error('Canvas tidak didukung browser'));
+     ctx.clearRect(0,0,w,h); ctx.drawImage(img,0,0,w,h);
+     const imageData=ctx.getImageData(0,0,w,h); const data=imageData.data;
+     // Hapus background putih polos / nyaris putih. Tidak menghapus background kompleks.
+     for(let p=0;p<data.length;p+=4){
+      const r=data[p],g=data[p+1],b=data[p+2];
+      if(r>238&&g>238&&b>238){data[p+3]=0;}
+     }
+     ctx.putImageData(imageData,0,0);
+     canvas.toBlob(blob=>{
+      if(!blob)return reject(new Error('Gagal convert logo PNG'));
+      const r2=new FileReader(); r2.onloadend=()=>resolve(r2.result); r2.onerror=()=>reject(new Error('Gagal membaca hasil PNG')); r2.readAsDataURL(blob);
+     },'image/png');
+    }catch(err){reject(err);}
+   };
+   img.onerror=()=>reject(new Error('Format logo tidak bisa dibaca browser'));
+   img.src=e.target.result;
   };
-
+  reader.onerror=()=>reject(new Error('File logo tidak bisa dibaca'));
   reader.readAsDataURL(file);
  });
 }
