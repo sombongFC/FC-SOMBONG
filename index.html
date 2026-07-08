@@ -181,6 +181,19 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 .sponsorHint{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:14px;padding:10px 12px;color:#166534;font-size:13px;margin:10px 0 14px}
 @media(max-width:850px){.sponsorUploadGrid{grid-template-columns:1fr}.sponsorSlotPreview img{height:86px!important}}
 
+
+/* v2.17 Logo klub upload card fix */
+.logoUploadCard{border:2px solid var(--green-border);background:linear-gradient(180deg,#ffffff,#f4fff7);border-radius:20px;padding:16px;margin-top:12px}
+.logoUploadHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.logoUploadTitle{font-weight:900;color:var(--green-dark);font-family:'Oswald',Arial,sans-serif;text-transform:uppercase;letter-spacing:.03em}
+.logoPreviewBox{min-height:120px;border:1px dashed #bbf7d0;background:#f8fafc;border-radius:18px;display:flex;align-items:center;justify-content:center;text-align:center;padding:14px;margin:10px 0}
+.logoPreviewBox img{max-height:96px;max-width:220px;object-fit:contain;background:transparent;border:0;padding:0;margin:0}
+.logoButtonRow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+#clubLogoFile{position:absolute!important;left:-9999px!important;width:1px!important;height:1px!important;opacity:0!important;pointer-events:none!important}
+#chooseClubLogoBtn,#saveClubLogo,#clearClubLogo{width:100%;min-height:46px;position:relative;z-index:80;pointer-events:auto!important;cursor:pointer!important}
+.clubLogoFileName{font-size:12px;color:#64748b;margin-top:8px;word-break:break-word}
+@media(max-width:760px){.logoButtonRow{grid-template-columns:1fr}.logoPreviewBox{min-height:105px}.logoPreviewBox img{max-height:86px;max-width:180px}}
+
 </style>
 </head>
 <body>
@@ -530,12 +543,24 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 
     <div class="panel">
       <h2>Logo Klub</h2>
-      <p class="muted">Upload logo FC Sombong untuk menggantikan lencana "FCS" default di navbar dan footer. Logo ini nanti bisa dipakai juga di fitur export gambar. Khusus Super Admin.</p>
+      <p class="muted">Upload logo FC Sombong untuk menggantikan lencana "FCS" default. Dibuat seperti upload banner/sponsor agar lebih jelas dan mudah diklik. Khusus Super Admin.</p>
       <label>Password Super Admin<input id="clubLogoAdminPass" type="password" placeholder="Password Super Admin"></label>
-      <label>File Logo (disarankan PNG transparan)<input id="clubLogoFile" type="file" accept="image/*"></label>
-      <button class="smallBtn" id="saveClubLogo" type="button">Simpan Logo Klub</button>
-      <button class="secondary" id="clearClubLogo" type="button">Hapus Logo Klub</button>
-      <div id="clubLogoPreview" class="sponsorPreview"></div>
+      <div class="logoUploadCard">
+        <div class="logoUploadHeader">
+          <div>
+            <div class="logoUploadTitle">Logo Klub Utama</div>
+            <p class="muted" style="margin:4px 0 0">Disarankan PNG transparan. Jika background putih polos, sistem akan mencoba membuatnya transparan.</p>
+          </div>
+        </div>
+        <input id="clubLogoFile" type="file" accept="image/png,image/jpeg,image/webp,image/*">
+        <div id="clubLogoPreview" class="logoPreviewBox"><p class="muted">Belum ada logo klub.</p></div>
+        <div id="clubLogoFileName" class="clubLogoFileName">Belum ada file dipilih.</div>
+        <div class="logoButtonRow">
+          <button class="smallBtn" id="chooseClubLogoBtn" type="button">Pilih Logo Klub</button>
+          <button class="smallBtn" id="saveClubLogo" type="button">Simpan Logo Klub</button>
+          <button class="secondary" id="clearClubLogo" type="button">Hapus Logo Klub</button>
+        </div>
+      </div>
     </div>
 
     <div class="panel">
@@ -826,15 +851,34 @@ function renderClubLogo(){
  }
  const footMark=document.querySelector('.footerLogo');
  if(footMark){ if(logo.image){footMark.innerHTML=`<img src="${logo.image}" alt="Logo" style="width:100%;height:100%;object-fit:cover;border-radius:999px">`;} else {footMark.textContent='⚽';} }
- if(prev){prev.innerHTML=logo.image?`<p class="muted">Logo aktif:</p><img src="${logo.image}" alt="Logo klub">`:'<p class="muted">Belum ada logo klub, memakai lencana FCS default.</p>';}
+ if(prev){prev.innerHTML=logo.image?`<div><p class="muted" style="margin:0 0 8px">Logo aktif:</p><img src="${logo.image}" alt="Logo klub"></div>`:'<p class="muted">Belum ada logo klub, memakai lencana FCS default.</p>';}
+}
+function previewSelectedClubLogo(){
+ const input=$('clubLogoFile'); const file=input?.files?.[0]; const nameBox=$('clubLogoFileName');
+ if(!file){ if(nameBox)nameBox.textContent='Belum ada file dipilih.'; renderClubLogo(); return; }
+ if(nameBox)nameBox.textContent=`File dipilih: ${file.name} (${Math.round(file.size/1024)} KB)`;
+ const reader=new FileReader();
+ reader.onload=()=>{const prev=$('clubLogoPreview'); if(prev)prev.innerHTML=`<div><p class="muted" style="margin:0 0 8px">Preview sebelum simpan:</p><img src="${reader.result}" alt="Preview logo klub"></div>`;};
+ reader.readAsDataURL(file);
 }
 function saveClubLogoFromForm(){
  const pass=String($('clubLogoAdminPass')?.value||'').trim();
  if(pass!==compSettings().superAdminPassword)return showToast('Password salah','Logo klub hanya bisa diubah oleh Super Admin.','error');
- const file=$('clubLogoFile')?.files?.[0];
- if(!file)return showToast('Logo belum dipilih','Upload file logo klub terlebih dahulu.','error');
- if(file.size>2000000)return showToast('File terlalu besar','Gunakan logo di bawah 2 MB.','error');
- const reader=new FileReader(); reader.onload=()=>{saveClubLogo({image:reader.result,updatedAt:new Date().toISOString()}); renderClubLogo(); if($('clubLogoAdminPass'))$('clubLogoAdminPass').value=''; showToast('Logo klub tersimpan','Logo akan tampil di navbar dan footer.');}; reader.readAsDataURL(file);
+ const input=$('clubLogoFile');
+ const file=input?.files?.[0];
+ if(!file)return showToast('Logo belum dipilih','Klik Pilih Logo Klub terlebih dahulu.','error');
+ if(file.size>5000000)return showToast('File terlalu besar','Gunakan logo di bawah 5 MB. Sistem akan otomatis kompres ke PNG.','error');
+ resizeImageFilePngTransparent(file,700,700).then(dataUrl=>{
+  saveClubLogo({image:dataUrl,format:'png-transparent',updatedAt:new Date().toISOString()});
+  renderClubLogo();
+  if(input)input.value='';
+  if($('clubLogoFileName'))$('clubLogoFileName').textContent='Belum ada file dipilih.';
+  if($('clubLogoAdminPass'))$('clubLogoAdminPass').value='';
+  showToast('Logo klub tersimpan','Logo dikonversi ke PNG dan background putih polos dicoba dibuat transparan.');
+ }).catch((err)=>{
+  console.error('UPLOAD CLUB LOGO ERROR:',err);
+  showToast('Gagal proses logo',err?.message||String(err)||'Coba pilih logo lain.','error');
+ });
 }
 function clearClubLogo(){
  const pass=String($('clubLogoAdminPass')?.value||'').trim();
@@ -1693,7 +1737,7 @@ function generateAiText(type){
 function copyAiOutput(){const el=$('aiOutput'); if(!el||!el.value)return showToast('Belum ada teks','Generate AI terlebih dahulu.','error'); navigator.clipboard?.writeText(el.value); showToast('Berhasil disalin','Teks AI siap ditempel ke WhatsApp.')}
 
 function exportCsv(){const rows=[['Tanggal','Home','Away','Skor Home','Skor Away','Scorer Home','Scorer Away','Penalty Winner','Cards']]; load().forEach(m=>rows.push([m.date,m.home,m.away,m.hs,m.as,(m.homeScorers||[]).join('; '),(m.awayScorers||[]).join('; '),m.penaltyWinner||'',(m.cards||[]).map(c=>`${c.player}-${c.team}-${c.type}`).join('; ')])); const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n'); const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='riwayat_pertandingan.csv'; a.click(); URL.revokeObjectURL(a.href)}
-function init(){document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); b.classList.add('active'); document.querySelectorAll('.page').forEach(p=>p.classList.remove('show')); $(b.dataset.page).classList.add('show');}); $('matchDate').value=new Date().toISOString().slice(0,10); if($('weekDate'))$('weekDate').value=new Date().toISOString().slice(0,10); fillSelects(); updateAccessUI(); if($('loginBtn'))$('loginBtn').onclick=loginAccessUser; if($('logoutBtn'))$('logoutBtn').onclick=()=>{clearCurrentAccessUser(); updateAccessUI(); const active=document.querySelector('.page.show'); if(active?.id==='admin'){document.querySelector('.tabs button[data-page="dashboard"]')?.click();} showToast('Logout berhasil','Input match dikunci kembali.')}; if($('generateAccessUser'))$('generateAccessUser').onclick=createAccessUser; document.querySelectorAll('.scoreBtn').forEach(btn=>btn.onclick=()=>{const input=$(btn.dataset.score); const next=Math.max(0,(+input.value||0)+(+btn.dataset.delta||0)); input.value=next; input.dispatchEvent(new Event('input',{bubbles:true}));}); if($('showYearStandings'))$('showYearStandings').onclick=()=>{standingsMode='year';$('showYearStandings').classList.add('activeMode');$('showWeekStandings')?.classList.remove('activeMode');$('showMonthStandings')?.classList.remove('activeMode');render()}; if($('showMonthStandings'))$('showMonthStandings').onclick=()=>{standingsMode='month';$('showMonthStandings').classList.add('activeMode');$('showWeekStandings')?.classList.remove('activeMode');$('showYearStandings')?.classList.remove('activeMode');render()}; if($('showWeekStandings'))$('showWeekStandings').onclick=()=>{standingsMode='week';$('showWeekStandings').classList.add('activeMode');$('showMonthStandings')?.classList.remove('activeMode');$('showYearStandings')?.classList.remove('activeMode');render()}; if($('weekDate'))$('weekDate').onchange=()=>{if(standingsMode==='year')standingsMode='week';$('showWeekStandings')?.classList.toggle('activeMode',standingsMode==='week');$('showMonthStandings')?.classList.toggle('activeMode',standingsMode==='month');$('showYearStandings')?.classList.remove('activeMode');render()}; if($('exportStandingsImage'))$('exportStandingsImage').onclick=exportStandingsImage; if($('copyStandingsWA'))$('copyStandingsWA').onclick=copyStandingsWA; ['homeScore','awayScore','homeTeam','awayTeam'].forEach(id=>$(id).addEventListener('input',()=>{refreshHistories();syncScorerInputs()})); $('enableCards').onchange=e=>{$('cardsBlock').classList.toggle('hidden',!e.target.checked); if(e.target.checked&&!document.querySelector('.cardRow'))addCardRow()}; $('addCard').onclick=()=>addCardRow(); $('playerSearch').oninput=renderPlayers; if($('savePlayers'))$('savePlayers').onclick=()=>{saveRosters(collectRosters()); refreshHistories(); renderPlayers(); showToast('Daftar pemain tersimpan','Autocomplete scorer dan kartu sudah diperbarui.');}; if($('cancelEditMatch'))$('cancelEditMatch').onclick=()=>{resetMatchEditMode(); $('matchForm').reset(); fillSelects();}; if($('saveClubLogo'))$('saveClubLogo').onclick=saveClubLogoFromForm; if($('clearClubLogo'))$('clearClubLogo').onclick=clearClubLogo; if($('addFinance'))$('addFinance').onclick=addFinance; if($('financeDate'))$('financeDate').value=new Date().toISOString().slice(0,10); if($('moreExportStandings'))$('moreExportStandings').onclick=exportStandingsImage; if($('moreCopyStandings'))$('moreCopyStandings').onclick=copyStandingsWA; if($('moreCopyTopScorer'))$('moreCopyTopScorer').onclick=copyTopScorerWA; if($('downloadBackupData'))$('downloadBackupData').onclick=downloadBackupData; if($('restoreBackupData'))$('restoreBackupData').onclick=restoreBackupData; $('exportCsv').onclick=exportCsv; $('exportPdf').onclick=()=>window.print(); bindExportButtonsForce();
+function init(){document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); b.classList.add('active'); document.querySelectorAll('.page').forEach(p=>p.classList.remove('show')); $(b.dataset.page).classList.add('show');}); $('matchDate').value=new Date().toISOString().slice(0,10); if($('weekDate'))$('weekDate').value=new Date().toISOString().slice(0,10); fillSelects(); updateAccessUI(); if($('loginBtn'))$('loginBtn').onclick=loginAccessUser; if($('logoutBtn'))$('logoutBtn').onclick=()=>{clearCurrentAccessUser(); updateAccessUI(); const active=document.querySelector('.page.show'); if(active?.id==='admin'){document.querySelector('.tabs button[data-page="dashboard"]')?.click();} showToast('Logout berhasil','Input match dikunci kembali.')}; if($('generateAccessUser'))$('generateAccessUser').onclick=createAccessUser; document.querySelectorAll('.scoreBtn').forEach(btn=>btn.onclick=()=>{const input=$(btn.dataset.score); const next=Math.max(0,(+input.value||0)+(+btn.dataset.delta||0)); input.value=next; input.dispatchEvent(new Event('input',{bubbles:true}));}); if($('showYearStandings'))$('showYearStandings').onclick=()=>{standingsMode='year';$('showYearStandings').classList.add('activeMode');$('showWeekStandings')?.classList.remove('activeMode');$('showMonthStandings')?.classList.remove('activeMode');render()}; if($('showMonthStandings'))$('showMonthStandings').onclick=()=>{standingsMode='month';$('showMonthStandings').classList.add('activeMode');$('showWeekStandings')?.classList.remove('activeMode');$('showYearStandings')?.classList.remove('activeMode');render()}; if($('showWeekStandings'))$('showWeekStandings').onclick=()=>{standingsMode='week';$('showWeekStandings').classList.add('activeMode');$('showMonthStandings')?.classList.remove('activeMode');$('showYearStandings')?.classList.remove('activeMode');render()}; if($('weekDate'))$('weekDate').onchange=()=>{if(standingsMode==='year')standingsMode='week';$('showWeekStandings')?.classList.toggle('activeMode',standingsMode==='week');$('showMonthStandings')?.classList.toggle('activeMode',standingsMode==='month');$('showYearStandings')?.classList.remove('activeMode');render()}; if($('exportStandingsImage'))$('exportStandingsImage').onclick=exportStandingsImage; if($('copyStandingsWA'))$('copyStandingsWA').onclick=copyStandingsWA; ['homeScore','awayScore','homeTeam','awayTeam'].forEach(id=>$(id).addEventListener('input',()=>{refreshHistories();syncScorerInputs()})); $('enableCards').onchange=e=>{$('cardsBlock').classList.toggle('hidden',!e.target.checked); if(e.target.checked&&!document.querySelector('.cardRow'))addCardRow()}; $('addCard').onclick=()=>addCardRow(); $('playerSearch').oninput=renderPlayers; if($('savePlayers'))$('savePlayers').onclick=()=>{saveRosters(collectRosters()); refreshHistories(); renderPlayers(); showToast('Daftar pemain tersimpan','Autocomplete scorer dan kartu sudah diperbarui.');}; if($('cancelEditMatch'))$('cancelEditMatch').onclick=()=>{resetMatchEditMode(); $('matchForm').reset(); fillSelects();}; if($('chooseClubLogoBtn'))$('chooseClubLogoBtn').onclick=()=>$('clubLogoFile')?.click(); if($('clubLogoFile'))$('clubLogoFile').onchange=previewSelectedClubLogo; if($('saveClubLogo'))$('saveClubLogo').onclick=saveClubLogoFromForm; if($('clearClubLogo'))$('clearClubLogo').onclick=clearClubLogo; if($('addFinance'))$('addFinance').onclick=addFinance; if($('financeDate'))$('financeDate').value=new Date().toISOString().slice(0,10); if($('moreExportStandings'))$('moreExportStandings').onclick=exportStandingsImage; if($('moreCopyStandings'))$('moreCopyStandings').onclick=copyStandingsWA; if($('moreCopyTopScorer'))$('moreCopyTopScorer').onclick=copyTopScorerWA; if($('downloadBackupData'))$('downloadBackupData').onclick=downloadBackupData; if($('restoreBackupData'))$('restoreBackupData').onclick=restoreBackupData; $('exportCsv').onclick=exportCsv; $('exportPdf').onclick=()=>window.print(); bindExportButtonsForce();
  $('matchForm').onsubmit=e=>{e.preventDefault(); if(!canInputMatch())return showToast('Akses ditolak','Login terlebih dahulu untuk input hasil pertandingan.','error'); const m={date:$('matchDate').value,home:$('homeTeam').value,away:$('awayTeam').value,hs:+$('homeScore').value,as:+$('awayScore').value,homeScorers:collectSide('home'),awayScorers:collectSide('away'),penaltyWinner:$('penaltyWinner').value,cards:$('enableCards').checked?collectCards():[]}; if(m.home===m.away)return showToast('Input belum valid','Home dan Away tidak boleh club yang sama.','error'); if(m.homeScorers.length!==m.hs)return showToast('Pencetak goal Home belum sesuai',`Skor home ${m.hs}, maka wajib ${m.hs} nama. Terisi ${m.homeScorers.length}.`,'error'); if(m.awayScorers.length!==m.as)return showToast('Pencetak goal Away belum sesuai',`Skor away ${m.as}, maka wajib ${m.as} nama. Terisi ${m.awayScorers.length}.`,'error'); if(compSettings().drawRule==='penalty' && m.hs===m.as && !m.penaltyWinner)return showToast('Penalty winner wajib dipilih','Karena skor seri, pilih pemenang penalty untuk poin 2/1.','error'); if(compSettings().drawRule!=='penalty')m.penaltyWinner=''; const data=load(); const editIdx=editingMatchIndex!==null?editingMatchIndex:($('editMatchIndex')?.value!==''?+$('editMatchIndex').value:null); if(editIdx!==null && isSuperAdmin() && data[editIdx]){data[editIdx]=m; save(data); showToast('Match diperbarui',`${m.home} ${m.hs} - ${m.as} ${m.away}`);} else {save([...data,m]); showToast('Match berhasil disimpan',`${m.home} ${m.hs} - ${m.as} ${m.away}`);} syncRostersFromMatches(); e.target.reset(); resetMatchEditMode(); $('matchDate').value=new Date().toISOString().slice(0,10); $('awayTeam').selectedIndex=1; $('cardRows').innerHTML=''; $('cardsBlock').classList.add('hidden'); fillSelects(); render();};
  $('saveSettings').onclick=()=>{const arr=$('teamSettings').value.split('\n').map(x=>x.trim()).filter(Boolean); if(arr.length<2)return showToast('Setting belum valid','Minimal input 2 club.','error'); const cfg=collectCompetitionSettings(); if(arr.length!==cfg.teamCount)return showToast('Jumlah team belum sesuai',`Setting jumlah team adalah ${cfg.teamCount}, tetapi daftar club berisi ${arr.length}.`,'error'); const oldRosters=loadRosters(); const unique=[...new Set(arr)]; const nextRosters={}; unique.forEach(t=>nextRosters[t]=oldRosters[t]||[]); saveTeams(unique); saveRosters(nextRosters); saveCompSettings(cfg); fillSelects(); render(); showToast('Setting kompetisi tersimpan','Format liga/piala, jumlah team, home-away, dan aturan seri sudah diperbarui.')}; if($('hardResetAll'))$('hardResetAll').onclick=hardResetAllData; if($('importInitialGoals'))$('importInitialGoals').onclick=importInitialGoals; if($('clearInitialGoals'))$('clearInitialGoals').onclick=clearInitialGoals; if($('drawRule'))$('drawRule').onchange=updatePenaltyOptions; $('resetData').onclick=()=>{localStorage.removeItem('matches_v2');render();fillSelects()}; render();}
 window.__stateReady.then(init).catch(init);
