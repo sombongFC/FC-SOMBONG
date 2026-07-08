@@ -637,13 +637,24 @@ Koko Lobang,21"></textarea>
 
 <script>
 window.__FC_SYNC_KEYS = ['competition_settings_v1','teams','team_rosters_v1','matches_v2','player_photos_v1','access_users_v1','initial_goals_v1','sponsors_v1','finance_reports_v1','club_logo_v1','dashboard_banner_v1'];
+window.__FC_BIG_IMAGE_KEYS = ['dashboard_banner_v1','sponsors_v1','club_logo_v1'];
 window.__syncTimer = null;
+window.__FC_MEM_STATE = {};
 window.__stateReady = fetch('/api/state', { cache: 'no-store' })
   .then(r => r.ok ? r.json() : {})
   .then(state => {
     if (state && typeof state === 'object') {
       window.__FC_SYNC_KEYS.forEach(k => {
-        if (Object.prototype.hasOwnProperty.call(state, k)) localStorage.setItem(k, state[k]);
+        if (Object.prototype.hasOwnProperty.call(state, k)) {
+          if (window.__FC_BIG_IMAGE_KEYS.includes(k)) {
+            // Data gambar besar jangan dipaksa masuk localStorage agar tidak terkena quota browser.
+            window.__FC_MEM_STATE[k] = state[k];
+            try { localStorage.removeItem(k); } catch(_e) {}
+          } else {
+            try { localStorage.setItem(k, state[k]); }
+            catch(_e) { console.warn('STATE LOAD SKIPPED:', k, _e); }
+          }
+        }
       });
     }
   })
@@ -654,8 +665,12 @@ window.__stateReady = fetch('/api/state', { cache: 'no-store' })
   function collectState(){
     const out = {};
     window.__FC_SYNC_KEYS.forEach(k => {
-      const v = localStorage.getItem(k);
-      if (v !== null) out[k] = v;
+      if (window.__FC_BIG_IMAGE_KEYS.includes(k) && window.__FC_MEM_STATE && window.__FC_MEM_STATE[k] != null) {
+        out[k] = window.__FC_MEM_STATE[k];
+      } else {
+        const v = localStorage.getItem(k);
+        if (v !== null) out[k] = v;
+      }
     });
     return out;
   }
@@ -669,16 +684,6 @@ window.__stateReady = fetch('/api/state', { cache: 'no-store' })
       }).catch(() => {});
     }, 350);
   }
-  localStorage.setItem = function(key, value){
-    originalSetItem(key, value);
-    if (window.__FC_SYNC_KEYS.includes(key)) scheduleSync();
-  };
-  localStorage.removeItem = function(key){
-    originalRemoveItem(key);
-    if (window.__FC_SYNC_KEYS.includes(key)) scheduleSync();
-  };
-  // Kalau tab ditutup/pindah sebelum debounce 350ms selesai, kirim paksa
-  // pakai sendBeacon supaya perubahan terakhir tidak hilang.
   function flushSyncNow(){
     if (window.__syncTimer) {
       clearTimeout(window.__syncTimer);
@@ -691,6 +696,16 @@ window.__stateReady = fetch('/api/state', { cache: 'no-store' })
       }
     }
   }
+  window.__scheduleFcStateSync = scheduleSync;
+  window.__flushFcStateSyncNow = flushSyncNow;
+  localStorage.setItem = function(key, value){
+    originalSetItem(key, value);
+    if (window.__FC_SYNC_KEYS.includes(key)) scheduleSync();
+  };
+  localStorage.removeItem = function(key){
+    originalRemoveItem(key);
+    if (window.__FC_SYNC_KEYS.includes(key)) scheduleSync();
+  };
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushSyncNow(); });
   window.addEventListener('pagehide', flushSyncNow);
 })();
@@ -772,27 +787,30 @@ function playerPhotos(){return JSON.parse(localStorage.getItem('player_photos_v1
 function savePlayerPhotos(obj){localStorage.setItem('player_photos_v1',JSON.stringify(obj))}
 function initialGoals(){return JSON.parse(localStorage.getItem('initial_goals_v1')||'{}')}
 function saveInitialGoals(obj){localStorage.setItem('initial_goals_v1',JSON.stringify(obj||{}))}
-function sponsors(){return JSON.parse(localStorage.getItem('sponsors_v1')||'{}')}
-function saveSponsors(obj){localStorage.setItem('sponsors_v1',JSON.stringify(obj||{}))}
-function clubLogo(){return JSON.parse(localStorage.getItem('club_logo_v1')||'{}')}
-function saveClubLogo(obj){localStorage.setItem('club_logo_v1',JSON.stringify(obj||{}))}
+function readBigState(key, fallback='{}'){
+ const raw=(window.__FC_MEM_STATE&&window.__FC_MEM_STATE[key]) || localStorage.getItem(key) || fallback;
+ try{return JSON.parse(raw)||JSON.parse(fallback)}catch(_e){try{return JSON.parse(fallback)}catch(__e){return {}}}
+}
+function saveBigState(key,obj){
+ const payload=JSON.stringify(obj||{});
+ if(!window.__FC_MEM_STATE)window.__FC_MEM_STATE={};
+ window.__FC_MEM_STATE[key]=payload;
+ try{localStorage.removeItem(key)}catch(_e){}
+ if(typeof window.__scheduleFcStateSync==='function')window.__scheduleFcStateSync();
+ return true;
+}
+function sponsors(){return readBigState('sponsors_v1','{}')}
+function saveSponsors(obj){return saveBigState('sponsors_v1',obj||{})}
+function clubLogo(){return readBigState('club_logo_v1','{}')}
+function saveClubLogo(obj){return saveBigState('club_logo_v1',obj||{})}
 function bannerImages(){
- let d={};
- try{d=JSON.parse(localStorage.getItem('dashboard_banner_v1')||'{}')||{};}catch(_e){d={};}
+ const d=readBigState('dashboard_banner_v1','{}');
  let slots=Array.isArray(d.slots)?d.slots.slice(0,3):[d.image||null,null,null];
  while(slots.length<3)slots.push(null);
  return {slots};
 }
 function saveBannerSlots(slots){
- const payload={slots:slots.slice(0,3),updatedAt:new Date().toISOString()};
- try{
-  localStorage.setItem('dashboard_banner_v1',JSON.stringify(payload));
-  return true;
- }catch(err){
-  console.error('SAVE BANNER ERROR:',err);
-  showToast('Storage penuh','Banner sudah dikompres, tapi browser masih penuh. Hapus banner/foto lama atau gunakan backup lalu reset data gambar.','error');
-  return false;
- }
+ return saveBigState('dashboard_banner_v1',{slots:slots.slice(0,3),updatedAt:new Date().toISOString()});
 }
 function renderBanner(){
  const {slots}=bannerImages();
@@ -831,6 +849,7 @@ function uploadBannerSlot(i){
   if(!saveBannerSlots(slots))return;
   renderBanner();
   if(input)input.value='';
+  if(typeof window.__flushFcStateSyncNow==='function')window.__flushFcStateSyncNow();
   showToast('Banner tersimpan',`Banner Slot ${i+1} berhasil diperbarui.`);
  }).catch((err)=>{
   console.error('UPLOAD BANNER ERROR:',err);
@@ -874,6 +893,7 @@ function saveClubLogoFromForm(){
   if(input)input.value='';
   if($('clubLogoFileName'))$('clubLogoFileName').textContent='Belum ada file dipilih.';
   if($('clubLogoAdminPass'))$('clubLogoAdminPass').value='';
+  if(typeof window.__flushFcStateSyncNow==='function')window.__flushFcStateSyncNow();
   showToast('Logo klub tersimpan','Logo dikonversi ke PNG dan background putih polos dicoba dibuat transparan.');
  }).catch((err)=>{
   console.error('UPLOAD CLUB LOGO ERROR:',err);
@@ -910,7 +930,9 @@ function saveSponsorSlot(i){
  resizeImageFilePngTransparent(file,700,350).then(dataUrl=>{
   const list=sponsorsList(); while(list.length<4)list.push({}); list[i]={name,logo:dataUrl,format:'png-transparent'}; saveSponsorsList(list); renderSponsor();
   if(input)input.value='';
-  if($('sponsorAdminPass'))$('sponsorAdminPass').value=''; showToast('Sponsor tersimpan',`Sponsor ${i+1} dikonversi ke PNG. Background putih polos dicoba dibuat transparan.`);
+  if($('sponsorAdminPass'))$('sponsorAdminPass').value='';
+  if(typeof window.__flushFcStateSyncNow==='function')window.__flushFcStateSyncNow();
+  showToast('Sponsor tersimpan',`Sponsor ${i+1} dikonversi ke PNG. Background putih polos dicoba dibuat transparan.`);
  }).catch((err)=>{
   console.error('UPLOAD SPONSOR ERROR:',err);
   showToast('Gagal proses sponsor',err?.message||String(err)||'Coba pilih logo lain.','error');
