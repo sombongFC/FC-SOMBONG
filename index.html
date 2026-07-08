@@ -169,6 +169,18 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 .sponsorPreview img{background:transparent!important;object-fit:contain!important}
 @media(max-width:850px){.bannerUploadGrid{grid-template-columns:1fr}.bannerSlotPreview img{height:170px!important}}
 
+/* v2.16 Sponsor upload slot UI */
+.sponsorUploadGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.sponsorSlotBox{border:2px solid #e5e7eb;background:#fff;border-radius:20px;padding:14px;position:relative}
+.sponsorSlotBox .slotTitle{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;font-weight:900;color:#064e3b}
+.sponsorSlotBox .slotBadge{background:#dcfce7;color:#166534;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:900}
+.sponsorSlotPreview{min-height:118px;border:1px dashed #bbf7d0;background:linear-gradient(135deg,#f8fafc 0%,#f8fafc 25%,#eef2f7 25%,#eef2f7 50%,#f8fafc 50%,#f8fafc 75%,#eef2f7 75%,#eef2f7 100%);background-size:18px 18px;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;margin-top:10px;padding:12px;text-align:center}
+.sponsorSlotPreview img{height:72px!important;max-width:92%!important;object-fit:contain!important;border:0!important;border-radius:0!important;padding:0!important;margin:0 auto 8px!important;background:transparent!important;box-shadow:none!important}
+.sponsorSlotPreview .muted{text-align:center;margin:0;padding:14px}
+.sponsorSlotPreview b{display:block;color:#064e3b;margin-top:4px}
+.sponsorHint{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:14px;padding:10px 12px;color:#166534;font-size:13px;margin:10px 0 14px}
+@media(max-width:850px){.sponsorUploadGrid{grid-template-columns:1fr}.sponsorSlotPreview img{height:86px!important}}
+
 </style>
 </head>
 <body>
@@ -527,33 +539,38 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
     </div>
 
     <div class="panel">
-      <h2>Sponsor Website</h2>
-      <p class="muted">Upload sampai 4 logo sponsor. Semua akan tampil dengan ukuran seragam. File akan dikonversi otomatis menjadi PNG, dan background putih polos akan dicoba dibuat transparan otomatis. Khusus Super Admin.</p>
+      <h2>Upload Logo Sponsor</h2>
+      <p class="muted">Upload sampai 4 logo sponsor. Tampilan dibuat per slot seperti upload banner agar tidak membingungkan. File akan dikonversi otomatis menjadi PNG, dan background putih polos akan dicoba dibuat transparan otomatis. Khusus Super Admin.</p>
+      <div class="sponsorHint">Tips: isi nama sponsor, pilih logo, lalu klik tombol simpan pada slot yang sama. Preview tiap sponsor akan muncul di kotak masing-masing.</div>
       <label>Password Super Admin<input id="sponsorAdminPass" type="password" placeholder="Password Super Admin"></label>
-      <div class="grid two">
-        <div>
+      <div class="sponsorUploadGrid">
+        <div class="sponsorSlotBox">
+          <div class="slotTitle">Sponsor Utama <span class="slotBadge">Slot 1</span></div>
           <label>Nama Sponsor 1<input id="sponsorName0" placeholder="contoh: Rajakom"></label>
-          <label>Logo Sponsor 1<input id="sponsorLogo0" type="file" accept="image/*"></label>
-          <div class="grid compact"><button class="smallBtn" type="button" onclick="saveSponsorSlot(0)">Simpan</button><button class="secondary" type="button" onclick="clearSponsorSlot(0)">Hapus</button></div>
-          <div id="sponsorSlotPreview0" class="sponsorPreview"></div>
+          <label>Upload Logo Sponsor 1<input id="sponsorLogo0" type="file" accept="image/*"></label>
+          <div class="grid compact"><button class="smallBtn" type="button" onclick="saveSponsorSlot(0)">Simpan Sponsor 1</button><button class="secondary" type="button" onclick="clearSponsorSlot(0)">Hapus</button></div>
+          <div id="sponsorSlotPreview0" class="sponsorSlotPreview"></div>
         </div>
-        <div>
+        <div class="sponsorSlotBox">
+          <div class="slotTitle">Sponsor Kedua <span class="slotBadge">Slot 2</span></div>
           <label>Nama Sponsor 2<input id="sponsorName1" placeholder="contoh: Rajakom"></label>
-          <label>Logo Sponsor 2<input id="sponsorLogo1" type="file" accept="image/*"></label>
-          <div class="grid compact"><button class="smallBtn" type="button" onclick="saveSponsorSlot(1)">Simpan</button><button class="secondary" type="button" onclick="clearSponsorSlot(1)">Hapus</button></div>
-          <div id="sponsorSlotPreview1" class="sponsorPreview"></div>
+          <label>Upload Logo Sponsor 2<input id="sponsorLogo1" type="file" accept="image/*"></label>
+          <div class="grid compact"><button class="smallBtn" type="button" onclick="saveSponsorSlot(1)">Simpan Sponsor 2</button><button class="secondary" type="button" onclick="clearSponsorSlot(1)">Hapus</button></div>
+          <div id="sponsorSlotPreview1" class="sponsorSlotPreview"></div>
         </div>
-        <div>
+        <div class="sponsorSlotBox">
+          <div class="slotTitle">Sponsor Ketiga <span class="slotBadge">Slot 3</span></div>
           <label>Nama Sponsor 3<input id="sponsorName2" placeholder="contoh: Rajakom"></label>
-          <label>Logo Sponsor 3<input id="sponsorLogo2" type="file" accept="image/*"></label>
-          <div class="grid compact"><button class="smallBtn" type="button" onclick="saveSponsorSlot(2)">Simpan</button><button class="secondary" type="button" onclick="clearSponsorSlot(2)">Hapus</button></div>
-          <div id="sponsorSlotPreview2" class="sponsorPreview"></div>
+          <label>Upload Logo Sponsor 3<input id="sponsorLogo2" type="file" accept="image/*"></label>
+          <div class="grid compact"><button class="smallBtn" type="button" onclick="saveSponsorSlot(2)">Simpan Sponsor 3</button><button class="secondary" type="button" onclick="clearSponsorSlot(2)">Hapus</button></div>
+          <div id="sponsorSlotPreview2" class="sponsorSlotPreview"></div>
         </div>
-        <div>
+        <div class="sponsorSlotBox">
+          <div class="slotTitle">Sponsor Keempat <span class="slotBadge">Slot 4</span></div>
           <label>Nama Sponsor 4<input id="sponsorName3" placeholder="contoh: Rajakom"></label>
-          <label>Logo Sponsor 4<input id="sponsorLogo3" type="file" accept="image/*"></label>
-          <div class="grid compact"><button class="smallBtn" type="button" onclick="saveSponsorSlot(3)">Simpan</button><button class="secondary" type="button" onclick="clearSponsorSlot(3)">Hapus</button></div>
-          <div id="sponsorSlotPreview3" class="sponsorPreview"></div>
+          <label>Upload Logo Sponsor 4<input id="sponsorLogo3" type="file" accept="image/*"></label>
+          <div class="grid compact"><button class="smallBtn" type="button" onclick="saveSponsorSlot(3)">Simpan Sponsor 4</button><button class="secondary" type="button" onclick="clearSponsorSlot(3)">Hapus</button></div>
+          <div id="sponsorSlotPreview3" class="sponsorSlotPreview"></div>
         </div>
       </div>
     </div>
