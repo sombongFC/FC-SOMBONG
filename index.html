@@ -218,6 +218,16 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 .topRankPlayer strong{word-break:break-word}
 @media(max-width:760px){.miniTopPhotos{max-width:128px}.topRankPlayers{grid-template-columns:1fr!important}}
 
+
+
+/* v2.26 Banner fullscreen preview + Top Skor WA layout cleanup */
+.dashboardBanner{cursor:pointer}
+.bannerLightbox{position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.86);display:none;align-items:center;justify-content:center;padding:20px}
+.bannerLightbox.show{display:flex}
+.bannerLightbox img{max-width:96vw;max-height:92vh;object-fit:contain;border-radius:14px;background:#000;box-shadow:0 24px 80px rgba(0,0,0,.45)}
+.bannerLightboxHint{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);color:#fff;background:rgba(0,0,0,.35);padding:8px 12px;border-radius:999px;font-size:12px;font-weight:800}
+@media(max-width:760px){.bannerLightbox{padding:10px}.bannerLightbox img{max-width:98vw;max-height:88vh;border-radius:10px}}
+
 </style>
 </head>
 <body>
@@ -842,6 +852,30 @@ function bannerImages(){
 function saveBannerSlots(slots){
  return saveBigState('dashboard_banner_v1',{slots:slots.slice(0,4),updatedAt:new Date().toISOString()});
 }
+
+function openBannerFullscreen(src){
+ if(!src)return;
+ let lb=document.getElementById('bannerLightbox');
+ if(!lb){
+  lb=document.createElement('div');
+  lb.id='bannerLightbox';
+  lb.className='bannerLightbox';
+  lb.innerHTML='<img id="bannerLightboxImg" alt="Banner full"><div class="bannerLightboxHint">Klik area luar gambar untuk kembali</div>';
+  lb.addEventListener('click',function(e){ if(e.target===lb) closeBannerFullscreen(); });
+  document.body.appendChild(lb);
+ }
+ const img=document.getElementById('bannerLightboxImg');
+ if(img){ img.src=src; img.onclick=function(e){e.stopPropagation();}; }
+ lb.classList.add('show');
+ document.body.style.overflow='hidden';
+}
+function closeBannerFullscreen(){
+ const lb=document.getElementById('bannerLightbox');
+ if(lb)lb.classList.remove('show');
+ document.body.style.overflow='';
+}
+document.addEventListener('keydown',function(e){ if(e.key==='Escape')closeBannerFullscreen(); });
+
 function renderBanner(){
  const {slots}=bannerImages();
  const box=$('dashboardBanner'); const wrap=$('bannerSlides');
@@ -851,7 +885,7 @@ function renderBanner(){
   if(!slides.length){box.classList.add('hidden'); wrap.innerHTML='';}
   else{
    box.classList.remove('hidden');
-   wrap.innerHTML=slides.map((x,i)=>`<img class="bannerSlide${i===0?' active':''}" src="${x.src}" alt="Banner Slot ${x.slotIndex+1}" data-slot="${x.slotIndex+1}">`).join('');
+   wrap.innerHTML=slides.map((x,i)=>`<img class="bannerSlide${i===0?' active':''}" src="${x.src}" alt="Banner Slot ${x.slotIndex+1}" data-slot="${x.slotIndex+1}" onclick="openBannerFullscreen(this.src)" title="Klik untuk lihat gambar penuh">`).join('');
    if(slides.length>1){
     let idx=0;
     window.__bannerTimer=setInterval(()=>{
@@ -1544,112 +1578,176 @@ async function exportTopScorerImage(){
  if(!groups.length)return showToast('Belum ada data','Top skor masih kosong.','error');
  const photos=playerPhotos();
  const topGroups=groups.filter(g=>g.rank<=3);
- const restGroups=groups.filter(g=>g.rank>3); // v2.25: jangan dipotong supaya rank 4,5,6 dst tidak hilang
+ const restGroups=groups.filter(g=>g.rank>3);
  const topImgs=[];
  for(const g of topGroups){
   const imgs=[];
   for(const p of g.players){ imgs.push(await loadCanvasImage(photos[keyName(p.name)]||null)); }
   topImgs.push(imgs);
  }
+ const sponsorData=sponsors();
+ const sponsorList=(Array.isArray(sponsorData.slots)?sponsorData.slots:[]).filter(s=>s&&s.logo).slice(0,4);
+ const sponsorImgs=[];
+ for(const s of sponsorList){ sponsorImgs.push(await loadCanvasImage(s.logo)); }
+
  const W=1080;
  const pad=54;
- const headerH=198;
- const topH=topGroups.reduce((sum,g)=>sum+(g.players.length>1?172:126),0);
- const restH=restGroups.reduce((sum,g)=>sum+58,0);
- const footerH=170;
- const H=Math.max(1350,headerH+topH+(restGroups.length?34+restH:12)+footerH+70);
+ const headerH=206;
+ const footerH=190;
+ const topH=topGroups.reduce((sum,g)=>sum+(g.players.length>1?162:116),0);
+ const estimatedRestH=restGroups.reduce((sum,g)=>{
+  const names=String(g.names.join(', ')).toUpperCase();
+  const lines=Math.min(4,Math.max(1,Math.ceil(names.length/34)));
+  return sum+Math.max(58,34+(lines*30));
+ },0);
+ const H=Math.max(1350,headerH+topH+(restGroups.length?28+estimatedRestH:0)+footerH+70);
  const c=document.createElement('canvas'); c.width=W; c.height=H; const ctx=c.getContext('2d');
-
- // v2.25: format WA putih-hitam lebih padat. Foto tidak boleh menutup/menjauhkan tulisan.
  const bg='#ffffff', text='#111111', muted='#555555', line='#111111', soft='#f7f7f7';
  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
 
- function fitTextLocal(textValue,x,y,maxW,fontSize,minSize=16,align='left',color=text,weight='900'){
+ function setFont(size,weight='900',family='Arial Black, Arial'){ctx.font=`${weight} ${size}px ${family}`;}
+ function fitTextLocal(textValue,x,y,maxW,fontSize,minSize=14,align='left',color=text,weight='900'){
   let size=fontSize; ctx.textAlign=align; ctx.fillStyle=color;
-  do{ctx.font=`${weight} ${size}px Arial Black, Arial`; if(ctx.measureText(String(textValue)).width<=maxW || size<=minSize)break; size-=2;}while(size>minSize);
+  do{setFont(size,weight); if(ctx.measureText(String(textValue)).width<=maxW || size<=minSize)break; size-=2;}while(size>minSize);
   ctx.fillText(String(textValue),x,y);
  }
- function drawCompactDivider(y){ctx.strokeStyle=line; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(W-pad,y); ctx.stroke();}
+ function wrapLines(textValue,maxW,fontSize=26,weight='900',maxLines=4){
+  const words=String(textValue||'').split(/\s+/).filter(Boolean);
+  const lines=[]; let cur=''; setFont(fontSize,weight);
+  for(const word of words){
+   const test=cur?cur+' '+word:word;
+   if(ctx.measureText(test).width<=maxW){cur=test;}
+   else{
+    if(cur)lines.push(cur);
+    cur=word;
+   }
+  }
+  if(cur)lines.push(cur);
+  if(lines.length>maxLines){
+   const kept=lines.slice(0,maxLines);
+   let last=kept[kept.length-1];
+   while(ctx.measureText(last+'…').width>maxW && last.length>3)last=last.slice(0,-1);
+   kept[kept.length-1]=last+'…';
+   return kept;
+  }
+  return lines.length?lines:[''];
+ }
+ function drawDivider(y){ctx.strokeStyle=line; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(W-pad,y); ctx.stroke();}
+ function drawAvatarWhite(name,cx,cy,r,img){
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.closePath(); ctx.clip();
+  ctx.fillStyle='#ffffff'; ctx.fillRect(cx-r,cy-r,r*2,r*2);
+  if(img){
+   // Area dasar putih membuat semua foto tampil lebih seragam di export.
+   // Background asli tidak dihapus AI, tetapi area avatar selalu putih dan rapi.
+   const scale=Math.max((r*2)/img.width,(r*2)/img.height);
+   const iw=img.width*scale, ih=img.height*scale;
+   ctx.drawImage(img,cx-iw/2,cy-ih/2,iw,ih);
+  }else{
+   ctx.fillStyle='#f2f2f2'; ctx.fillRect(cx-r,cy-r,r*2,r*2);
+   ctx.fillStyle=text; setFont(Math.max(22,Math.round(r*0.70))); ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('#',cx,cy); ctx.textBaseline='alphabetic';
+  }
+  ctx.restore();
+  ctx.strokeStyle=text; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
+ }
  function drawNameUnderPhoto(px,py,r,img,name,maxW){
-  drawPlayerAvatar(ctx,name,px,py,r,img);
-  fitTextLocal(String(name||'').toUpperCase(),px,py+r+24,maxW,19,12,'center',text,'900');
+  drawAvatarWhite(name,px,py,r,img);
+  fitTextLocal(String(name||'').toUpperCase(),px,py+r+24,maxW,18,12,'center',text,'900');
  }
 
- // Header lebih pendek agar isi tidak terpotong saat dibagikan di WA
+ // Header putih hitam, sederhana untuk WhatsApp.
  ctx.textAlign='center'; ctx.fillStyle=text;
- ctx.font='900 28px Arial Black, Arial'; ctx.fillText('FC SOMBONG',W/2,42);
- ctx.font='900 78px Arial Black, Impact, Arial'; ctx.fillText('TOP SKOR',W/2,112);
+ setFont(28); ctx.fillText('FC SOMBONG',W/2,42);
+ setFont(78); ctx.fillText('TOP SKOR',W/2,112);
  ctx.strokeStyle=line; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(W/2-210,138); ctx.lineTo(W/2-72,138); ctx.moveTo(W/2+72,138); ctx.lineTo(W/2+210,138); ctx.stroke();
- ctx.font='900 26px Arial Black, Arial'; ctx.fillText('ALL TIME',W/2,148);
+ setFont(26); ctx.fillText('ALL TIME',W/2,148);
  ctx.fillStyle=muted; ctx.font='800 20px Arial'; ctx.fillText('UPDATE: '+topScorerUpdateDateLabel(),W/2,180);
 
  let y=206;
+ const rankX=pad+34;
+ const firstPhotoX=pad+122; // v2.26: semua grup foto mulai dari titik yang sama dengan rank 1.
+ const goalX=W-pad-8;
+
  topGroups.forEach((g,gi)=>{
   const together=g.players.length>1;
-  const rowH=together?158:112;
-  const x=pad, w=W-pad*2;
-
-  drawCompactDivider(y);
-  // Rank kiri dibuat dekat ke foto
-  ctx.fillStyle=text; ctx.textAlign='center'; ctx.font='900 58px Arial Black, Arial'; ctx.fillText(String(g.rank),x+34,y+72);
-  if(together){ctx.font='900 16px Arial'; ctx.fillText('BERSAMA',x+34,y+96);}
-
-  // Goal kanan
-  ctx.textAlign='right'; ctx.fillStyle=text; ctx.font='900 58px Arial Black, Arial'; ctx.fillText(String(g.goals),x+w-8,y+70);
-  ctx.font='900 22px Arial Black, Arial'; ctx.fillText('GOAL',x+w-8,y+96);
+  const rowH=together?156:112;
+  drawDivider(y);
+  ctx.fillStyle=text; ctx.textAlign='center'; setFont(58); ctx.fillText(String(g.rank),rankX,y+72);
+  if(together){ctx.font='900 16px Arial'; ctx.fillText('BERSAMA',rankX,y+96);}
+  ctx.textAlign='right'; setFont(58); ctx.fillText(String(g.goals),goalX,y+70);
+  setFont(22); ctx.fillText('GOAL',goalX,y+96);
 
   const imgs=topImgs[gi]||[];
   if(together){
-   // Foto sharing rank dibuat rapat dan berada satu baris, bukan terlalu jauh.
-   const n=Math.min(g.players.length,5);
-   const areaX=x+105;
-   const areaW=w-260;
-   const gap=Math.min(142,areaW/n);
-   const totalW=gap*n;
-   const startX=areaX+(areaW-totalW)/2+gap/2;
-   const r=n>=4?36:40;
-   g.players.slice(0,5).forEach((p,i)=>{
-    const px=startX+gap*i;
-    drawNameUnderPhoto(px,y+55,r,imgs[i],p.name,Math.min(132,gap+6));
-   });
-   if(g.players.length>5){
-    ctx.fillStyle=muted; ctx.font='800 15px Arial'; ctx.textAlign='center';
-    ctx.fillText('+'+(g.players.length-5)+' pemain lain',areaX+areaW/2,y+rowH-12);
+   const players=g.players;
+   const maxShown=Math.min(players.length,5);
+   const r=maxShown>=4?34:38;
+   const gap=maxShown>=4?128:148;
+   // Mulai persis sejajar dengan foto rank 1, tidak ada space kosong di kiri.
+   for(let i=0;i<maxShown;i++){
+    const px=firstPhotoX+(gap*i);
+    drawNameUnderPhoto(px,y+56,r,imgs[i],players[i].name,Math.min(128,gap-8));
+   }
+   if(players.length>5){
+    ctx.fillStyle=muted; ctx.font='800 15px Arial'; ctx.textAlign='left';
+    ctx.fillText('+'+(players.length-5)+' pemain lain',firstPhotoX+(gap*maxShown)+10,y+62);
    }
   }else{
    const p=g.players[0];
-   const photoX=x+122;
-   drawPlayerAvatar(ctx,p.name,photoX,y+56,42,imgs[0]);
-   // Nama langsung di kanan foto, jarak dibuat dekat.
-   fitTextLocal(String(p.name).toUpperCase(),photoX+62,y+70,w-330,40,22,'left',text,'900');
+   drawAvatarWhite(p.name,firstPhotoX,y+56,42,imgs[0]);
+   fitTextLocal(String(p.name).toUpperCase(),firstPhotoX+66,y+70,W-firstPhotoX-270,40,22,'left',text,'900');
   }
   y+=rowH;
  });
- drawCompactDivider(y);
+ drawDivider(y);
 
  if(restGroups.length){
   y+=24;
   restGroups.forEach((g,idx)=>{
-   const rowH=58;
    const x=pad, w=W-pad*2;
-   if(idx%2===0){ctx.fillStyle=soft; ctx.fillRect(x,y-4,w,rowH);}
-   ctx.fillStyle=text; ctx.font='900 34px Arial Black, Arial'; ctx.textAlign='center'; ctx.fillText(String(g.rank),x+34,y+38);
-   // Semua pencetak goal rank 4 ke bawah tetap ditampilkan, termasuk jika ada nama sharing rank.
    const names=String(g.names.join(', ')).toUpperCase();
-   fitTextLocal(names,x+82,y+37,w-205,27,16,'left',text,'900');
-   ctx.textAlign='right'; ctx.font='900 34px Arial Black, Arial'; ctx.fillText(String(g.goals),W-pad-14,y+35);
+   const nameMaxW=w-225;
+   const lines=wrapLines(names,nameMaxW,27,'900',4);
+   const rowH=Math.max(58,34+(lines.length*30));
+   if(idx%2===0){ctx.fillStyle=soft; ctx.fillRect(x,y-4,w,rowH);}
+   ctx.fillStyle=text; setFont(34); ctx.textAlign='center'; ctx.fillText(String(g.rank),x+34,y+38);
+   ctx.textAlign='left'; ctx.fillStyle=text; setFont(27);
+   lines.forEach((ln,i)=>ctx.fillText(ln,x+82,y+37+(i*28)));
+   ctx.textAlign='right'; setFont(34); ctx.fillText(String(g.goals),W-pad-14,y+35);
    ctx.font='800 13px Arial'; ctx.fillText('GOAL',W-pad-14,y+52);
    ctx.strokeStyle='#d9d9d9'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(x,y+rowH); ctx.lineTo(x+w,y+rowH); ctx.stroke();
    y+=rowH;
   });
  }
 
- y+=10;
+ y+=12;
  ctx.fillStyle=muted; ctx.font='800 18px Arial'; ctx.textAlign='center';
  ctx.fillText('Gol sama = peringkat sama • Rank 1–3 memakai foto profil',W/2,y+24);
 
- await drawSponsorFooter(ctx,W,H,{footerH});
- if(safeDownloadCanvas(c,'top-skor-wa-putih-hitam-v225-'+new Date().toISOString().slice(0,10)+'.png')) showToast('Export berhasil','Gambar Top Skor v2.25 sudah dirapikan untuk WhatsApp.');
+ // Footer sponsor mengikuti sponsor yang diupload di website.
+ const footerTop=H-footerH;
+ ctx.strokeStyle=line; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(pad,footerTop+8); ctx.lineTo(W-pad,footerTop+8); ctx.stroke();
+ ctx.fillStyle=text; setFont(22); ctx.textAlign='center'; ctx.fillText('SPONSORED BY',W/2,footerTop+48);
+ const slots=4;
+ const slotW=(W-pad*2-24)/slots;
+ for(let i=0;i<slots;i++){
+  const sx=pad+i*(slotW+8); const sy=footerTop+68; const sh=76;
+  ctx.strokeStyle='#e5e5e5'; ctx.lineWidth=1; ctx.strokeRect(sx,sy,slotW,sh);
+  const sp=sponsorList[i]; const img=sponsorImgs[i];
+  if(sp&&img){
+   const maxLogoW=slotW-26, maxLogoH=40;
+   const sc=Math.min(maxLogoW/img.width,maxLogoH/img.height,1);
+   const lw=img.width*sc, lh=img.height*sc;
+   ctx.drawImage(img,sx+(slotW-lw)/2,sy+12,lw,lh);
+   fitTextLocal(String(sp.name||'SPONSOR').toUpperCase(),sx+slotW/2,sy+64,slotW-12,12,9,'center',text,'800');
+  }else{
+   ctx.fillStyle=muted; ctx.font='800 13px Arial'; ctx.textAlign='center'; ctx.fillText('SPONSOR '+(i+1),sx+slotW/2,sy+43);
+  }
+ }
+ ctx.fillStyle=text; ctx.font='900 16px Arial'; ctx.textAlign='center';
+ ctx.fillText('FC SOMBONG • COMMUNITY LEAGUE MANAGEMENT',W/2,H-22);
+
+ if(safeDownloadCanvas(c,'top-skor-wa-putih-hitam-v226-'+new Date().toISOString().slice(0,10)+'.png')) showToast('Export berhasil','Gambar Top Skor v2.26 sudah dirapikan untuk WhatsApp.');
 }
 
 function bindTopScorerExport(){
