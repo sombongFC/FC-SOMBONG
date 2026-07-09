@@ -194,6 +194,16 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 .clubLogoFileName{font-size:12px;color:#64748b;margin-top:8px;word-break:break-word}
 @media(max-width:760px){.logoButtonRow{grid-template-columns:1fr}.logoPreviewBox{min-height:105px}.logoPreviewBox img{max-height:86px;max-width:180px}}
 
+
+
+/* v2.20 Banner 4 slot + top scorer shared-rank layout */
+.bannerSlotCard{border:2px solid var(--green-border);background:linear-gradient(180deg,#ffffff,#f7fff9);border-radius:22px;padding:16px;margin-bottom:12px}
+.bannerSlotCard h3{margin:0 0 8px;color:var(--green-dark)}
+.bannerSlotPreview img{width:100%;max-width:520px;height:160px;object-fit:cover;border-radius:16px;border:1px solid #dbe7df;background:#000;padding:0;margin-top:10px}
+.bannerSlotPreview .emptyPreview{height:120px;border:1px dashed #b7cfc0;border-radius:16px;display:flex;align-items:center;justify-content:center;color:#64748b;background:#f8fafc;margin-top:10px}
+.topRankSection{display:grid;gap:12px;margin:14px 0 18px}.topRankGroup{border:2px solid #bbf7d0;background:linear-gradient(180deg,#fff,#f0fdf4);border-radius:22px;padding:14px}.topRankHead{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px}.topRankBadge{display:inline-flex;align-items:center;gap:6px;background:#052e16;color:#ffd21a;border-radius:999px;padding:8px 12px;font-weight:900}.topRankGoals{font-weight:900;color:#065f46;font-size:22px}.topRankPlayers{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}.topRankPlayer{display:grid;grid-template-columns:58px 1fr;gap:10px;align-items:center;background:#fff;border:1px solid #dcfce7;border-radius:18px;padding:10px}.topRankPlayer .rankPhoto{width:58px;height:58px}.topRankPlayer strong{display:block;line-height:1.15}.topRankPlayer small{color:#64748b;font-weight:700}.topOtherList{border-top:1px solid #e5e7eb;margin-top:12px;padding-top:12px}.topOtherRow{display:grid;grid-template-columns:54px 1fr auto;gap:10px;align-items:start;padding:10px 0;border-bottom:1px solid #eef2f7}.topOtherRank{font-weight:900;color:#065f46}.topOtherNames{font-weight:800}.topSharedNote{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:14px;padding:10px;margin:10px 0;font-weight:700}
+@media(max-width:760px){.bannerSlotPreview img{height:125px}.topRankPlayers{grid-template-columns:1fr}.topOtherRow{grid-template-columns:42px 1fr auto}}
+
 </style>
 </head>
 <body>
@@ -227,7 +237,7 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
     </div>
     <div class="grid three">
       <div class="panel"><h2>Recent Matches</h2><div id="recentMatches"></div></div>
-      <div class="panel"><h2>Quick Klasemen</h2><div id="miniStandings"></div></div>
+      <div class="panel"><h2>Quick Klasemen</h2><p class="muted" style="margin-top:-8px"><b>All Time Klasemen</b> dari semua pertandingan.</p><div id="miniStandings"></div></div>
       <div class="panel"><h2>Top Skor</h2><div id="miniTopScorers"></div></div>
     </div>
   </section>
@@ -517,26 +527,32 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 
     <div class="panel">
       <h2>Banner Dashboard</h2>
-      <p class="muted">Upload sampai 3 gambar. Kalau lebih dari satu terisi, banner akan otomatis berganti tiap 4 detik di halaman Dashboard. Khusus Super Admin.</p>
+      <p class="muted">Upload sampai 4 gambar. Kalau lebih dari satu terisi, banner akan otomatis berganti tiap 4 detik di halaman Dashboard. Khusus Super Admin.</p>
       <label>Password Super Admin<input id="bannerAdminPass" type="password" placeholder="Password Super Admin"></label>
       <div class="bannerUploadGrid">
-        <div class="bannerSlotBox">
+        <div class="bannerSlotBox bannerSlotCard">
           <div class="slotTitle">Banner Utama <span class="slotBadge">Slot 1</span></div>
           <label>Upload Banner Utama<input id="bannerFile0" type="file" accept="image/*"></label>
           <div class="grid compact"><button class="smallBtn" type="button" onclick="uploadBannerSlot(0)">Simpan Banner 1</button><button class="secondary" type="button" onclick="clearBannerSlot(0)">Hapus</button></div>
           <div id="bannerSlotPreview0" class="bannerSlotPreview"></div>
         </div>
-        <div class="bannerSlotBox">
+        <div class="bannerSlotBox bannerSlotCard">
           <div class="slotTitle">Banner Kedua <span class="slotBadge">Slot 2</span></div>
           <label>Upload Banner Kedua<input id="bannerFile1" type="file" accept="image/*"></label>
           <div class="grid compact"><button class="smallBtn" type="button" onclick="uploadBannerSlot(1)">Simpan Banner 2</button><button class="secondary" type="button" onclick="clearBannerSlot(1)">Hapus</button></div>
           <div id="bannerSlotPreview1" class="bannerSlotPreview"></div>
         </div>
-        <div class="bannerSlotBox">
+        <div class="bannerSlotBox bannerSlotCard">
           <div class="slotTitle">Banner Ketiga <span class="slotBadge">Slot 3</span></div>
           <label>Upload Banner Ketiga<input id="bannerFile2" type="file" accept="image/*"></label>
           <div class="grid compact"><button class="smallBtn" type="button" onclick="uploadBannerSlot(2)">Simpan Banner 3</button><button class="secondary" type="button" onclick="clearBannerSlot(2)">Hapus</button></div>
           <div id="bannerSlotPreview2" class="bannerSlotPreview"></div>
+        </div>
+        <div class="bannerSlotBox bannerSlotCard">
+          <div class="slotTitle">Banner Keempat <span class="slotBadge">Slot 4</span></div>
+          <label>Upload Banner Keempat<input id="bannerFile3" type="file" accept="image/*"></label>
+          <div class="grid compact"><button class="smallBtn" type="button" onclick="uploadBannerSlot(3)">Simpan Banner 4</button><button class="secondary" type="button" onclick="clearBannerSlot(3)">Hapus</button></div>
+          <div id="bannerSlotPreview3" class="bannerSlotPreview"></div>
         </div>
       </div>
     </div>
@@ -805,12 +821,12 @@ function clubLogo(){return readBigState('club_logo_v1','{}')}
 function saveClubLogo(obj){return saveBigState('club_logo_v1',obj||{})}
 function bannerImages(){
  const d=readBigState('dashboard_banner_v1','{}');
- let slots=Array.isArray(d.slots)?d.slots.slice(0,3):[d.image||null,null,null];
- while(slots.length<3)slots.push(null);
+ let slots=Array.isArray(d.slots)?d.slots.slice(0,4):[d.image||null,null,null,null];
+ while(slots.length<4)slots.push(null);
  return {slots};
 }
 function saveBannerSlots(slots){
- return saveBigState('dashboard_banner_v1',{slots:slots.slice(0,3),updatedAt:new Date().toISOString()});
+ return saveBigState('dashboard_banner_v1',{slots:slots.slice(0,4),updatedAt:new Date().toISOString()});
 }
 function renderBanner(){
  const {slots}=bannerImages();
@@ -832,9 +848,9 @@ function renderBanner(){
    }
   }
  }
- for(let i=0;i<3;i++){
+ for(let i=0;i<4;i++){
   const prev=$('bannerSlotPreview'+i);
-  if(prev)prev.innerHTML=slots[i]?`<img src="${slots[i]}" alt="Preview Banner Slot ${i+1}">`:`<p class="muted">Slot ${i+1} kosong.</p>`;
+  if(prev)prev.innerHTML=slots[i]?`<img src="${slots[i]}" alt="Preview Banner Slot ${i+1}">`:`<div class="emptyPreview">Banner Slot ${i+1} kosong</div>`;
  }
 }
 function uploadBannerSlot(i){
@@ -845,7 +861,7 @@ function uploadBannerSlot(i){
  if(!file)return showToast('Gambar belum dipilih',`Upload file untuk Banner Slot ${i+1} terlebih dahulu.`,'error');
  if(file.size>15000000)return showToast('File terlalu besar','Gunakan gambar di bawah 15 MB.','error');
  resizeImageFile(file,960,540,0.58).then(dataUrl=>{
-  const {slots}=bannerImages(); while(slots.length<3)slots.push(null); slots[i]=dataUrl;
+  const {slots}=bannerImages(); while(slots.length<4)slots.push(null); slots[i]=dataUrl;
   if(!saveBannerSlots(slots))return;
   renderBanner();
   if(input)input.value='';
@@ -859,7 +875,7 @@ function uploadBannerSlot(i){
 function clearBannerSlot(i){
  const pass=String($('bannerAdminPass')?.value||'').trim();
  if(pass!==compSettings().superAdminPassword)return showToast('Password salah','Banner hanya bisa dihapus oleh Super Admin.','error');
- const {slots}=bannerImages(); while(slots.length<3)slots.push(null); slots[i]=null; saveBannerSlots(slots); renderBanner();
+ const {slots}=bannerImages(); while(slots.length<4)slots.push(null); slots[i]=null; saveBannerSlots(slots); renderBanner();
  showToast('Banner dihapus',`Banner Slot ${i+1} sudah dikosongkan.`);
 }
 function renderClubLogo(){
@@ -1211,18 +1227,38 @@ function ensureSuperAdminForAction(actionLabel='aksi ini'){
 function deleteMatch(idx){if(!ensureSuperAdminForAction('hapus match'))return; const data=load(); const m=data[idx]; if(!m)return; if(!confirm(`Hapus match ${m.home} ${m.hs}-${m.as} ${m.away}?`))return; data.splice(idx,1); save(data); render(); showToast('Match dihapus','Klasemen dan Top Scorer otomatis dihitung ulang.')}
 function renderTopScorers(ps){
  const photos=playerPhotos();
- const scorers=ps.filter(p=>p.goals>0);
- if(!scorers.length)return '<p class="muted">Belum ada pencetak gol.</p>';
- return scorers.map((p,i)=>{
-  const src=photos[keyName(p.name)]||'';
-  return `<div class="topScorerCard cleanTopScorer"><div>${src?`<img class="rankPhoto" src="${src}">`:'<div class="rankPhoto"></div>'}</div><div><strong>${i+1}. ${escapeHtml(p.name)}</strong><div class="muted">${escapeHtml(p.teams)} • Main ${p.appearances}x${p.initialGoals?` • Goal awal ${p.initialGoals}`:''} • Avg ${p.goalPerMatch} goal/main${i<5?' • Top 5':''}</div></div><span class="badge">${p.goals} goal</span></div>`;
- }).join('');
+ const groups=rankedTopScorerGroups();
+ if(!groups.length)return '<p class="muted">Belum ada pencetak gol.</p>';
+ const medal=r=>r===1?'🥇':(r===2?'🥈':(r===3?'🥉':'#'+r));
+ const topGroups=groups.filter(g=>g.rank<=3);
+ const restGroups=groups.filter(g=>g.rank>3);
+ let html='<div class="topSharedNote">Peringkat memakai sistem sharing rank: jika jumlah gol sama, pemain berbagi peringkat yang sama. Contoh: 35 gol ada 3 pemain, semuanya Rank #1 dan peringkat berikutnya menjadi #4.</div>';
+ if(topGroups.length){
+  html+='<div class="topRankSection">';
+  topGroups.forEach(g=>{
+   html+=`<div class="topRankGroup"><div class="topRankHead"><span class="topRankBadge">${medal(g.rank)} Rank #${g.rank}</span><span class="topRankGoals">${g.goals} goal</span></div><div class="topRankPlayers">`;
+   g.players.forEach(p=>{
+    const src=photos[keyName(p.name)]||'';
+    html+=`<div class="topRankPlayer"><div>${src?`<img class="rankPhoto" src="${src}" alt="${escapeHtml(p.name)}">`:'<div class="rankPhoto"></div>'}</div><div><strong>${escapeHtml(p.name)}</strong><small>${escapeHtml(p.teams)} • Main ${p.appearances}x${p.initialGoals?` • Goal awal ${p.initialGoals}`:''}</small></div></div>`;
+   });
+   html+='</div></div>';
+  });
+  html+='</div>';
+ }
+ if(restGroups.length){
+  html+='<div class="topOtherList"><h3>Peringkat Berikutnya</h3>';
+  restGroups.forEach(g=>{
+   html+=`<div class="topOtherRow"><span class="topOtherRank">#${g.rank}</span><span class="topOtherNames">${g.names.map(escapeHtml).join(', ')}</span><span class="badge">${g.goals} goal</span></div>`;
+  });
+  html+='</div>';
+ }
+ return html;
 }
 function bindTopScorerUploads(){}
 function render(){applyLeagueTitle(); const matches=load(), st=standings(matches), ps=playerStats(); $('statTeams').textContent=activeTeams().length; $('statMatches').textContent=matches.length; $('statGoals').textContent=matches.reduce((s,m)=>s+m.hs+m.as,0); $('statTop').textContent=ps[0]?`${ps[0].name} (${ps[0].goals})`:'-'; $('recentMatches').innerHTML=renderMatches(matches.slice(-6), false); $('matchList').innerHTML=renderMatches(matches, false); if($('adminMatchList')) $('adminMatchList').innerHTML=renderAdminMatches(matches);
  $('miniStandings').innerHTML=st.slice(0,5).map((r,i)=>{const dotColor=i===0?'#16a34a':(i===st.slice(0,5).length-1?'#dc2626':'#f59e0b'); return `<div class="standingRow"><span><span class="rankDot" style="background:${dotColor}"></span>${i+1}. ${escapeHtml(r.team)}</span><span class="badge">${r.pts} pts</span></div>`}).join('')||'<p class="muted">Belum ada klasemen.</p>';
- const photos=playerPhotos(); const topFive=ps.slice(0,5);
- $('miniTopScorers').innerHTML=topFive.length?topFive.map((p,i)=>{const img=photos[keyName(p.name)]; const avatar=img?`<img class="miniTopAvatar" src="${img}" alt="${escapeHtml(p.name)}">`:`<span class="miniTopAvatar placeholder">👤</span>`; return `<div class="miniTopRow"><span class="miniTopRank">${i+1}</span>${avatar}<span class="miniTopName">${escapeHtml(p.name)}</span><span class="miniTopGoals">${p.goals}</span></div>`}).join(''):'<p class="muted">Belum ada top skor.</p>';
+ const photos=playerPhotos(); const topGroups=rankedTopScorerGroups().slice(0,5);
+ $('miniTopScorers').innerHTML=topGroups.length?topGroups.map((g)=>{const names=g.names.map(escapeHtml).join(', '); const first=g.players&&g.players[0]; const img=(g.rank<=3&&first)?photos[keyName(first.name)]:''; const avatar=img?`<img class="miniTopAvatar" src="${img}" alt="${escapeHtml(first.name)}">`:`<span class="miniTopAvatar placeholder">${g.rank<=3?'👤':'#'}</span>`; return `<div class="miniTopRow"><span class="miniTopRank">${g.rank}</span>${avatar}<span class="miniTopName">${names}</span><span class="miniTopGoals">${g.goals}</span></div>`}).join(''):'<p class="muted">Belum ada top skor.</p>';
  renderStandingsTable(matches);
  renderTeamPlayerColumns();
  renderSponsor(); renderClubLogo(); renderBanner(); renderFinance();
@@ -1298,12 +1334,14 @@ function clearInitialGoals(){
 
 function rankedTopScorerGroups(){
  const scorers=playerStats().filter(p=>p.goals>0).sort((a,b)=>(b.goals-a.goals)||a.name.localeCompare(b.name));
- const groups=[]; let prevGoals=null;
- scorers.forEach((p)=>{
+ const groups=[]; let prevGoals=null; let currentRank=0;
+ scorers.forEach((p,idx)=>{
   if(p.goals!==prevGoals){
-   groups.push({rank:groups.length+1,goals:p.goals,names:[p.name]});
+   currentRank=idx+1; // sharing rank: 1,1,1,4
+   groups.push({rank:currentRank,goals:p.goals,players:[p],names:[p.name]});
    prevGoals=p.goals;
   } else {
+   groups[groups.length-1].players.push(p);
    groups[groups.length-1].names.push(p.name);
   }
  });
@@ -1466,62 +1504,59 @@ function regroupFlatByRank(flatItems){
 async function exportTopScorerImage(){
  const groups=rankedTopScorerGroups();
  if(!groups.length)return showToast('Belum ada data','Top skor masih kosong.','error');
- const flat=[]; groups.forEach(g=>g.names.forEach(n=>flat.push({rank:g.rank,goals:g.goals,name:n})));
- const topFlat=flat.slice(0,5);
- const restGroups=regroupFlatByRank(flat.slice(5));
+ const topGroups=groups.filter(g=>g.rank<=3);
+ const restGroups=groups.filter(g=>g.rank>3);
  const photos=playerPhotos();
- const topImgs=await Promise.all(topFlat.map(p=>loadCanvasImage(photos[keyName(p.name)]||null)));
+ const topPlayers=[]; topGroups.forEach(g=>g.players.forEach(p=>topPlayers.push({rank:g.rank,goals:g.goals,name:p.name})));
+ const topImgs=await Promise.all(topPlayers.map(p=>loadCanvasImage(photos[keyName(p.name)]||null)));
  const W=1080, pad=56;
- const headerH=200, topRowH=118, restRowH=72;
- const restExtra=restGroups.reduce((s,g)=>s+Math.max(0,g.names.length-1)*26,0);
- const restHeaderH=restGroups.length?70:0;
- const H=headerH + topFlat.length*topRowH + restHeaderH + restGroups.length*restRowH + restExtra + 210;
+ const headerH=210, topRowH=126, restRowH=76;
+ const restExtra=restGroups.reduce((s,g)=>s+Math.max(0,g.names.length-1)*24,0);
+ const restHeaderH=restGroups.length?72:0;
+ const H=headerH + Math.max(1,topPlayers.length)*topRowH + restHeaderH + restGroups.length*restRowH + restExtra + 210;
  const c=document.createElement('canvas'); c.width=W; c.height=H; const ctx=c.getContext('2d');
  ctx.fillStyle='#050505'; ctx.fillRect(0,0,W,H);
- const grad=ctx.createLinearGradient(0,0,W,0); grad.addColorStop(0,'#062b18'); grad.addColorStop(.5,'#00964a'); grad.addColorStop(1,'#062b18'); ctx.fillStyle=grad; ctx.fillRect(0,0,W,18);
- ctx.textAlign='center'; ctx.fillStyle='#f4f4f4'; ctx.font='900 68px Arial Black, Impact, Arial'; ctx.fillText('TOP SKOR FC SOMBONG',W/2,84);
- ctx.fillStyle='#ffd21a'; ctx.font='800 36px Arial Black, Arial'; ctx.fillText('UPDATE '+topScorerUpdateDateLabel(),W/2,136);
- ctx.strokeStyle='#ffd21a'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(pad,158); ctx.lineTo(W-pad,158); ctx.stroke();
+ const grad=ctx.createLinearGradient(0,0,W,0); grad.addColorStop(0,'#062b18'); grad.addColorStop(.5,'#00964a'); grad.addColorStop(1,'#062b18'); ctx.fillStyle=grad; ctx.fillRect(0,0,W,20);
+ ctx.textAlign='center'; ctx.fillStyle='#f4f4f4'; ctx.font='900 70px Arial Black, Impact, Arial'; ctx.fillText('TOP SKOR FC SOMBONG',W/2,88);
+ ctx.fillStyle='#ffd21a'; ctx.font='800 34px Arial Black, Arial'; ctx.fillText('SHARED RANKING • UPDATE '+topScorerUpdateDateLabel(),W/2,140);
+ ctx.fillStyle='rgba(255,255,255,.72)'; ctx.font='700 24px Arial'; ctx.fillText('Pemain dengan jumlah gol sama berbagi peringkat yang sama',W/2,176);
+ ctx.strokeStyle='#ffd21a'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(pad,190); ctx.lineTo(W-pad,190); ctx.stroke();
  let y=headerH;
- // Top 5 dengan foto
- topFlat.forEach((p,i)=>{
-  const cy=y+topRowH/2, r=44;
+ topPlayers.forEach((p,i)=>{
+  const cy=y+topRowH/2, r=46;
   if(i%2===1){ctx.fillStyle='rgba(255,255,255,.04)'; ctx.fillRect(0,y,W,topRowH);}
   drawPlayerAvatar(ctx,p.name,pad+r,cy,r,topImgs[i]);
-  ctx.fillStyle='#ffd21a'; ctx.font='900 26px Arial Black, Arial'; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillText(String(p.rank),pad+r,cy+r+18);
-  ctx.fillStyle='#f6f6f6'; ctx.font='800 38px Arial'; ctx.textAlign='left';
-  ctx.fillText(p.name,pad+2*r+34,cy);
-  ctx.fillStyle='#ffd21a'; ctx.font='900 52px Arial Black, Arial'; ctx.textAlign='right';
-  ctx.fillText(String(p.goals),W-pad,cy+2);
+  ctx.fillStyle='#ffd21a'; ctx.font='900 25px Arial Black, Arial'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('RANK',pad+r,cy+r+18);
+  ctx.fillText('#'+p.rank,pad+r,cy+r+45);
+  ctx.fillStyle='#f6f6f6'; ctx.font='800 38px Arial'; ctx.textAlign='left'; ctx.fillText(p.name,pad+2*r+38,cy-4);
+  ctx.fillStyle='rgba(255,255,255,.68)'; ctx.font='700 22px Arial'; ctx.fillText(p.rank===1?'Pemuncak top skor':'Top 3 ranking',pad+2*r+38,cy+30);
+  ctx.fillStyle='#ffd21a'; ctx.font='900 54px Arial Black, Arial'; ctx.textAlign='right'; ctx.fillText(String(p.goals),W-pad,cy-4);
+  ctx.fillStyle='rgba(255,255,255,.72)'; ctx.font='800 22px Arial'; ctx.fillText('GOAL',W-pad,cy+32);
   ctx.textBaseline='alphabetic';
   ctx.strokeStyle='rgba(255,255,255,.18)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(pad,y+topRowH-2); ctx.lineTo(W-pad,y+topRowH-2); ctx.stroke();
   y+=topRowH;
  });
  if(restGroups.length){
   y+=24;
-  ctx.fillStyle='rgba(255,255,255,.6)'; ctx.font='800 24px Arial'; ctx.textAlign='left'; ctx.fillText('PEMAIN LAINNYA',pad,y+24);
-  ctx.strokeStyle='#ffd21a'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(pad,y+40); ctx.lineTo(W-pad,y+40); ctx.stroke();
-  y+=restHeaderH;
-  ctx.textBaseline='top';
+  ctx.fillStyle='rgba(255,255,255,.65)'; ctx.font='800 25px Arial'; ctx.textAlign='left'; ctx.fillText('PERINGKAT BERIKUTNYA',pad,y+24);
+  ctx.strokeStyle='#ffd21a'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(pad,y+42); ctx.lineTo(W-pad,y+42); ctx.stroke();
+  y+=restHeaderH; ctx.textBaseline='top';
   restGroups.forEach(g=>{
-   const names=g.names;
-   const blockH=restRowH + Math.max(0,names.length-1)*26;
+   const names=g.names; const blockH=restRowH + Math.max(0,names.length-1)*24;
    ctx.strokeStyle='rgba(255,255,255,.16)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(pad,y+blockH-14); ctx.lineTo(W-pad,y+blockH-14); ctx.stroke();
-   ctx.fillStyle='#ffd21a'; ctx.font='900 34px Arial Black, Arial'; ctx.textAlign='center'; ctx.fillText(String(g.rank),pad+30,y+4);
-   ctx.fillStyle='#e5e7eb'; ctx.font='800 28px Arial'; ctx.textAlign='left';
-   names.forEach((n,i)=>{const bullet=names.length>1?'• ':''; wrapCanvasText(ctx,bullet+n,pad+72,y+i*28,720,28);});
-   ctx.fillStyle='#ffd21a'; ctx.font='900 36px Arial Black, Arial'; ctx.textAlign='right'; ctx.fillText(String(g.goals),W-pad,y+2);
+   ctx.fillStyle='#ffd21a'; ctx.font='900 34px Arial Black, Arial'; ctx.textAlign='center'; ctx.fillText('#'+g.rank,pad+36,y+5);
+   ctx.fillStyle='#e5e7eb'; ctx.font='800 28px Arial'; ctx.textAlign='left'; names.forEach((n,i)=>wrapCanvasText(ctx,(names.length>1?'• ':'')+n,pad+92,y+4+i*26,690,28));
+   ctx.fillStyle='#ffd21a'; ctx.font='900 38px Arial Black, Arial'; ctx.textAlign='right'; ctx.fillText(String(g.goals),W-pad,y+2);
+   ctx.fillStyle='rgba(255,255,255,.7)'; ctx.font='700 18px Arial'; ctx.fillText('goal',W-pad,y+40);
    y+=blockH;
   });
   ctx.textBaseline='alphabetic';
  }
- y+=20;
- ctx.strokeStyle='#ffd21a'; ctx.lineWidth=2; ctx.strokeRect(pad,y,W-pad*2,44);
- ctx.fillStyle='#ffd21a'; ctx.font='800 22px Arial'; ctx.textAlign='center'; ctx.fillText('CATATAN: OWN GOAL TIDAK DICANTUMKAN',W/2,y+28);
- y+=44+20;
+ y+=20; ctx.strokeStyle='#ffd21a'; ctx.lineWidth=2; ctx.strokeRect(pad,y,W-pad*2,48);
+ ctx.fillStyle='#ffd21a'; ctx.font='800 22px Arial'; ctx.textAlign='center'; ctx.fillText('CATATAN: OWN GOAL TIDAK DICANTUMKAN • FOTO HANYA UNTUK RANK 1-3',W/2,y+31);
+ y+=68;
  await drawSponsorFooter(ctx,W,H,{footerH:H-y});
- if(safeDownloadCanvas(c,'top-skor-fc-sombong-'+new Date().toISOString().slice(0,10)+'.png')) showToast('Export berhasil','Gambar Top Skor sudah dibuat.');
+ if(safeDownloadCanvas(c,'top-skor-fc-sombong-'+new Date().toISOString().slice(0,10)+'.png')) showToast('Export berhasil','Gambar Top Skor sudah dibuat dengan shared ranking.');
 }
 function bindTopScorerExport(){
  if($('topScorerExportDate') && !$('topScorerExportDate').value) $('topScorerExportDate').value=new Date().toISOString().slice(0,10);
