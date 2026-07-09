@@ -204,6 +204,19 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 .topRankSection{display:grid;gap:12px;margin:14px 0 18px}.topRankGroup{border:2px solid #bbf7d0;background:linear-gradient(180deg,#fff,#f0fdf4);border-radius:22px;padding:14px}.topRankHead{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px}.topRankBadge{display:inline-flex;align-items:center;gap:6px;background:#052e16;color:#ffd21a;border-radius:999px;padding:8px 12px;font-weight:900}.topRankGoals{font-weight:900;color:#065f46;font-size:22px}.topRankPlayers{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:10px}.topRankPlayer{display:grid;grid-template-columns:58px 1fr;gap:10px;align-items:center;background:#fff;border:1px solid #dcfce7;border-radius:18px;padding:10px}.topRankPlayer .rankPhoto{width:58px;height:58px}.topRankPlayer strong{display:block;line-height:1.15}.topRankPlayer small{color:#64748b;font-weight:700}.topOtherList{border-top:1px solid #e5e7eb;margin-top:12px;padding-top:12px}.topOtherRow{display:grid;grid-template-columns:54px 1fr auto;gap:10px;align-items:start;padding:10px 0;border-bottom:1px solid #eef2f7}.topOtherRank{font-weight:900;color:#065f46}.topOtherNames{font-weight:800}.topSharedNote{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:14px;padding:10px;margin:10px 0;font-weight:700}
 @media(max-width:760px){.bannerSlotPreview img{height:125px}.topRankPlayers{grid-template-columns:1fr}.topOtherRow{grid-template-columns:42px 1fr auto}}
 
+
+/* v2.21 Top skor dense shared rank + multi foto untuk ranking yang sama */
+/* v2.22 Export Top Skor format WhatsApp portrait: rank 1-3 tampil dengan semua foto pemain sharing rank */
+.miniTopPhotos{display:flex;align-items:center;gap:4px;flex:none;min-width:44px;max-width:180px;overflow:hidden}
+.miniTopPhotos .miniTopAvatar{margin-left:-10px}
+.miniTopPhotos .miniTopAvatar:first-child{margin-left:0}
+.miniTopPhotos .miniTopAvatar.placeholder{width:38px;height:38px}
+.topSharedNote{background:#eef6ff!important;border-color:#bfdbfe!important;color:#17346d!important}
+.topRankPlayers{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))!important}
+.topRankPlayer{min-width:0}
+.topRankPlayer strong{word-break:break-word}
+@media(max-width:760px){.miniTopPhotos{max-width:128px}.topRankPlayers{grid-template-columns:1fr!important}}
+
 </style>
 </head>
 <body>
@@ -1232,7 +1245,7 @@ function renderTopScorers(ps){
  const medal=r=>r===1?'🥇':(r===2?'🥈':(r===3?'🥉':'#'+r));
  const topGroups=groups.filter(g=>g.rank<=3);
  const restGroups=groups.filter(g=>g.rank>3);
- let html='<div class="topSharedNote">Peringkat memakai sistem sharing rank: jika jumlah gol sama, pemain berbagi peringkat yang sama. Contoh: 35 gol ada 3 pemain, semuanya Rank #1 dan peringkat berikutnya menjadi #4.</div>';
+ let html='<div class="topSharedNote">Peringkat memakai sistem sharing rank padat: jika jumlah gol sama, pemain berbagi peringkat yang sama. Contoh: 26 gol ada 3 pemain, semuanya Rank #2 dan peringkat berikutnya menjadi Rank #3.</div>';
  if(topGroups.length){
   html+='<div class="topRankSection">';
   topGroups.forEach(g=>{
@@ -1257,8 +1270,20 @@ function renderTopScorers(ps){
 function bindTopScorerUploads(){}
 function render(){applyLeagueTitle(); const matches=load(), st=standings(matches), ps=playerStats(); $('statTeams').textContent=activeTeams().length; $('statMatches').textContent=matches.length; $('statGoals').textContent=matches.reduce((s,m)=>s+m.hs+m.as,0); $('statTop').textContent=ps[0]?`${ps[0].name} (${ps[0].goals})`:'-'; $('recentMatches').innerHTML=renderMatches(matches.slice(-6), false); $('matchList').innerHTML=renderMatches(matches, false); if($('adminMatchList')) $('adminMatchList').innerHTML=renderAdminMatches(matches);
  $('miniStandings').innerHTML=st.slice(0,5).map((r,i)=>{const dotColor=i===0?'#16a34a':(i===st.slice(0,5).length-1?'#dc2626':'#f59e0b'); return `<div class="standingRow"><span><span class="rankDot" style="background:${dotColor}"></span>${i+1}. ${escapeHtml(r.team)}</span><span class="badge">${r.pts} pts</span></div>`}).join('')||'<p class="muted">Belum ada klasemen.</p>';
- const photos=playerPhotos(); const topGroups=rankedTopScorerGroups().slice(0,5);
- $('miniTopScorers').innerHTML=topGroups.length?topGroups.map((g)=>{const names=g.names.map(escapeHtml).join(', '); const first=g.players&&g.players[0]; const img=(g.rank<=3&&first)?photos[keyName(first.name)]:''; const avatar=img?`<img class="miniTopAvatar" src="${img}" alt="${escapeHtml(first.name)}">`:`<span class="miniTopAvatar placeholder">${g.rank<=3?'👤':'#'}</span>`; return `<div class="miniTopRow"><span class="miniTopRank">${g.rank}</span>${avatar}<span class="miniTopName">${names}</span><span class="miniTopGoals">${g.goals}</span></div>`}).join(''):'<p class="muted">Belum ada top skor.</p>';
+ const photos=playerPhotos(); const topGroups=rankedTopScorerGroups().slice(0,6);
+ $('miniTopScorers').innerHTML=topGroups.length?topGroups.map((g)=>{
+  const names=g.names.map(escapeHtml).join(', ');
+  let avatars='';
+  if(g.rank<=3){
+   avatars='<span class="miniTopPhotos">'+g.players.map((p)=>{
+    const img=photos[keyName(p.name)]||'';
+    return img?`<img class="miniTopAvatar" src="${img}" alt="${escapeHtml(p.name)}">`:`<span class="miniTopAvatar placeholder">👤</span>`;
+   }).join('')+'</span>';
+  } else {
+   avatars='<span class="miniTopPhotos"><span class="miniTopAvatar placeholder">#</span></span>';
+  }
+  return `<div class="miniTopRow"><span class="miniTopRank">${g.rank}</span>${avatars}<span class="miniTopName">${names}</span><span class="miniTopGoals">${g.goals}</span></div>`;
+ }).join(''):'<p class="muted">Belum ada top skor.</p>';
  renderStandingsTable(matches);
  renderTeamPlayerColumns();
  renderSponsor(); renderClubLogo(); renderBanner(); renderFinance();
@@ -1335,9 +1360,9 @@ function clearInitialGoals(){
 function rankedTopScorerGroups(){
  const scorers=playerStats().filter(p=>p.goals>0).sort((a,b)=>(b.goals-a.goals)||a.name.localeCompare(b.name));
  const groups=[]; let prevGoals=null; let currentRank=0;
- scorers.forEach((p,idx)=>{
+ scorers.forEach((p)=>{
   if(p.goals!==prevGoals){
-   currentRank=idx+1; // sharing rank: 1,1,1,4
+   currentRank+=1; // dense shared rank: 1, 2, 2, 2, 3, 4
    groups.push({rank:currentRank,goals:p.goals,players:[p],names:[p.name]});
    prevGoals=p.goals;
   } else {
@@ -1504,59 +1529,111 @@ function regroupFlatByRank(flatItems){
 async function exportTopScorerImage(){
  const groups=rankedTopScorerGroups();
  if(!groups.length)return showToast('Belum ada data','Top skor masih kosong.','error');
+ const photos=playerPhotos();
+ const medal={1:'🥇',2:'🥈',3:'🥉'};
  const topGroups=groups.filter(g=>g.rank<=3);
  const restGroups=groups.filter(g=>g.rank>3);
- const photos=playerPhotos();
- const topPlayers=[]; topGroups.forEach(g=>g.players.forEach(p=>topPlayers.push({rank:g.rank,goals:g.goals,name:p.name})));
- const topImgs=await Promise.all(topPlayers.map(p=>loadCanvasImage(photos[keyName(p.name)]||null)));
- const W=1080, pad=56;
- const headerH=210, topRowH=126, restRowH=76;
- const restExtra=restGroups.reduce((s,g)=>s+Math.max(0,g.names.length-1)*24,0);
- const restHeaderH=restGroups.length?72:0;
- const H=headerH + Math.max(1,topPlayers.length)*topRowH + restHeaderH + restGroups.length*restRowH + restExtra + 210;
- const c=document.createElement('canvas'); c.width=W; c.height=H; const ctx=c.getContext('2d');
- ctx.fillStyle='#050505'; ctx.fillRect(0,0,W,H);
- const grad=ctx.createLinearGradient(0,0,W,0); grad.addColorStop(0,'#062b18'); grad.addColorStop(.5,'#00964a'); grad.addColorStop(1,'#062b18'); ctx.fillStyle=grad; ctx.fillRect(0,0,W,20);
- ctx.textAlign='center'; ctx.fillStyle='#f4f4f4'; ctx.font='900 70px Arial Black, Impact, Arial'; ctx.fillText('TOP SKOR FC SOMBONG',W/2,88);
- ctx.fillStyle='#ffd21a'; ctx.font='800 34px Arial Black, Arial'; ctx.fillText('SHARED RANKING • UPDATE '+topScorerUpdateDateLabel(),W/2,140);
- ctx.fillStyle='rgba(255,255,255,.72)'; ctx.font='700 24px Arial'; ctx.fillText('Pemain dengan jumlah gol sama berbagi peringkat yang sama',W/2,176);
- ctx.strokeStyle='#ffd21a'; ctx.lineWidth=4; ctx.beginPath(); ctx.moveTo(pad,190); ctx.lineTo(W-pad,190); ctx.stroke();
- let y=headerH;
- topPlayers.forEach((p,i)=>{
-  const cy=y+topRowH/2, r=46;
-  if(i%2===1){ctx.fillStyle='rgba(255,255,255,.04)'; ctx.fillRect(0,y,W,topRowH);}
-  drawPlayerAvatar(ctx,p.name,pad+r,cy,r,topImgs[i]);
-  ctx.fillStyle='#ffd21a'; ctx.font='900 25px Arial Black, Arial'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('RANK',pad+r,cy+r+18);
-  ctx.fillText('#'+p.rank,pad+r,cy+r+45);
-  ctx.fillStyle='#f6f6f6'; ctx.font='800 38px Arial'; ctx.textAlign='left'; ctx.fillText(p.name,pad+2*r+38,cy-4);
-  ctx.fillStyle='rgba(255,255,255,.68)'; ctx.font='700 22px Arial'; ctx.fillText(p.rank===1?'Pemuncak top skor':'Top 3 ranking',pad+2*r+38,cy+30);
-  ctx.fillStyle='#ffd21a'; ctx.font='900 54px Arial Black, Arial'; ctx.textAlign='right'; ctx.fillText(String(p.goals),W-pad,cy-4);
-  ctx.fillStyle='rgba(255,255,255,.72)'; ctx.font='800 22px Arial'; ctx.fillText('GOAL',W-pad,cy+32);
-  ctx.textBaseline='alphabetic';
-  ctx.strokeStyle='rgba(255,255,255,.18)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(pad,y+topRowH-2); ctx.lineTo(W-pad,y+topRowH-2); ctx.stroke();
-  y+=topRowH;
- });
- if(restGroups.length){
-  y+=24;
-  ctx.fillStyle='rgba(255,255,255,.65)'; ctx.font='800 25px Arial'; ctx.textAlign='left'; ctx.fillText('PERINGKAT BERIKUTNYA',pad,y+24);
-  ctx.strokeStyle='#ffd21a'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(pad,y+42); ctx.lineTo(W-pad,y+42); ctx.stroke();
-  y+=restHeaderH; ctx.textBaseline='top';
-  restGroups.forEach(g=>{
-   const names=g.names; const blockH=restRowH + Math.max(0,names.length-1)*24;
-   ctx.strokeStyle='rgba(255,255,255,.16)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(pad,y+blockH-14); ctx.lineTo(W-pad,y+blockH-14); ctx.stroke();
-   ctx.fillStyle='#ffd21a'; ctx.font='900 34px Arial Black, Arial'; ctx.textAlign='center'; ctx.fillText('#'+g.rank,pad+36,y+5);
-   ctx.fillStyle='#e5e7eb'; ctx.font='800 28px Arial'; ctx.textAlign='left'; names.forEach((n,i)=>wrapCanvasText(ctx,(names.length>1?'• ':'')+n,pad+92,y+4+i*26,690,28));
-   ctx.fillStyle='#ffd21a'; ctx.font='900 38px Arial Black, Arial'; ctx.textAlign='right'; ctx.fillText(String(g.goals),W-pad,y+2);
-   ctx.fillStyle='rgba(255,255,255,.7)'; ctx.font='700 18px Arial'; ctx.fillText('goal',W-pad,y+40);
-   y+=blockH;
-  });
-  ctx.textBaseline='alphabetic';
+ const topImgs=[];
+ for(const g of topGroups){
+  const imgs=[];
+  for(const p of g.players){ imgs.push(await loadCanvasImage(photos[keyName(p.name)]||null)); }
+  topImgs.push(imgs);
  }
- y+=20; ctx.strokeStyle='#ffd21a'; ctx.lineWidth=2; ctx.strokeRect(pad,y,W-pad*2,48);
- ctx.fillStyle='#ffd21a'; ctx.font='800 22px Arial'; ctx.textAlign='center'; ctx.fillText('CATATAN: OWN GOAL TIDAK DICANTUMKAN • FOTO HANYA UNTUK RANK 1-3',W/2,y+31);
- y+=68;
- await drawSponsorFooter(ctx,W,H,{footerH:H-y});
- if(safeDownloadCanvas(c,'top-skor-fc-sombong-'+new Date().toISOString().slice(0,10)+'.png')) showToast('Export berhasil','Gambar Top Skor sudah dibuat dengan shared ranking.');
+ const W=1080;
+ const pad=50;
+ const headerH=190;
+ const topH=topGroups.reduce((sum,g)=>sum+(g.players.length>2?235:205),0);
+ const restH=restGroups.reduce((sum,g)=>sum+Math.max(76,54+Math.ceil(g.names.join(', ').length/34)*28),0);
+ const footerH=135;
+ const H=Math.max(1350,headerH+topH+(restGroups.length?90+restH:30)+footerH+70);
+ const c=document.createElement('canvas'); c.width=W; c.height=H; const ctx=c.getContext('2d');
+ // Background format WhatsApp: portrait, kontras tinggi, tidak terlalu ramai.
+ const bg=ctx.createLinearGradient(0,0,0,H);
+ bg.addColorStop(0,'#062b18'); bg.addColorStop(.55,'#0f5132'); bg.addColorStop(1,'#071510');
+ ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+ ctx.fillStyle='rgba(255,210,26,.14)'; ctx.beginPath(); ctx.arc(W-120,90,210,0,Math.PI*2); ctx.fill();
+ ctx.fillStyle='rgba(255,255,255,.06)'; ctx.beginPath(); ctx.arc(20,360,260,0,Math.PI*2); ctx.fill();
+
+ ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+ ctx.fillStyle='#ffd21a'; ctx.font='900 42px Arial Black, Arial'; ctx.fillText('FC SOMBONG',W/2,58);
+ ctx.fillStyle='#ffffff'; ctx.font='900 74px Arial Black, Impact, Arial'; ctx.fillText('TOP SKOR',W/2,130);
+ ctx.fillStyle='rgba(255,255,255,.82)'; ctx.font='800 27px Arial'; ctx.fillText('UPDATE '+topScorerUpdateDateLabel(),W/2,172);
+
+ let y=205;
+ function drawCard(x,y,w,h,r,fill,stroke){
+  ctx.save(); roundRect(ctx,x,y,w,h,r); ctx.fillStyle=fill; ctx.fill(); ctx.lineWidth=stroke?3:0; if(stroke){ctx.strokeStyle=stroke; ctx.stroke();} ctx.restore();
+ }
+ function fitText(text,x,y,maxW,fontSize,minSize=24,weight='900',align='left',color='#fff'){
+  let size=fontSize; ctx.textAlign=align; ctx.fillStyle=color;
+  do{ctx.font=`${weight} ${size}px Arial Black, Arial`; if(ctx.measureText(String(text)).width<=maxW || size<=minSize)break; size-=2;}while(size>minSize);
+  ctx.fillText(String(text),x,y);
+ }
+ function drawNameLines(names,x,y,maxW,lineH,fontSize){
+  ctx.textAlign='left'; ctx.fillStyle='#082016'; ctx.font=`900 ${fontSize}px Arial Black, Arial`;
+  const joined=names.join(', ');
+  const words=joined.split(' '); let line='', lines=[];
+  words.forEach(w=>{const test=line?line+' '+w:w; if(ctx.measureText(test).width>maxW && line){lines.push(line); line=w;}else line=test;});
+  if(line)lines.push(line);
+  lines.slice(0,3).forEach((ln,i)=>ctx.fillText(ln,x,y+i*lineH));
+  return Math.min(lines.length,3)*lineH;
+ }
+
+ topGroups.forEach((g,gi)=>{
+  const cardH=g.players.length>2?220:190;
+  const x=pad, w=W-pad*2;
+  const fill=g.rank===1?'#fff7cc':(g.rank===2?'#f8fafc':'#fff3e0');
+  const stroke=g.rank===1?'#ffd21a':'rgba(255,255,255,.75)';
+  drawCard(x,y,w,cardH,30,fill,stroke);
+  // Rank badge
+  ctx.fillStyle='#052e16'; ctx.beginPath(); ctx.arc(x+72,y+72,48,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#ffd21a'; ctx.font='900 44px Arial Black, Arial'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('#'+g.rank,x+72,y+72);
+  ctx.textBaseline='alphabetic';
+  // Photos for all players in rank 1-3
+  const imgs=topImgs[gi]||[];
+  const photoR=g.players.length>=3?40:46;
+  const startX=x+155;
+  g.players.slice(0,5).forEach((p,i)=>{
+   const px=startX+i*(photoR*1.65);
+   drawPlayerAvatar(ctx,p.name,px,y+66,photoR,imgs[i]);
+  });
+  if(g.players.length>5){
+   ctx.fillStyle='#052e16'; ctx.beginPath(); ctx.arc(startX+5*(photoR*1.65),y+66,photoR,0,Math.PI*2); ctx.fill();
+   ctx.fillStyle='#ffd21a'; ctx.font='900 27px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('+'+(g.players.length-5),startX+5*(photoR*1.65),y+66); ctx.textBaseline='alphabetic';
+  }
+  // Text
+  ctx.fillStyle='#065f46'; ctx.font='900 26px Arial Black, Arial'; ctx.textAlign='left'; ctx.fillText((medal[g.rank]||'')+' PERINGKAT '+g.rank+(g.players.length>1?' BERSAMA':''),x+155,y+130);
+  drawNameLines(g.names,x+155,y+166,w-345,34,31);
+  ctx.fillStyle='#052e16'; ctx.textAlign='right'; ctx.font='900 70px Arial Black, Arial'; ctx.fillText(String(g.goals),x+w-34,y+96);
+  ctx.fillStyle='#065f46'; ctx.font='900 27px Arial Black, Arial'; ctx.fillText('GOAL',x+w-34,y+132);
+  y+=cardH+18;
+ });
+
+ if(restGroups.length){
+  y+=12;
+  ctx.fillStyle='#ffd21a'; ctx.textAlign='left'; ctx.font='900 32px Arial Black, Arial'; ctx.fillText('PERINGKAT BERIKUTNYA',pad,y+30);
+  ctx.fillStyle='rgba(255,255,255,.78)'; ctx.font='700 22px Arial'; ctx.fillText('Urutan memakai shared rank: nilai sama = peringkat sama',pad,y+62);
+  y+=86;
+  restGroups.forEach((g,idx)=>{
+   const names=g.names.join(', ');
+   const rowH=Math.max(76,54+Math.ceil(names.length/34)*28);
+   drawCard(pad,y,W-pad*2,rowH,20,idx%2?'rgba(255,255,255,.10)':'rgba(255,255,255,.16)',null);
+   ctx.fillStyle='#ffd21a'; ctx.font='900 34px Arial Black, Arial'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(String(g.rank),pad+45,y+rowH/2);
+   ctx.textBaseline='alphabetic';
+   ctx.fillStyle='#ffffff'; ctx.font='900 29px Arial Black, Arial'; ctx.textAlign='left';
+   wrapCanvasText(ctx,names,pad+95,y+31,W-pad*2-235,30);
+   ctx.fillStyle='#ffd21a'; ctx.font='900 38px Arial Black, Arial'; ctx.textAlign='right'; ctx.fillText(String(g.goals),W-pad-28,y+43);
+   ctx.fillStyle='rgba(255,255,255,.75)'; ctx.font='800 18px Arial'; ctx.fillText('goal',W-pad-28,y+67);
+   y+=rowH+10;
+  });
+ }
+
+ // Catatan singkat agar mudah dipahami di WA.
+ y+=18;
+ drawCard(pad,y,W-pad*2,62,18,'rgba(255,210,26,.14)','#ffd21a');
+ ctx.fillStyle='#fff7cc'; ctx.font='800 22px Arial'; ctx.textAlign='center'; ctx.fillText('Nilai gol yang sama berbagi peringkat yang sama • Foto hanya untuk peringkat 1–3',W/2,y+39);
+
+ await drawSponsorFooter(ctx,W,H,{footerH});
+ if(safeDownloadCanvas(c,'top-skor-wa-fc-sombong-'+new Date().toISOString().slice(0,10)+'.png')) showToast('Export berhasil','Gambar Top Skor format WhatsApp sudah dibuat.');
 }
 function bindTopScorerExport(){
  if($('topScorerExportDate') && !$('topScorerExportDate').value) $('topScorerExportDate').value=new Date().toISOString().slice(0,10);
