@@ -153,6 +153,7 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 .adminMatchTop{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;font-weight:900}.adminMatchTop .away{text-align:right}.adminMatchMeta{margin-top:8px;color:#64748b;font-size:13px}.adminActions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.adminActions button{border:0;border-radius:12px;padding:10px 14px;font-weight:900;cursor:pointer}.adminActions .editBtn{background:#dcfce7;color:#065f46}.adminActions .deleteBtn{background:#fee2e2;color:#991b1b}.adminLocked{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:16px;padding:14px;margin:12px 0;font-weight:800}.tabs button.adminOnlyTab{background:#fef3c7;color:#92400e}.tabs button.adminOnlyTab.active{background:#fff;color:#17346d}
 
 
+/* v2.24 Top Skor WA export putih-hitam */
 /* v2.14 export click fix */
 #exportStandingsImage,#exportTopScorerImage,#moreExportStandings,#copyStandingsWA,#copyTopScorerWA,#moreCopyStandings,#moreCopyTopScorer{pointer-events:auto!important;position:relative;z-index:50;cursor:pointer!important}
 
@@ -1437,41 +1438,43 @@ function loadCanvasImage(src){
  });
 }
 async function drawSponsorFooter(ctx,W,H,opts={}){
- const footerH=opts.footerH||150;
+ const footerH=opts.footerH||170;
  const y=H-footerH;
  const list=(typeof sponsorsList==='function'?sponsorsList():[]).filter(x=>x&&(x.logo||x.name));
  ctx.save();
- ctx.fillStyle='#0b2f22'; ctx.fillRect(0,y,W,footerH);
- ctx.strokeStyle='rgba(255,255,255,.18)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(48,y+1); ctx.lineTo(W-48,y+1); ctx.stroke();
- ctx.fillStyle='rgba(255,255,255,.72)'; ctx.font='800 22px Arial'; ctx.textAlign='center'; ctx.fillText('SPONSOR',W/2,y+34);
+ ctx.fillStyle='#ffffff'; ctx.fillRect(0,y,W,footerH);
+ ctx.strokeStyle='#111111'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(54,y+1); ctx.lineTo(W-54,y+1); ctx.stroke();
+ ctx.fillStyle='#111111'; ctx.font='900 22px Arial Black, Arial'; ctx.textAlign='center'; ctx.fillText('SPONSORED BY',W/2,y+38);
  if(list.length){
   const maxSlots=Math.min(list.length,4);
-  const gap=24;
+  const gap=22;
   const slotW=(W-120-gap*(maxSlots-1))/maxSlots;
   let x=60;
   for(let i=0;i<maxSlots;i++){
    const sp=list[i];
    const img=await loadCanvasImage(sp.logo||null);
-   const boxX=x, boxY=y+50, boxH=72;
-   ctx.fillStyle='rgba(255,255,255,.08)'; roundRect(ctx,boxX,boxY,slotW,boxH,16); ctx.fill();
+   const boxX=x, boxY=y+56, boxH=76;
+   ctx.fillStyle='#ffffff'; roundRect(ctx,boxX,boxY,slotW,boxH,14); ctx.fill();
+   ctx.strokeStyle='#eeeeee'; ctx.lineWidth=1; roundRect(ctx,boxX,boxY,slotW,boxH,14); ctx.stroke();
    if(img){
-    const ratio=Math.min((slotW-28)/img.width,(boxH-22)/img.height,1);
+    const ratio=Math.min((slotW-32)/img.width,(boxH-24)/img.height,1);
     const iw=img.width*ratio, ih=img.height*ratio;
     ctx.drawImage(img,boxX+(slotW-iw)/2,boxY+(boxH-ih)/2,iw,ih);
    }else{
-    ctx.fillStyle='rgba(255,255,255,.84)'; ctx.font='900 20px Arial'; ctx.textAlign='center';
-    ctx.fillText(String(sp.name||'SPONSOR').toUpperCase(),boxX+slotW/2,boxY+43);
+    ctx.fillStyle='#111111'; ctx.font='900 19px Arial Black, Arial'; ctx.textAlign='center';
+    ctx.fillText(String(sp.name||'SPONSOR').toUpperCase(),boxX+slotW/2,boxY+45);
    }
    if(sp.name){
-    ctx.fillStyle='rgba(255,255,255,.64)'; ctx.font='700 15px Arial'; ctx.textAlign='center';
+    ctx.fillStyle='#222222'; ctx.font='700 14px Arial'; ctx.textAlign='center';
     const nm=String(sp.name).toUpperCase();
-    ctx.fillText(nm.length>18?nm.slice(0,18)+'…':nm,boxX+slotW/2,y+141);
+    ctx.fillText(nm.length>18?nm.slice(0,18)+'…':nm,boxX+slotW/2,y+152);
    }
    x+=slotW+gap;
   }
  }else{
-  ctx.fillStyle='rgba(255,255,255,.65)'; ctx.font='800 22px Arial'; ctx.textAlign='center'; ctx.fillText('Belum ada sponsor',W/2,y+90);
+  ctx.fillStyle='#555555'; ctx.font='800 22px Arial'; ctx.textAlign='center'; ctx.fillText('Belum ada sponsor',W/2,y+98);
  }
+ ctx.fillStyle='#111111'; ctx.font='800 17px Arial'; ctx.textAlign='center'; ctx.fillText('FC SOMBONG • COMMUNITY LEAGUE MANAGEMENT',W/2,H-14);
  ctx.restore();
 }
 
@@ -1518,13 +1521,13 @@ function drawPlayerAvatar(ctx,name,cx,cy,r,img){
   const iw=img.width*scale, ih=img.height*scale;
   ctx.drawImage(img,cx-iw/2,cy-ih/2,iw,ih);
  } else {
-  ctx.fillStyle='#1c2b24'; ctx.fillRect(cx-r,cy-r,r*2,r*2);
-  ctx.fillStyle='#3a4a42';
-  ctx.beginPath(); ctx.arc(cx,cy-r*0.28,r*0.36,0,Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.arc(cx,cy+r*0.95,r*0.62,Math.PI,0); ctx.fill();
+  ctx.fillStyle='#f2f2f2'; ctx.fillRect(cx-r,cy-r,r*2,r*2);
+  ctx.fillStyle='#111111'; ctx.font=`900 ${Math.max(22,Math.round(r*0.70))}px Arial Black, Arial`; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('#',cx,cy);
+  ctx.textBaseline='alphabetic';
  }
  ctx.restore();
- ctx.strokeStyle='#ffd21a'; ctx.lineWidth=3;
+ ctx.strokeStyle='#111111'; ctx.lineWidth=3;
  ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.stroke();
 }
 function regroupFlatByRank(flatItems){
@@ -1541,7 +1544,7 @@ async function exportTopScorerImage(){
  if(!groups.length)return showToast('Belum ada data','Top skor masih kosong.','error');
  const photos=playerPhotos();
  const topGroups=groups.filter(g=>g.rank<=3);
- const restGroups=groups.filter(g=>g.rank>3);
+ const restGroups=groups.filter(g=>g.rank>3).slice(0,8);
  const topImgs=[];
  for(const g of topGroups){
   const imgs=[];
@@ -1549,96 +1552,112 @@ async function exportTopScorerImage(){
   topImgs.push(imgs);
  }
  const W=1080;
- const pad=54;
- const headerH=178;
- const topH=topGroups.reduce((sum,g)=>sum+(g.players.length>2?210:184),0);
- const restH=restGroups.reduce((sum,g)=>sum+Math.max(66,48+Math.ceil(g.names.join(', ').length/38)*25),0);
- const footerH=160;
- const H=Math.max(1350,headerH+topH+(restGroups.length?74+restH:22)+footerH+70);
+ const pad=56;
+ const headerH=250;
+ const topH=topGroups.reduce((sum,g)=>sum+(g.players.length>1?250:190),0);
+ const restH=restGroups.reduce((sum,g)=>sum+82,0);
+ const footerH=180;
+ const H=Math.max(1350,headerH+topH+(restGroups.length?54+restH:20)+footerH+42);
  const c=document.createElement('canvas'); c.width=W; c.height=H; const ctx=c.getContext('2d');
 
- // v2.23: desain 1-tone untuk WhatsApp: satu warna utama, kontras tinggi, mudah dibaca.
- const bg='#0b2f22';
- const panel='#123d2d';
- const panel2='#164833';
- const text='#ffffff';
- const muted='rgba(255,255,255,.72)';
- const line='rgba(255,255,255,.16)';
+ // v2.24: export WA putih-hitam, kontras tinggi, foto tidak menutup nama.
+ const bg='#ffffff';
+ const text='#111111';
+ const muted='#555555';
+ const line='#111111';
+ const soft='#f6f6f6';
  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
- ctx.fillStyle='rgba(255,255,255,.045)'; ctx.fillRect(0,0,W,92);
- ctx.fillStyle=text; ctx.textAlign='center'; ctx.textBaseline='alphabetic';
- ctx.font='900 34px Arial Black, Arial'; ctx.fillText('FC SOMBONG',W/2,52);
- ctx.font='900 76px Arial Black, Impact, Arial'; ctx.fillText('TOP SKOR',W/2,127);
- ctx.fillStyle=muted; ctx.font='800 26px Arial'; ctx.fillText('UPDATE '+topScorerUpdateDateLabel(),W/2,164);
 
- let y=194;
- function drawCard(x,y,w,h,r,fill,stroke){ctx.save(); roundRect(ctx,x,y,w,h,r); ctx.fillStyle=fill; ctx.fill(); if(stroke){ctx.lineWidth=2; ctx.strokeStyle=stroke; ctx.stroke();} ctx.restore();}
- function fitTextLocal(textValue,x,y,maxW,fontSize,minSize=22,align='left',color=text){
+ function drawCard(x,y,w,h,r,fill,stroke='#111111',lineWidth=2){
+  ctx.save(); roundRect(ctx,x,y,w,h,r); ctx.fillStyle=fill; ctx.fill(); if(stroke){ctx.lineWidth=lineWidth; ctx.strokeStyle=stroke; ctx.stroke();} ctx.restore();
+ }
+ function fitTextLocal(textValue,x,y,maxW,fontSize,minSize=20,align='left',color=text,weight='900'){
   let size=fontSize; ctx.textAlign=align; ctx.fillStyle=color;
-  do{ctx.font=`900 ${size}px Arial Black, Arial`; if(ctx.measureText(String(textValue)).width<=maxW || size<=minSize)break; size-=2;}while(size>minSize);
+  do{ctx.font=`${weight} ${size}px Arial Black, Arial`; if(ctx.measureText(String(textValue)).width<=maxW || size<=minSize)break; size-=2;}while(size>minSize);
   ctx.fillText(String(textValue),x,y);
  }
- function wrapLines(textValue,maxW,fontSize){
+ function wrapLines(textValue,maxW,fontSize,maxLines=2){
   ctx.font=`900 ${fontSize}px Arial Black, Arial`;
   const words=String(textValue).split(' '); let lineText='', lines=[];
   words.forEach(w=>{const test=lineText?lineText+' '+w:w; if(ctx.measureText(test).width>maxW && lineText){lines.push(lineText); lineText=w;}else lineText=test;});
-  if(lineText)lines.push(lineText); return lines;
+  if(lineText)lines.push(lineText); return lines.slice(0,maxLines);
  }
- const medalText={1:'RANK 1',2:'RANK 2',3:'RANK 3'};
+ function drawPhotoName(px,py,r,img,name,maxW){
+  drawPlayerAvatar(ctx,name,px,py,r,img);
+  const nm=String(name||'').toUpperCase();
+  fitTextLocal(nm,px,py+r+34,maxW,24,16,'center',text,'900');
+ }
+
+ // Header
+ ctx.textAlign='center';
+ ctx.fillStyle=text;
+ ctx.font='900 34px Arial Black, Arial'; ctx.fillText('FC SOMBONG',W/2,54);
+ ctx.font='900 88px Arial Black, Impact, Arial'; ctx.fillText('TOP SKOR',W/2,140);
+ ctx.strokeStyle=line; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(W/2-245,168); ctx.lineTo(W/2-90,168); ctx.moveTo(W/2+90,168); ctx.lineTo(W/2+245,168); ctx.stroke();
+ ctx.font='900 31px Arial Black, Arial'; ctx.fillText('ALL TIME',W/2,178);
+ ctx.fillStyle=muted; ctx.font='800 24px Arial'; ctx.fillText('UPDATE: '+topScorerUpdateDateLabel(),W/2,218);
+
+ let y=258;
  topGroups.forEach((g,gi)=>{
-  const cardH=g.players.length>2?196:172;
+  const together=g.players.length>1;
+  const cardH=together?230:170;
   const x=pad, w=W-pad*2;
-  drawCard(x,y,w,cardH,28,gi%2?panel2:panel,line);
-  // rank block
-  ctx.fillStyle='rgba(255,255,255,.10)'; roundRect(ctx,x+22,y+25,104,cardH-50,22); ctx.fill();
-  ctx.fillStyle=text; ctx.textAlign='center'; ctx.font='900 48px Arial Black, Arial'; ctx.fillText(String(g.rank),x+74,y+84);
-  ctx.fillStyle=muted; ctx.font='800 18px Arial'; ctx.fillText('RANK',x+74,y+113);
-  // photos for all players in rank 1-3
+  drawCard(x,y,w,cardH,0,'#ffffff','#111111',2);
+
+  // rank kiri
+  ctx.fillStyle=text; ctx.textAlign='center'; ctx.font='900 74px Arial Black, Arial'; ctx.fillText(String(g.rank),x+54,y+92);
+  if(together){ ctx.font='900 20px Arial'; ctx.fillText('(BERSAMA)',x+54,y+128); }
+
+  // goals kanan
+  ctx.textAlign='right'; ctx.fillStyle=text; ctx.font='900 70px Arial Black, Arial'; ctx.fillText(String(g.goals),x+w-22,y+82);
+  ctx.font='900 27px Arial Black, Arial'; ctx.fillText('GOAL',x+w-22,y+116);
+
   const imgs=topImgs[gi]||[];
-  const photoR=g.players.length>=3?34:40;
-  const startX=x+158;
-  g.players.slice(0,6).forEach((p,i)=>{
-   const px=startX+i*(photoR*1.52);
-   drawPlayerAvatar(ctx,p.name,px,y+60,photoR,imgs[i]);
-  });
-  if(g.players.length>6){
-   const px=startX+6*(photoR*1.52);
-   ctx.fillStyle='#0a241a'; ctx.beginPath(); ctx.arc(px,y+60,photoR,0,Math.PI*2); ctx.fill();
-   ctx.fillStyle=text; ctx.font='900 22px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('+'+(g.players.length-6),px,y+60); ctx.textBaseline='alphabetic';
+  if(together){
+   const n=Math.min(g.players.length,4);
+   const areaX=x+150;
+   const areaW=w-315;
+   const gap=areaW/n;
+   const r=n>=4?42:48;
+   g.players.slice(0,4).forEach((p,i)=>{
+    const px=areaX+gap*i+gap/2;
+    drawPhotoName(px,y+74,r,imgs[i],p.name,Math.min(170,gap-8));
+   });
+   if(g.players.length>4){
+    ctx.fillStyle=text; ctx.font='900 20px Arial Black, Arial'; ctx.textAlign='center';
+    ctx.fillText('+'+(g.players.length-4)+' PEMAIN',areaX+areaW/2,y+cardH-20);
+   }
+  }else{
+   const p=g.players[0];
+   drawPlayerAvatar(ctx,p.name,x+178,y+84,55,imgs[0]);
+   fitTextLocal(String(p.name).toUpperCase(),x+255,y+101,w-440,48,24,'left',text,'900');
   }
-  ctx.fillStyle=muted; ctx.font='900 24px Arial'; ctx.textAlign='left'; ctx.fillText(medalText[g.rank]+(g.players.length>1?' BERSAMA':''),x+158,y+112);
-  const lines=wrapLines(g.names.join(', '),w-360,30).slice(0,2);
-  lines.forEach((ln,i)=>fitTextLocal(ln,x+158,y+150+i*32,w-360,30,22,'left',text));
-  ctx.textAlign='right'; ctx.fillStyle=text; ctx.font='900 66px Arial Black, Arial'; ctx.fillText(String(g.goals),x+w-30,y+84);
-  ctx.fillStyle=muted; ctx.font='900 25px Arial'; ctx.fillText('GOAL',x+w-30,y+116);
-  y+=cardH+16;
+  y+=cardH+18;
  });
 
  if(restGroups.length){
-  y+=8;
-  ctx.strokeStyle=line; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(W-pad,y); ctx.stroke();
-  ctx.fillStyle=text; ctx.textAlign='left'; ctx.font='900 30px Arial Black, Arial'; ctx.fillText('DAFTAR BERIKUTNYA',pad,y+44);
-  y+=66;
+  ctx.strokeStyle=line; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(pad,y+6); ctx.lineTo(W-pad,y+6); ctx.stroke();
+  y+=38;
   restGroups.forEach((g,idx)=>{
-   const names=g.names.join(', ');
-   const rowH=Math.max(66,48+Math.ceil(names.length/38)*25);
-   drawCard(pad,y,W-pad*2,rowH,18,idx%2?panel2:panel,line);
-   ctx.fillStyle=text; ctx.font='900 32px Arial Black, Arial'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(String(g.rank),pad+42,y+rowH/2);
-   ctx.textBaseline='alphabetic';
-   ctx.fillStyle=text; ctx.font='900 27px Arial Black, Arial'; ctx.textAlign='left';
-   wrapCanvasText(ctx,names,pad+92,y+31,W-pad*2-220,28);
-   ctx.fillStyle=text; ctx.font='900 36px Arial Black, Arial'; ctx.textAlign='right'; ctx.fillText(String(g.goals),W-pad-26,y+40);
-   ctx.fillStyle=muted; ctx.font='800 17px Arial'; ctx.fillText('goal',W-pad-26,y+62);
-   y+=rowH+9;
+   const rowH=76;
+   const x=pad, w=W-pad*2;
+   if(idx%2===0){ctx.fillStyle=soft; ctx.fillRect(x,y-6,w,rowH);}
+   ctx.fillStyle=text; ctx.font='900 48px Arial Black, Arial'; ctx.textAlign='center'; ctx.fillText(String(g.rank),x+42,y+48);
+   const names=String(g.names.join(', ')).toUpperCase();
+   fitTextLocal(names,x+95,y+46,w-255,31,18,'left',text,'900');
+   ctx.textAlign='right'; ctx.font='900 46px Arial Black, Arial'; ctx.fillText(String(g.goals),W-pad-24,y+44);
+   ctx.font='800 17px Arial'; ctx.fillText('GOAL',W-pad-24,y+66);
+   ctx.strokeStyle='#dddddd'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(x,y+rowH); ctx.lineTo(x+w,y+rowH); ctx.stroke();
+   y+=rowH;
   });
  }
 
  y+=16;
- drawCard(pad,y,W-pad*2,58,18,'rgba(255,255,255,.07)',line);
- ctx.fillStyle=muted; ctx.font='800 21px Arial'; ctx.textAlign='center'; ctx.fillText('Gol sama = peringkat sama • Foto ditampilkan untuk Rank 1–3',W/2,y+36);
+ ctx.fillStyle=muted; ctx.font='800 21px Arial'; ctx.textAlign='center';
+ ctx.fillText('Gol sama = peringkat sama • Foto hanya untuk Rank 1–3',W/2,y+28);
 
  await drawSponsorFooter(ctx,W,H,{footerH});
- if(safeDownloadCanvas(c,'top-skor-wa-fc-sombong-'+new Date().toISOString().slice(0,10)+'.png')) showToast('Export berhasil','Gambar Top Skor format WhatsApp 1-tone sudah dibuat.');
+ if(safeDownloadCanvas(c,'top-skor-wa-putih-hitam-'+new Date().toISOString().slice(0,10)+'.png')) showToast('Export berhasil','Gambar Top Skor putih-hitam siap untuk WhatsApp.');
 }
 
 function bindTopScorerExport(){
