@@ -1143,19 +1143,35 @@ function createAccessUser(){
  renderAccessUsers(); showToast('User input dibuat',`Akses untuk ${username} sudah aktif.`);
 }
 function allScorers(m){return [...(m.homeScorers||m.scorers||[]),...(m.awayScorers||[])]}
+// v2.27: Rapikan data nama pemain Top Skor.
+// - Paul Sagna / Paul Sanga dianggap 1 orang: Paul Sanga.
+// - Carlos standalone dihapus dari list karena sudah digabung ke PDT Rio Carlos.
+// Catatan: PDT Rio Carlos tetap aman karena bukan nama standalone Carlos.
+function canonicalPlayerName(name){
+ name=normalizeName(name);
+ if(!name)return '';
+ const k=keyName(name);
+ const aliases={
+  'paul sagna':'Paul Sanga',
+  'paul sanga':'Paul Sanga'
+ };
+ if(aliases[k])return aliases[k];
+ if(k==='carlos')return '';
+ return name;
+}
 function allPlayers(){
  const map={};
- Object.values(loadRosters()).flat().forEach(n=>{n=normalizeName(n); if(n) map[keyName(n)]=n});
- Object.values(initialGoals()).forEach(g=>{const n=normalizeName(g.name); if(n) map[keyName(n)]=n});
- load().forEach(m=>{[...allScorers(m),...(m.cards||[]).map(c=>c.player)].forEach(n=>{n=normalizeName(n); if(n) map[keyName(n)]=n})});
+ Object.values(loadRosters()).flat().forEach(n=>{n=canonicalPlayerName(n); if(n) map[keyName(n)]=n});
+ Object.values(initialGoals()).forEach(g=>{const n=canonicalPlayerName(g.name); if(n) map[keyName(n)]=n});
+ load().forEach(m=>{[...allScorers(m),...(m.cards||[]).map(c=>c.player)].forEach(n=>{n=canonicalPlayerName(n); if(n) map[keyName(n)]=n})});
  return Object.values(map).sort((a,b)=>a.localeCompare(b));
 }
 function teamPlayers(team){
  const map={};
- rosterPlayers(team).forEach(n=>{if(n) map[keyName(n)]=n});
+ rosterPlayers(team).forEach(n=>{n=canonicalPlayerName(n); if(n) map[keyName(n)]=n});
  load().forEach(m=>{
-  if(m.home===team)[...(m.homeScorers||[]),...(m.cards||[]).filter(c=>c.team===team).map(c=>c.player)].forEach(n=>{n=normalizeName(n); if(n) map[keyName(n)]=n});
-  if(m.away===team)[...(m.awayScorers||[]),...(m.cards||[]).filter(c=>c.team===team).map(c=>c.player)].forEach(n=>{n=normalizeName(n); if(n) map[keyName(n)]=n});
+  if(m.home===team)[...(m.homeScorers||[]),...(m.cards||[]).filter(c=>c.team===team).map(c=>c.player)].forEach(n=>{n=canonicalPlayerName(n); if(n) map[keyName(n)]=n});
+  if(m.away===team)[...(m.awayScorers||[]),...(m.cards||[]).filter(c=>c.team===team).map(c=>c.player)].forEach(n=>{n=canonicalPlayerName(n); if(n) map[keyName(n)]=n});
  }); return Object.values(map).sort((a,b)=>a.localeCompare(b));
 }
 function standings(matches){
@@ -1185,7 +1201,7 @@ function weeklyHallOfFame(matches){
  });
 }
 function playerStats(){
- const map={}; const ensure=(name,team='')=>{name=normalizeName(name); if(!name)return null; const k=keyName(name); if(!map[k])map[k]={name,teams:new Set(),appearances:0,goals:0,initialGoals:0,yellow:0,red:0,goalRate:0}; if(team)map[k].teams.add(team); return map[k]};
+ const map={}; const ensure=(name,team='')=>{name=canonicalPlayerName(name); if(!name)return null; const k=keyName(name); if(!map[k])map[k]={name,teams:new Set(),appearances:0,goals:0,initialGoals:0,yellow:0,red:0,goalRate:0}; if(team)map[k].teams.add(team); return map[k]};
  Object.values(initialGoals()).forEach(g=>{const s=ensure(g.name,'Statistik awal'); if(s){s.initialGoals=Number(g.goals)||0; s.goals += Number(g.goals)||0;}});
  load().forEach(m=>{
   const playedHome=new Set(), playedAway=new Set();
@@ -1682,11 +1698,11 @@ async function exportTopScorerImage(){
    const players=g.players;
    const maxShown=Math.min(players.length,5);
    const r=maxShown>=4?34:38;
-   const gap=maxShown>=4?128:148;
+   const gap=maxShown>=4?92:110;
    // Mulai persis sejajar dengan foto rank 1, tidak ada space kosong di kiri.
    for(let i=0;i<maxShown;i++){
     const px=firstPhotoX+(gap*i);
-    drawNameUnderPhoto(px,y+56,r,imgs[i],players[i].name,Math.min(128,gap-8));
+    drawNameUnderPhoto(px,y+56,r,imgs[i],players[i].name,Math.min(102,gap-6));
    }
    if(players.length>5){
     ctx.fillStyle=muted; ctx.font='800 15px Arial'; ctx.textAlign='left';
@@ -1747,7 +1763,7 @@ async function exportTopScorerImage(){
  ctx.fillStyle=text; ctx.font='900 16px Arial'; ctx.textAlign='center';
  ctx.fillText('FC SOMBONG • COMMUNITY LEAGUE MANAGEMENT',W/2,H-22);
 
- if(safeDownloadCanvas(c,'top-skor-wa-putih-hitam-v226-'+new Date().toISOString().slice(0,10)+'.png')) showToast('Export berhasil','Gambar Top Skor v2.26 sudah dirapikan untuk WhatsApp.');
+ if(safeDownloadCanvas(c,'top-skor-wa-putih-hitam-v227-'+new Date().toISOString().slice(0,10)+'.png')) showToast('Export berhasil','Gambar Top Skor v2.27 sudah dirapikan untuk WhatsApp.');
 }
 
 function bindTopScorerExport(){
