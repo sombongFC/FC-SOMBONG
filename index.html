@@ -1601,8 +1601,22 @@ async function exportTopScorerImage(){
   for(const p of g.players){ imgs.push(await loadCanvasImage(photos[keyName(p.name)]||null)); }
   topImgs.push(imgs);
  }
- const sponsorData=sponsors();
- const sponsorList=(Array.isArray(sponsorData.slots)?sponsorData.slots:[]).filter(s=>s&&s.logo).slice(0,4);
+ // v2.28: Export Top Skor harus mengambil sponsor dari data upload website.
+ // Format terbaru tersimpan sebagai { list:[{name, logo}] }, bukan { slots:[] }.
+ // Ditambah fallback dari footer DOM agar logo tetap ikut kalau data sudah dirender di halaman.
+ let sponsorList=[];
+ if(typeof sponsorsList==='function'){
+  sponsorList=sponsorsList().filter(s=>s&&s.logo).slice(0,4);
+ }else{
+  const sponsorData=sponsors&&sponsors();
+  sponsorList=(Array.isArray(sponsorData?.list)?sponsorData.list:(Array.isArray(sponsorData?.slots)?sponsorData.slots:[])).filter(s=>s&&s.logo).slice(0,4);
+ }
+ if(!sponsorList.length){
+  sponsorList=Array.from(document.querySelectorAll('#sponsorFooter img')).slice(0,4).map(img=>({
+   name:img.getAttribute('title')||img.getAttribute('alt')||'Sponsor',
+   logo:img.src
+  })).filter(s=>s.logo);
+ }
  const sponsorImgs=[];
  for(const s of sponsorList){ sponsorImgs.push(await loadCanvasImage(s.logo)); }
 
@@ -1763,7 +1777,7 @@ async function exportTopScorerImage(){
  ctx.fillStyle=text; ctx.font='900 16px Arial'; ctx.textAlign='center';
  ctx.fillText('FC SOMBONG • COMMUNITY LEAGUE MANAGEMENT',W/2,H-22);
 
- if(safeDownloadCanvas(c,'top-skor-wa-putih-hitam-v227-'+new Date().toISOString().slice(0,10)+'.png')) showToast('Export berhasil','Gambar Top Skor v2.27 sudah dirapikan untuk WhatsApp.');
+ if(safeDownloadCanvas(c,'top-skor-wa-putih-hitam-v228-'+new Date().toISOString().slice(0,10)+'.png')) showToast('Export berhasil','Gambar Top Skor v2.28 sudah dirapikan dan sponsor mengikuti data website.');
 }
 
 function bindTopScorerExport(){
