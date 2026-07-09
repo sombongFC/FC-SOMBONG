@@ -1437,30 +1437,40 @@ function loadCanvasImage(src){
  });
 }
 async function drawSponsorFooter(ctx,W,H,opts={}){
- const sp=sponsors();
  const footerH=opts.footerH||150;
  const y=H-footerH;
+ const list=(typeof sponsorsList==='function'?sponsorsList():[]).filter(x=>x&&(x.logo||x.name));
  ctx.save();
- ctx.fillStyle='#050505'; ctx.fillRect(0,y,W,footerH);
- ctx.fillStyle='#ffd21a'; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(300,y); ctx.lineTo(375,H); ctx.lineTo(0,H); ctx.closePath(); ctx.fill();
- ctx.fillStyle='#061b12'; ctx.font='900 28px Arial Black, Arial'; ctx.textAlign='left'; ctx.fillText('TEAM',34,y+55); ctx.fillText('FC SOMBONG',34,y+92);
- ctx.strokeStyle='#ffd21a'; ctx.lineWidth=3; ctx.strokeRect(0,y,W,footerH);
- ctx.fillStyle='#f4f4f4'; ctx.font='900 28px Arial'; ctx.textAlign='left'; ctx.fillText('SPONSOR:',405,y+82);
- if(sp.logo){
-  const img=await loadCanvasImage(sp.logo);
-  if(img){
-   const maxW=420, maxH=104;
-   const ratio=Math.min(maxW/img.width,maxH/img.height);
-   const iw=img.width*ratio, ih=img.height*ratio;
-   const lx=565, ly=y+(footerH-ih)/2;
-   ctx.fillStyle='#fff'; ctx.fillRect(lx-16,ly-12,iw+32,ih+24);
-   ctx.drawImage(img,lx,ly,iw,ih);
-   if(sp.name){ctx.fillStyle='#fff'; ctx.font='900 22px Arial'; ctx.fillText(String(sp.name).toUpperCase(),lx+iw+28,y+86);}
-  } else {
-   ctx.fillStyle='#fff'; ctx.font='900 30px Arial'; ctx.fillText(sp.name||'Sponsor',565,y+86);
+ ctx.fillStyle='#0b2f22'; ctx.fillRect(0,y,W,footerH);
+ ctx.strokeStyle='rgba(255,255,255,.18)'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(48,y+1); ctx.lineTo(W-48,y+1); ctx.stroke();
+ ctx.fillStyle='rgba(255,255,255,.72)'; ctx.font='800 22px Arial'; ctx.textAlign='center'; ctx.fillText('SPONSOR',W/2,y+34);
+ if(list.length){
+  const maxSlots=Math.min(list.length,4);
+  const gap=24;
+  const slotW=(W-120-gap*(maxSlots-1))/maxSlots;
+  let x=60;
+  for(let i=0;i<maxSlots;i++){
+   const sp=list[i];
+   const img=await loadCanvasImage(sp.logo||null);
+   const boxX=x, boxY=y+50, boxH=72;
+   ctx.fillStyle='rgba(255,255,255,.08)'; roundRect(ctx,boxX,boxY,slotW,boxH,16); ctx.fill();
+   if(img){
+    const ratio=Math.min((slotW-28)/img.width,(boxH-22)/img.height,1);
+    const iw=img.width*ratio, ih=img.height*ratio;
+    ctx.drawImage(img,boxX+(slotW-iw)/2,boxY+(boxH-ih)/2,iw,ih);
+   }else{
+    ctx.fillStyle='rgba(255,255,255,.84)'; ctx.font='900 20px Arial'; ctx.textAlign='center';
+    ctx.fillText(String(sp.name||'SPONSOR').toUpperCase(),boxX+slotW/2,boxY+43);
+   }
+   if(sp.name){
+    ctx.fillStyle='rgba(255,255,255,.64)'; ctx.font='700 15px Arial'; ctx.textAlign='center';
+    const nm=String(sp.name).toUpperCase();
+    ctx.fillText(nm.length>18?nm.slice(0,18)+'…':nm,boxX+slotW/2,y+141);
+   }
+   x+=slotW+gap;
   }
- } else {
-  ctx.fillStyle='rgba(255,255,255,.75)'; ctx.font='800 24px Arial'; ctx.fillText('Belum ada sponsor',565,y+86);
+ }else{
+  ctx.fillStyle='rgba(255,255,255,.65)'; ctx.font='800 22px Arial'; ctx.textAlign='center'; ctx.fillText('Belum ada sponsor',W/2,y+90);
  }
  ctx.restore();
 }
@@ -1530,7 +1540,6 @@ async function exportTopScorerImage(){
  const groups=rankedTopScorerGroups();
  if(!groups.length)return showToast('Belum ada data','Top skor masih kosong.','error');
  const photos=playerPhotos();
- const medal={1:'🥇',2:'🥈',3:'🥉'};
  const topGroups=groups.filter(g=>g.rank<=3);
  const restGroups=groups.filter(g=>g.rank>3);
  const topImgs=[];
@@ -1540,101 +1549,98 @@ async function exportTopScorerImage(){
   topImgs.push(imgs);
  }
  const W=1080;
- const pad=50;
- const headerH=190;
- const topH=topGroups.reduce((sum,g)=>sum+(g.players.length>2?235:205),0);
- const restH=restGroups.reduce((sum,g)=>sum+Math.max(76,54+Math.ceil(g.names.join(', ').length/34)*28),0);
- const footerH=135;
- const H=Math.max(1350,headerH+topH+(restGroups.length?90+restH:30)+footerH+70);
+ const pad=54;
+ const headerH=178;
+ const topH=topGroups.reduce((sum,g)=>sum+(g.players.length>2?210:184),0);
+ const restH=restGroups.reduce((sum,g)=>sum+Math.max(66,48+Math.ceil(g.names.join(', ').length/38)*25),0);
+ const footerH=160;
+ const H=Math.max(1350,headerH+topH+(restGroups.length?74+restH:22)+footerH+70);
  const c=document.createElement('canvas'); c.width=W; c.height=H; const ctx=c.getContext('2d');
- // Background format WhatsApp: portrait, kontras tinggi, tidak terlalu ramai.
- const bg=ctx.createLinearGradient(0,0,0,H);
- bg.addColorStop(0,'#062b18'); bg.addColorStop(.55,'#0f5132'); bg.addColorStop(1,'#071510');
+
+ // v2.23: desain 1-tone untuk WhatsApp: satu warna utama, kontras tinggi, mudah dibaca.
+ const bg='#0b2f22';
+ const panel='#123d2d';
+ const panel2='#164833';
+ const text='#ffffff';
+ const muted='rgba(255,255,255,.72)';
+ const line='rgba(255,255,255,.16)';
  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
- ctx.fillStyle='rgba(255,210,26,.14)'; ctx.beginPath(); ctx.arc(W-120,90,210,0,Math.PI*2); ctx.fill();
- ctx.fillStyle='rgba(255,255,255,.06)'; ctx.beginPath(); ctx.arc(20,360,260,0,Math.PI*2); ctx.fill();
+ ctx.fillStyle='rgba(255,255,255,.045)'; ctx.fillRect(0,0,W,92);
+ ctx.fillStyle=text; ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+ ctx.font='900 34px Arial Black, Arial'; ctx.fillText('FC SOMBONG',W/2,52);
+ ctx.font='900 76px Arial Black, Impact, Arial'; ctx.fillText('TOP SKOR',W/2,127);
+ ctx.fillStyle=muted; ctx.font='800 26px Arial'; ctx.fillText('UPDATE '+topScorerUpdateDateLabel(),W/2,164);
 
- ctx.textAlign='center'; ctx.textBaseline='alphabetic';
- ctx.fillStyle='#ffd21a'; ctx.font='900 42px Arial Black, Arial'; ctx.fillText('FC SOMBONG',W/2,58);
- ctx.fillStyle='#ffffff'; ctx.font='900 74px Arial Black, Impact, Arial'; ctx.fillText('TOP SKOR',W/2,130);
- ctx.fillStyle='rgba(255,255,255,.82)'; ctx.font='800 27px Arial'; ctx.fillText('UPDATE '+topScorerUpdateDateLabel(),W/2,172);
-
- let y=205;
- function drawCard(x,y,w,h,r,fill,stroke){
-  ctx.save(); roundRect(ctx,x,y,w,h,r); ctx.fillStyle=fill; ctx.fill(); ctx.lineWidth=stroke?3:0; if(stroke){ctx.strokeStyle=stroke; ctx.stroke();} ctx.restore();
- }
- function fitText(text,x,y,maxW,fontSize,minSize=24,weight='900',align='left',color='#fff'){
+ let y=194;
+ function drawCard(x,y,w,h,r,fill,stroke){ctx.save(); roundRect(ctx,x,y,w,h,r); ctx.fillStyle=fill; ctx.fill(); if(stroke){ctx.lineWidth=2; ctx.strokeStyle=stroke; ctx.stroke();} ctx.restore();}
+ function fitTextLocal(textValue,x,y,maxW,fontSize,minSize=22,align='left',color=text){
   let size=fontSize; ctx.textAlign=align; ctx.fillStyle=color;
-  do{ctx.font=`${weight} ${size}px Arial Black, Arial`; if(ctx.measureText(String(text)).width<=maxW || size<=minSize)break; size-=2;}while(size>minSize);
-  ctx.fillText(String(text),x,y);
+  do{ctx.font=`900 ${size}px Arial Black, Arial`; if(ctx.measureText(String(textValue)).width<=maxW || size<=minSize)break; size-=2;}while(size>minSize);
+  ctx.fillText(String(textValue),x,y);
  }
- function drawNameLines(names,x,y,maxW,lineH,fontSize){
-  ctx.textAlign='left'; ctx.fillStyle='#082016'; ctx.font=`900 ${fontSize}px Arial Black, Arial`;
-  const joined=names.join(', ');
-  const words=joined.split(' '); let line='', lines=[];
-  words.forEach(w=>{const test=line?line+' '+w:w; if(ctx.measureText(test).width>maxW && line){lines.push(line); line=w;}else line=test;});
-  if(line)lines.push(line);
-  lines.slice(0,3).forEach((ln,i)=>ctx.fillText(ln,x,y+i*lineH));
-  return Math.min(lines.length,3)*lineH;
+ function wrapLines(textValue,maxW,fontSize){
+  ctx.font=`900 ${fontSize}px Arial Black, Arial`;
+  const words=String(textValue).split(' '); let lineText='', lines=[];
+  words.forEach(w=>{const test=lineText?lineText+' '+w:w; if(ctx.measureText(test).width>maxW && lineText){lines.push(lineText); lineText=w;}else lineText=test;});
+  if(lineText)lines.push(lineText); return lines;
  }
-
+ const medalText={1:'RANK 1',2:'RANK 2',3:'RANK 3'};
  topGroups.forEach((g,gi)=>{
-  const cardH=g.players.length>2?220:190;
+  const cardH=g.players.length>2?196:172;
   const x=pad, w=W-pad*2;
-  const fill=g.rank===1?'#fff7cc':(g.rank===2?'#f8fafc':'#fff3e0');
-  const stroke=g.rank===1?'#ffd21a':'rgba(255,255,255,.75)';
-  drawCard(x,y,w,cardH,30,fill,stroke);
-  // Rank badge
-  ctx.fillStyle='#052e16'; ctx.beginPath(); ctx.arc(x+72,y+72,48,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle='#ffd21a'; ctx.font='900 44px Arial Black, Arial'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('#'+g.rank,x+72,y+72);
-  ctx.textBaseline='alphabetic';
-  // Photos for all players in rank 1-3
+  drawCard(x,y,w,cardH,28,gi%2?panel2:panel,line);
+  // rank block
+  ctx.fillStyle='rgba(255,255,255,.10)'; roundRect(ctx,x+22,y+25,104,cardH-50,22); ctx.fill();
+  ctx.fillStyle=text; ctx.textAlign='center'; ctx.font='900 48px Arial Black, Arial'; ctx.fillText(String(g.rank),x+74,y+84);
+  ctx.fillStyle=muted; ctx.font='800 18px Arial'; ctx.fillText('RANK',x+74,y+113);
+  // photos for all players in rank 1-3
   const imgs=topImgs[gi]||[];
-  const photoR=g.players.length>=3?40:46;
-  const startX=x+155;
-  g.players.slice(0,5).forEach((p,i)=>{
-   const px=startX+i*(photoR*1.65);
-   drawPlayerAvatar(ctx,p.name,px,y+66,photoR,imgs[i]);
+  const photoR=g.players.length>=3?34:40;
+  const startX=x+158;
+  g.players.slice(0,6).forEach((p,i)=>{
+   const px=startX+i*(photoR*1.52);
+   drawPlayerAvatar(ctx,p.name,px,y+60,photoR,imgs[i]);
   });
-  if(g.players.length>5){
-   ctx.fillStyle='#052e16'; ctx.beginPath(); ctx.arc(startX+5*(photoR*1.65),y+66,photoR,0,Math.PI*2); ctx.fill();
-   ctx.fillStyle='#ffd21a'; ctx.font='900 27px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('+'+(g.players.length-5),startX+5*(photoR*1.65),y+66); ctx.textBaseline='alphabetic';
+  if(g.players.length>6){
+   const px=startX+6*(photoR*1.52);
+   ctx.fillStyle='#0a241a'; ctx.beginPath(); ctx.arc(px,y+60,photoR,0,Math.PI*2); ctx.fill();
+   ctx.fillStyle=text; ctx.font='900 22px Arial'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('+'+(g.players.length-6),px,y+60); ctx.textBaseline='alphabetic';
   }
-  // Text
-  ctx.fillStyle='#065f46'; ctx.font='900 26px Arial Black, Arial'; ctx.textAlign='left'; ctx.fillText((medal[g.rank]||'')+' PERINGKAT '+g.rank+(g.players.length>1?' BERSAMA':''),x+155,y+130);
-  drawNameLines(g.names,x+155,y+166,w-345,34,31);
-  ctx.fillStyle='#052e16'; ctx.textAlign='right'; ctx.font='900 70px Arial Black, Arial'; ctx.fillText(String(g.goals),x+w-34,y+96);
-  ctx.fillStyle='#065f46'; ctx.font='900 27px Arial Black, Arial'; ctx.fillText('GOAL',x+w-34,y+132);
-  y+=cardH+18;
+  ctx.fillStyle=muted; ctx.font='900 24px Arial'; ctx.textAlign='left'; ctx.fillText(medalText[g.rank]+(g.players.length>1?' BERSAMA':''),x+158,y+112);
+  const lines=wrapLines(g.names.join(', '),w-360,30).slice(0,2);
+  lines.forEach((ln,i)=>fitTextLocal(ln,x+158,y+150+i*32,w-360,30,22,'left',text));
+  ctx.textAlign='right'; ctx.fillStyle=text; ctx.font='900 66px Arial Black, Arial'; ctx.fillText(String(g.goals),x+w-30,y+84);
+  ctx.fillStyle=muted; ctx.font='900 25px Arial'; ctx.fillText('GOAL',x+w-30,y+116);
+  y+=cardH+16;
  });
 
  if(restGroups.length){
-  y+=12;
-  ctx.fillStyle='#ffd21a'; ctx.textAlign='left'; ctx.font='900 32px Arial Black, Arial'; ctx.fillText('PERINGKAT BERIKUTNYA',pad,y+30);
-  ctx.fillStyle='rgba(255,255,255,.78)'; ctx.font='700 22px Arial'; ctx.fillText('Urutan memakai shared rank: nilai sama = peringkat sama',pad,y+62);
-  y+=86;
+  y+=8;
+  ctx.strokeStyle=line; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(W-pad,y); ctx.stroke();
+  ctx.fillStyle=text; ctx.textAlign='left'; ctx.font='900 30px Arial Black, Arial'; ctx.fillText('DAFTAR BERIKUTNYA',pad,y+44);
+  y+=66;
   restGroups.forEach((g,idx)=>{
    const names=g.names.join(', ');
-   const rowH=Math.max(76,54+Math.ceil(names.length/34)*28);
-   drawCard(pad,y,W-pad*2,rowH,20,idx%2?'rgba(255,255,255,.10)':'rgba(255,255,255,.16)',null);
-   ctx.fillStyle='#ffd21a'; ctx.font='900 34px Arial Black, Arial'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(String(g.rank),pad+45,y+rowH/2);
+   const rowH=Math.max(66,48+Math.ceil(names.length/38)*25);
+   drawCard(pad,y,W-pad*2,rowH,18,idx%2?panel2:panel,line);
+   ctx.fillStyle=text; ctx.font='900 32px Arial Black, Arial'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(String(g.rank),pad+42,y+rowH/2);
    ctx.textBaseline='alphabetic';
-   ctx.fillStyle='#ffffff'; ctx.font='900 29px Arial Black, Arial'; ctx.textAlign='left';
-   wrapCanvasText(ctx,names,pad+95,y+31,W-pad*2-235,30);
-   ctx.fillStyle='#ffd21a'; ctx.font='900 38px Arial Black, Arial'; ctx.textAlign='right'; ctx.fillText(String(g.goals),W-pad-28,y+43);
-   ctx.fillStyle='rgba(255,255,255,.75)'; ctx.font='800 18px Arial'; ctx.fillText('goal',W-pad-28,y+67);
-   y+=rowH+10;
+   ctx.fillStyle=text; ctx.font='900 27px Arial Black, Arial'; ctx.textAlign='left';
+   wrapCanvasText(ctx,names,pad+92,y+31,W-pad*2-220,28);
+   ctx.fillStyle=text; ctx.font='900 36px Arial Black, Arial'; ctx.textAlign='right'; ctx.fillText(String(g.goals),W-pad-26,y+40);
+   ctx.fillStyle=muted; ctx.font='800 17px Arial'; ctx.fillText('goal',W-pad-26,y+62);
+   y+=rowH+9;
   });
  }
 
- // Catatan singkat agar mudah dipahami di WA.
- y+=18;
- drawCard(pad,y,W-pad*2,62,18,'rgba(255,210,26,.14)','#ffd21a');
- ctx.fillStyle='#fff7cc'; ctx.font='800 22px Arial'; ctx.textAlign='center'; ctx.fillText('Nilai gol yang sama berbagi peringkat yang sama • Foto hanya untuk peringkat 1–3',W/2,y+39);
+ y+=16;
+ drawCard(pad,y,W-pad*2,58,18,'rgba(255,255,255,.07)',line);
+ ctx.fillStyle=muted; ctx.font='800 21px Arial'; ctx.textAlign='center'; ctx.fillText('Gol sama = peringkat sama • Foto ditampilkan untuk Rank 1–3',W/2,y+36);
 
  await drawSponsorFooter(ctx,W,H,{footerH});
- if(safeDownloadCanvas(c,'top-skor-wa-fc-sombong-'+new Date().toISOString().slice(0,10)+'.png')) showToast('Export berhasil','Gambar Top Skor format WhatsApp sudah dibuat.');
+ if(safeDownloadCanvas(c,'top-skor-wa-fc-sombong-'+new Date().toISOString().slice(0,10)+'.png')) showToast('Export berhasil','Gambar Top Skor format WhatsApp 1-tone sudah dibuat.');
 }
+
 function bindTopScorerExport(){
  if($('topScorerExportDate') && !$('topScorerExportDate').value) $('topScorerExportDate').value=new Date().toISOString().slice(0,10);
  if($('aiTodayDate') && !$('aiTodayDate').value) $('aiTodayDate').value=new Date().toISOString().slice(0,10);
