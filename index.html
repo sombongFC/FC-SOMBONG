@@ -228,6 +228,21 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 .bannerLightboxHint{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);color:#fff;background:rgba(0,0,0,.35);padding:8px 12px;border-radius:999px;font-size:12px;font-weight:800}
 @media(max-width:760px){.bannerLightbox{padding:10px}.bannerLightbox img{max-width:98vw;max-height:88vh;border-radius:10px}}
 
+
+
+/* v2.29 recent/history match detail layout */
+.compactMatch .matchLine{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)!important;align-items:center!important;}
+.compactMatch .matchScorers{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px;align-items:start;margin-top:8px;font-size:12.5px;line-height:1.35;color:#0f172a;}
+.compactMatch .scorerCol{min-width:0;overflow-wrap:anywhere;word-break:break-word;}
+.compactMatch .scorerCol.home{text-align:left;}
+.compactMatch .scorerCol.away{text-align:right;}
+.compactMatch .matchExtra{min-width:92px;text-align:center;color:#64748b;font-size:11.5px;line-height:1.35;}
+.compactMatch .matchExtra span{display:block;}
+.historyDateGroup{margin:22px 0 10px;border-top:2px solid #0f172a;padding-top:12px;}
+.historyDateGroup:first-child{margin-top:4px;}
+.historyDateTitle{display:inline-block;background:#0f172a;color:#fff;border-radius:999px;padding:7px 12px;font-weight:900;font-size:12px;letter-spacing:.04em;text-transform:uppercase;}
+@media(max-width:640px){.compactMatch .matchScorers{grid-template-columns:1fr;gap:4px}.compactMatch .scorerCol.away{text-align:left}.compactMatch .matchExtra{text-align:left;min-width:0}.historyDateGroup{margin-top:18px}}
+
 </style>
 </head>
 <body>
@@ -1257,7 +1272,28 @@ function fmtShortDate(dateStr){
  if(Number.isNaN(d.getTime())) return escapeHtml(dateStr||'-');
  return d.toLocaleDateString('id-ID',{day:'2-digit',month:'short'}).replace('.', '');
 }
-function renderMatches(matches, showActions=false){const all=load(); const reversed=matches.slice().reverse(); return reversed.map((m,revIdx)=>{let idx=-1; if(showActions && matches.length===all.length){idx=all.length-1-revIdx;} else if(showActions){idx=all.findIndex(x=>x.date===m.date&&x.home===m.home&&x.away===m.away&&+x.hs===+m.hs&&+x.as===+m.as&&JSON.stringify(x.homeScorers||[])===JSON.stringify(m.homeScorers||[])&&JSON.stringify(x.awayScorers||[])===JSON.stringify(m.awayScorers||[]));} const cards=(m.cards||[]).map(c=>`${escapeHtml(c.player)} (${c.type==='red'?'M':'K'})`).join(', ')||'-'; const meta=`${fmtShortDate(m.date)} • H: ${(m.homeScorers||[]).map(escapeHtml).join(', ')||'-'} • A: ${(m.awayScorers||[]).map(escapeHtml).join(', ')||'-'}${m.penaltyWinner?` • Pen: ${escapeHtml(m.penaltyWinner)}`:''} • Kartu: ${cards}`; const actions=showActions&&idx>-1?`<div class="adminActions"><button type="button" onclick="editMatch(${idx})">✏️ Edit</button><button type="button" class="dangerMini" onclick="deleteMatch(${idx})">🗑 Hapus</button></div>`:''; return `<div class="match compactMatch"><div class="matchMain"><div class="matchLine"><span class="teamName">${escapeHtml(m.home)}</span><span class="scoreInline">${m.hs} - ${m.as}</span><span class="teamName">${escapeHtml(m.away)}</span></div><div class="matchMeta">${meta}</div>${actions}</div></div>`}).join('')||'<p class="muted">Belum ada match.</p>'}
+function renderMatches(matches, showActions=false, groupByDate=false){
+ const all=load();
+ const reversed=matches.slice().reverse();
+ if(!reversed.length)return '<p class="muted">Belum ada match.</p>';
+ let lastDate='';
+ return reversed.map((m,revIdx)=>{
+  let idx=-1;
+  if(showActions && matches.length===all.length){idx=all.length-1-revIdx;}
+  else if(showActions){idx=all.findIndex(x=>x.date===m.date&&x.home===m.home&&x.away===m.away&&+x.hs===+m.hs&&+x.as===+m.as&&JSON.stringify(x.homeScorers||[])===JSON.stringify(m.homeScorers||[])&&JSON.stringify(x.awayScorers||[])===JSON.stringify(m.awayScorers||[]));}
+  const homeGoals=(m.homeScorers||[]).map(escapeHtml).join(', ')||'-';
+  const awayGoals=(m.awayScorers||[]).map(escapeHtml).join(', ')||'-';
+  const cardList=(m.cards||[]).map(c=>`${escapeHtml(c.player)} (${c.type==='red'?'Merah':'Kuning'})`).join(', ');
+  const extras=[];
+  extras.push(`<span>${fmtShortDate(m.date)}</span>`);
+  if(m.penaltyWinner) extras.push(`<span>Pen: ${escapeHtml(m.penaltyWinner)}</span>`);
+  if(cardList) extras.push(`<span>Kartu: ${cardList}</span>`);
+  const actions=showActions&&idx>-1?`<div class="adminActions"><button type="button" onclick="editMatch(${idx})">✏️ Edit</button><button type="button" class="dangerMini" onclick="deleteMatch(${idx})">🗑 Hapus</button></div>`:'';
+  let group='';
+  if(groupByDate && m.date!==lastDate){lastDate=m.date; group=`<div class="historyDateGroup"><span class="historyDateTitle">${fmtShortDate(m.date)}</span></div>`;}
+  return `${group}<div class="match compactMatch"><div class="matchMain"><div class="matchLine"><span class="teamName">${escapeHtml(m.home)}</span><span class="scoreInline">${m.hs} - ${m.as}</span><span class="teamName">${escapeHtml(m.away)}</span></div><div class="matchScorers"><div class="scorerCol home">${homeGoals}</div><div class="matchExtra">${extras.join('')}</div><div class="scorerCol away">${awayGoals}</div></div>${actions}</div></div>`;
+ }).join('');
+}
 function renderAdminMatches(matches){
  if(!isSuperAdmin()) return '<div class="adminLocked">Login sebagai <b>superadmin</b> untuk melihat tombol edit dan hapus pertandingan.</div>';
  const all=load();
@@ -1319,7 +1355,7 @@ function renderTopScorers(ps){
  return html;
 }
 function bindTopScorerUploads(){}
-function render(){applyLeagueTitle(); const matches=load(), st=standings(matches), ps=playerStats(); $('statTeams').textContent=activeTeams().length; $('statMatches').textContent=matches.length; $('statGoals').textContent=matches.reduce((s,m)=>s+m.hs+m.as,0); $('statTop').textContent=ps[0]?`${ps[0].name} (${ps[0].goals})`:'-'; $('recentMatches').innerHTML=renderMatches(matches.slice(-6), false); $('matchList').innerHTML=renderMatches(matches, false); if($('adminMatchList')) $('adminMatchList').innerHTML=renderAdminMatches(matches);
+function render(){applyLeagueTitle(); const matches=load(), st=standings(matches), ps=playerStats(); $('statTeams').textContent=activeTeams().length; $('statMatches').textContent=matches.length; $('statGoals').textContent=matches.reduce((s,m)=>s+m.hs+m.as,0); $('statTop').textContent=ps[0]?`${ps[0].name} (${ps[0].goals})`:'-'; $('recentMatches').innerHTML=renderMatches(matches.slice(-6), false, false); $('matchList').innerHTML=renderMatches(matches, false, true); if($('adminMatchList')) $('adminMatchList').innerHTML=renderAdminMatches(matches);
  $('miniStandings').innerHTML=st.slice(0,5).map((r,i)=>{const dotColor=i===0?'#16a34a':(i===st.slice(0,5).length-1?'#dc2626':'#f59e0b'); return `<div class="standingRow"><span><span class="rankDot" style="background:${dotColor}"></span>${i+1}. ${escapeHtml(r.team)}</span><span class="badge">${r.pts} pts</span></div>`}).join('')||'<p class="muted">Belum ada klasemen.</p>';
  const photos=playerPhotos(); const topGroups=rankedTopScorerGroups().slice(0,6);
  $('miniTopScorers').innerHTML=topGroups.length?topGroups.map((g)=>{
