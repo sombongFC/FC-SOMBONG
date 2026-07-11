@@ -154,6 +154,7 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 
 
 /* v2.24 Top Skor WA export putih-hitam */
+/* v2.30 robust player photo lookup */
 /* v2.14 export click fix */
 #exportStandingsImage,#exportTopScorerImage,#moreExportStandings,#copyStandingsWA,#copyTopScorerWA,#moreCopyStandings,#moreCopyTopScorer{pointer-events:auto!important;position:relative;z-index:50;cursor:pointer!important}
 
@@ -838,8 +839,55 @@ function load(){
  try{return JSON.parse(raw)||[]}catch(_e){return []}
 }
 function save(data){localStorage.setItem('matches_v2',JSON.stringify(data))}
-function playerPhotos(){return JSON.parse(localStorage.getItem('player_photos_v1')||'{}')}
+function playerPhotos(){
+ try{return JSON.parse(localStorage.getItem('player_photos_v1')||'{}')||{}}catch(_e){return {}}
+}
 function savePlayerPhotos(obj){localStorage.setItem('player_photos_v1',JSON.stringify(obj))}
+
+// Pencarian foto dibuat toleran terhadap huruf besar/kecil, spasi, tanda baca,
+// key lama, serta value berbentuk string atau object.
+function photoNameKey(name){
+ return String(name||'')
+  .normalize('NFKD')
+  .replace(/[\u0300-\u036f]/g,'')
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g,'')
+  .trim();
+}
+function photoDataUrl(value){
+ if(typeof value==='string')return value;
+ if(value&&typeof value==='object'){
+  return value.dataUrl||value.image||value.src||value.photo||value.url||'';
+ }
+ return '';
+}
+function resolvePlayerPhoto(name, photosObj){
+ const photos=photosObj||playerPhotos();
+ const exact=photos[keyName(name)];
+ const exactUrl=photoDataUrl(exact);
+ if(exactUrl)return exactUrl;
+
+ const wanted=photoNameKey(name);
+ if(!wanted)return '';
+ for(const [storedName,storedValue] of Object.entries(photos)){
+  if(photoNameKey(storedName)===wanted){
+   const url=photoDataUrl(storedValue);
+   if(url)return url;
+  }
+ }
+
+ // Fallback aman untuk key lama yang mungkin berisi nama tim/label tambahan.
+ const candidates=[];
+ for(const [storedName,storedValue] of Object.entries(photos)){
+  const storedKey=photoNameKey(storedName);
+  if(storedKey && (storedKey.includes(wanted)||wanted.includes(storedKey))){
+   const url=photoDataUrl(storedValue);
+   if(url)candidates.push({storedKey,url});
+  }
+ }
+ if(candidates.length===1)return candidates[0].url;
+ return '';
+}
 function initialGoals(){return JSON.parse(localStorage.getItem('initial_goals_v1')||'{}')}
 function saveInitialGoals(obj){localStorage.setItem('initial_goals_v1',JSON.stringify(obj||{}))}
 function readBigState(key, fallback='{}'){
@@ -1338,7 +1386,7 @@ function renderTopScorers(ps){
   topGroups.forEach(g=>{
    html+=`<div class="topRankGroup"><div class="topRankHead"><span class="topRankBadge">${medal(g.rank)} Rank #${g.rank}</span><span class="topRankGoals">${g.goals} goal</span></div><div class="topRankPlayers">`;
    g.players.forEach(p=>{
-    const src=photos[keyName(p.name)]||'';
+    const src=resolvePlayerPhoto(p.name,photos);
     html+=`<div class="topRankPlayer"><div>${src?`<img class="rankPhoto" src="${src}" alt="${escapeHtml(p.name)}">`:'<div class="rankPhoto"></div>'}</div><div><strong>${escapeHtml(p.name)}</strong><small>${escapeHtml(p.teams)} • Main ${p.appearances}x${p.initialGoals?` • Goal awal ${p.initialGoals}`:''}</small></div></div>`;
    });
    html+='</div></div>';
@@ -1363,7 +1411,7 @@ function render(){applyLeagueTitle(); const matches=load(), st=standings(matches
   let avatars='';
   if(g.rank<=3){
    avatars='<span class="miniTopPhotos">'+g.players.map((p)=>{
-    const img=photos[keyName(p.name)]||'';
+    const img=resolvePlayerPhoto(p.name,photos);
     return img?`<img class="miniTopAvatar" src="${img}" alt="${escapeHtml(p.name)}">`:`<span class="miniTopAvatar placeholder">👤</span>`;
    }).join('')+'</span>';
   } else {
@@ -1634,7 +1682,7 @@ async function exportTopScorerImage(){
  const topImgs=[];
  for(const g of topGroups){
   const imgs=[];
-  for(const p of g.players){ imgs.push(await loadCanvasImage(photos[keyName(p.name)]||null)); }
+  for(const p of g.players){ imgs.push(await loadCanvasImage(resolvePlayerPhoto(p.name,photos)||null)); }
   topImgs.push(imgs);
  }
  // v2.28: Export Top Skor harus mengambil sponsor dari data upload website.
@@ -1918,7 +1966,7 @@ async function exportStandingsImage(){
  await drawSponsorFooter(ctx,W,H,{footerH});
  if(safeDownloadCanvas(c,'klasemen-fc-sombong-'+new Date().toISOString().slice(0,10)+'.png')) showToast('Export berhasil','Gambar klasemen sudah dibuat.');
 }
-function renderPlayers(){const q=keyName($('playerSearch').value); const photos=playerPhotos(); const rows=playerStats().filter(p=>!q||keyName(p.name).includes(q)); $('playersTable').innerHTML='<tr><th>Foto</th><th>Nama</th><th>Club History</th><th>Main/Hadir</th><th>Goal</th><th>Goal ÷ Main</th><th>Kuning</th><th>Merah</th><th>Ganti Foto</th></tr>'+rows.map(p=>{const src=photos[keyName(p.name)]||''; return `<tr><td>${src?`<img class="playerPhoto" src="${src}">`:'<div class="playerPhoto"></div>'}</td><td>${escapeHtml(p.name)}</td><td>${escapeHtml(p.teams)}</td><td>${p.appearances}</td><td>${p.goals}</td><td>${p.goalPerMatch}</td><td>${p.yellow}</td><td>${p.red}</td><td><input class="photoInput" type="file" accept="image/*" data-player="${escapeHtml(p.name)}"></td></tr>`}).join(''); document.querySelectorAll('.photoInput').forEach(inp=>inp.onchange=e=>setPlayerPhoto(inp.dataset.player,e.target.files?.[0]));}
+function renderPlayers(){const q=keyName($('playerSearch').value); const photos=playerPhotos(); const rows=playerStats().filter(p=>!q||keyName(p.name).includes(q)); $('playersTable').innerHTML='<tr><th>Foto</th><th>Nama</th><th>Club History</th><th>Main/Hadir</th><th>Goal</th><th>Goal ÷ Main</th><th>Kuning</th><th>Merah</th><th>Ganti Foto</th></tr>'+rows.map(p=>{const src=resolvePlayerPhoto(p.name,photos); return `<tr><td>${src?`<img class="playerPhoto" src="${src}">`:'<div class="playerPhoto"></div>'}</td><td>${escapeHtml(p.name)}</td><td>${escapeHtml(p.teams)}</td><td>${p.appearances}</td><td>${p.goals}</td><td>${p.goalPerMatch}</td><td>${p.yellow}</td><td>${p.red}</td><td><input class="photoInput" type="file" accept="image/*" data-player="${escapeHtml(p.name)}"></td></tr>`}).join(''); document.querySelectorAll('.photoInput').forEach(inp=>inp.onchange=e=>setPlayerPhoto(inp.dataset.player,e.target.files?.[0]));}
 
 function loadCompetitionSettingsForm(){
  const cfg=compSettings();
