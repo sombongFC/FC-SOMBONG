@@ -244,6 +244,13 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 .historyDateTitle{display:inline-block;background:#0f172a;color:#fff;border-radius:999px;padding:7px 12px;font-weight:900;font-size:12px;letter-spacing:.04em;text-transform:uppercase;}
 @media(max-width:640px){.compactMatch .matchScorers{grid-template-columns:1fr;gap:4px}.compactMatch .scorerCol.away{text-align:left}.compactMatch .matchExtra{text-align:left;min-width:0}.historyDateGroup{margin-top:18px}}
 
+
+/* v2.32 Top Assist 10 + photo + export */
+.assistTopRow{grid-template-columns:48px 52px minmax(0,1fr) auto}
+.assistTopPhoto{width:46px;height:46px;border-radius:999px;object-fit:cover;background:#f3f4f6;border:2px solid #bbf7d0}
+.assistTopTools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0 16px}
+.assistTopTools button{width:auto;padding:12px 16px;border-radius:14px}
+@media(max-width:560px){.assistTopRow{grid-template-columns:38px 44px minmax(0,1fr) auto}.assistTopPhoto{width:40px;height:40px}.assistTopStat{font-size:13px}}
 </style>
 </head>
 <body>
@@ -439,7 +446,7 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
     <div class="panel">
       <h2>Statistik & Pencarian Pemain</h2>
       <input id="playerSearch" class="searchBox" placeholder="Cari nama pemain...">
-      <p class="muted">Ganti foto pemain dilakukan dari halaman ini agar tampilan Top Skor tetap rapi. Foto otomatis muncul di Top Skor.</p>
+      <p class="muted">Ganti foto pemain dilakukan dari halaman ini agar tampilan Top Skor tetap rapi. Foto otomatis muncul di Top Skor dan Top Assist.</p>
       <div class="tableWrap"><table id="playersTable"></table></div>
     </div>
   </section>
@@ -458,7 +465,14 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
         <button type="button" class="secondary" id="copyTopScorerWA">Copy Teks WA</button>
       </div>
       <div id="scorerList"></div>
-      <div class="panel" style="margin-top:18px"><div class="panelHead"><h2 style="margin:0">Top Assist</h2><span class="badge">3 Tertinggi</span></div><div id="topAssistList"></div></div>
+      <div class="panel" style="margin-top:18px">
+        <div class="panelHead"><h2 style="margin:0">Top Assist</h2><span class="badge">10 Tertinggi</span></div>
+        <p class="muted">Menggunakan nama dan foto pemain yang sama dari data pemain. Urutan: assist terbanyak, lalu goal terbanyak.</p>
+        <div class="assistTopTools">
+          <button type="button" id="exportTopAssistImage">Export Gambar Top Assist</button>
+        </div>
+        <div id="topAssistList"></div>
+      </div>
     </div>
   </section>
 
@@ -1448,9 +1462,10 @@ function renderTopScorers(ps){
 }
 function bindTopScorerUploads(){}
 function renderTopAssists(ps){
- const top=(ps||playerStats()).filter(p=>p.assists>0).sort((a,b)=>b.assists-a.assists||b.goals-a.goals||a.name.localeCompare(b.name)).slice(0,3);
+ const photos=playerPhotos();
+ const top=(ps||playerStats()).filter(p=>p.assists>0).sort((a,b)=>b.assists-a.assists||b.goals-a.goals||a.name.localeCompare(b.name)).slice(0,10);
  if(!top.length)return '<p class="muted">Belum ada data assist.</p>';
- return `<div class="assistTopList">${top.map((p,i)=>`<div class="assistTopRow"><div class="assistTopRank">#${i+1}</div><div><strong>${escapeHtml(p.name)}</strong><div class="muted">${escapeHtml(p.teams||'-')}</div></div><div class="assistTopStat">${p.assists} Assist<small>${p.goals} Goal</small></div></div>`).join('')}</div>`;
+ return `<div class="assistTopList">${top.map((p,i)=>{const src=resolvePlayerPhoto(p.name,photos); return `<div class="assistTopRow"><div class="assistTopRank">#${i+1}</div><div>${src?`<img class="assistTopPhoto" src="${src}" alt="${escapeHtml(p.name)}">`:'<div class="assistTopPhoto"></div>'}</div><div><strong>${escapeHtml(p.name)}</strong><div class="muted">${escapeHtml(p.teams||'-')}</div></div><div class="assistTopStat">${p.assists} Assist<small>${p.goals} Goal</small></div></div>`}).join('')}</div>`;
 }
 function render(){applyLeagueTitle(); const matches=load(), st=standings(matches), ps=playerStats(); $('statTeams').textContent=activeTeams().length; $('statMatches').textContent=matches.length; $('statGoals').textContent=matches.reduce((s,m)=>s+m.hs+m.as,0); $('statTop').textContent=ps[0]?`${ps[0].name} (${ps[0].goals})`:'-'; $('recentMatches').innerHTML=renderMatches(matches.slice(-6), false, false); $('matchList').innerHTML=renderMatches(matches, false, true); if($('adminMatchList')) $('adminMatchList').innerHTML=renderAdminMatches(matches);
  $('miniStandings').innerHTML=st.slice(0,5).map((r,i)=>{const dotColor=i===0?'#16a34a':(i===st.slice(0,5).length-1?'#dc2626':'#f59e0b'); return `<div class="standingRow"><span><span class="rankDot" style="background:${dotColor}"></span>${i+1}. ${escapeHtml(r.team)}</span><span class="badge">${r.pts} pts</span></div>`}).join('')||'<p class="muted">Belum ada klasemen.</p>';
@@ -1913,10 +1928,59 @@ async function exportTopScorerImage(){
  if(safeDownloadCanvas(c,'top-skor-wa-putih-hitam-v228-'+new Date().toISOString().slice(0,10)+'.png')) showToast('Export berhasil','Gambar Top Skor v2.28 sudah dirapikan dan sponsor mengikuti data website.');
 }
 
+async function exportTopAssistImage(){
+ const top=playerStats().filter(p=>p.assists>0).sort((a,b)=>b.assists-a.assists||b.goals-a.goals||a.name.localeCompare(b.name)).slice(0,10);
+ if(!top.length)return showToast('Belum ada data','Top Assist masih kosong.','error');
+ const photos=playerPhotos();
+ const imgs=[];
+ for(const p of top) imgs.push(await loadCanvasImage(resolvePlayerPhoto(p.name,photos)||null));
+ let sponsorList=[];
+ if(typeof sponsorsList==='function') sponsorList=sponsorsList().filter(s=>s&&s.logo).slice(0,4);
+ if(!sponsorList.length){
+  const sponsorData=typeof sponsors==='function'?sponsors():null;
+  sponsorList=(Array.isArray(sponsorData?.list)?sponsorData.list:(Array.isArray(sponsorData?.slots)?sponsorData.slots:[])).filter(s=>s&&s.logo).slice(0,4);
+ }
+ const sponsorImgs=[]; for(const sp of sponsorList) sponsorImgs.push(await loadCanvasImage(sp.logo));
+ const W=1080,pad=56,rowH=96,headerH=210,footerH=180,H=headerH+(top.length*rowH)+footerH+50;
+ const c=document.createElement('canvas'); c.width=W; c.height=H; const ctx=c.getContext('2d');
+ ctx.fillStyle='#fff'; ctx.fillRect(0,0,W,H); ctx.fillStyle='#111'; ctx.textAlign='center';
+ ctx.font='900 28px Arial'; ctx.fillText('FC SOMBONG',W/2,44);
+ ctx.font='900 72px Arial'; ctx.fillText('TOP ASSIST',W/2,112);
+ ctx.font='800 20px Arial'; ctx.fillStyle='#555'; ctx.fillText('10 PEMAIN TERTINGGI • UPDATE '+topScorerUpdateDateLabel(),W/2,158);
+ ctx.strokeStyle='#111';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(pad,184);ctx.lineTo(W-pad,184);ctx.stroke();
+ let y=headerH;
+ top.forEach((p,i)=>{
+  if(i%2===0){ctx.fillStyle='#f7f7f7';ctx.fillRect(pad,y-6,W-pad*2,rowH)}
+  ctx.fillStyle='#111';ctx.textAlign='center';ctx.font='900 38px Arial';ctx.fillText(String(i+1),pad+30,y+52);
+  const cx=pad+106,cy=y+40,r=34,img=imgs[i];
+  ctx.save();ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.clip();ctx.fillStyle='#f1f1f1';ctx.fillRect(cx-r,cy-r,r*2,r*2);
+  if(img){const sc=Math.max((r*2)/img.width,(r*2)/img.height),iw=img.width*sc,ih=img.height*sc;ctx.drawImage(img,cx-iw/2,cy-ih/2,iw,ih)}
+  ctx.restore();ctx.strokeStyle='#111';ctx.lineWidth=2;ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.stroke();
+  ctx.textAlign='left';ctx.fillStyle='#111';ctx.font='900 30px Arial';ctx.fillText(String(p.name||'').toUpperCase(),pad+160,y+36);
+  ctx.fillStyle='#666';ctx.font='700 17px Arial';ctx.fillText(String(p.teams||'-').toUpperCase(),pad+160,y+62);
+  ctx.textAlign='right';ctx.fillStyle='#111';ctx.font='900 42px Arial';ctx.fillText(String(p.assists),W-pad-88,y+42);
+  ctx.font='900 17px Arial';ctx.fillText('ASSIST',W-pad-18,y+42);
+  ctx.fillStyle='#666';ctx.font='800 16px Arial';ctx.fillText(String(p.goals)+' GOAL',W-pad-18,y+66);
+  ctx.strokeStyle='#ddd';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(pad,y+rowH-6);ctx.lineTo(W-pad,y+rowH-6);ctx.stroke();
+  y+=rowH;
+ });
+ const footerTop=H-footerH;ctx.strokeStyle='#111';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(pad,footerTop+8);ctx.lineTo(W-pad,footerTop+8);ctx.stroke();
+ ctx.fillStyle='#111';ctx.textAlign='center';ctx.font='900 20px Arial';ctx.fillText('SPONSORED BY',W/2,footerTop+42);
+ const slots=4,slotW=(W-pad*2-24)/slots;
+ for(let i=0;i<slots;i++){
+  const sx=pad+i*(slotW+8),sy=footerTop+58,sh=72;ctx.strokeStyle='#e5e5e5';ctx.lineWidth=1;ctx.strokeRect(sx,sy,slotW,sh);
+  const sp=sponsorList[i],im=sponsorImgs[i];
+  if(sp&&im){const sc=Math.min((slotW-22)/im.width,38/im.height,1),iw=im.width*sc,ih=im.height*sc;ctx.drawImage(im,sx+(slotW-iw)/2,sy+8,iw,ih);ctx.fillStyle='#111';ctx.font='800 11px Arial';ctx.textAlign='center';ctx.fillText(String(sp.name||'SPONSOR').toUpperCase(),sx+slotW/2,sy+61)}
+ }
+ ctx.fillStyle='#111';ctx.font='900 15px Arial';ctx.textAlign='center';ctx.fillText('FC SOMBONG • COMMUNITY LEAGUE MANAGEMENT',W/2,H-18);
+ if(safeDownloadCanvas(c,'top-assist-10-'+new Date().toISOString().slice(0,10)+'.png')) showToast('Export berhasil','Gambar Top Assist 10 pemain sudah dibuat.');
+}
+
 function bindTopScorerExport(){
  if($('topScorerExportDate') && !$('topScorerExportDate').value) $('topScorerExportDate').value=new Date().toISOString().slice(0,10);
  if($('aiTodayDate') && !$('aiTodayDate').value) $('aiTodayDate').value=new Date().toISOString().slice(0,10);
  if($('exportTopScorerImage')) $('exportTopScorerImage').onclick=exportTopScorerImage;
+ if($('exportTopAssistImage')) $('exportTopAssistImage').onclick=exportTopAssistImage;
  if($('copyTopScorerWA')) $('copyTopScorerWA').onclick=copyTopScorerWA;
  bindExportButtonsForce && bindExportButtonsForce();
 }
