@@ -1648,7 +1648,7 @@ function loadCanvasImage(src){
  });
 }
 async function drawSponsorFooter(ctx,W,H,opts={}){
- const footerH=opts.footerH||170;
+ const footerH=opts.footerH||190;
  const y=H-footerH;
  const list=(typeof sponsorsList==='function'?sponsorsList():[]).filter(x=>x&&(x.logo||x.name));
  ctx.save();
@@ -1663,7 +1663,7 @@ async function drawSponsorFooter(ctx,W,H,opts={}){
   for(let i=0;i<maxSlots;i++){
    const sp=list[i];
    const img=await loadCanvasImage(sp.logo||null);
-   const boxX=x, boxY=y+56, boxH=76;
+   const boxX=x, boxY=y+52, boxH=72;
    ctx.fillStyle='#ffffff'; roundRect(ctx,boxX,boxY,slotW,boxH,14); ctx.fill();
    ctx.strokeStyle='#eeeeee'; ctx.lineWidth=1; roundRect(ctx,boxX,boxY,slotW,boxH,14); ctx.stroke();
    if(img){
@@ -1677,14 +1677,17 @@ async function drawSponsorFooter(ctx,W,H,opts={}){
    if(sp.name){
     ctx.fillStyle='#222222'; ctx.font='700 14px Arial'; ctx.textAlign='center';
     const nm=String(sp.name).toUpperCase();
-    ctx.fillText(nm.length>18?nm.slice(0,18)+'…':nm,boxX+slotW/2,y+152);
+    ctx.fillText(nm.length>18?nm.slice(0,18)+'…':nm,boxX+slotW/2,y+145);
    }
    x+=slotW+gap;
   }
  }else{
   ctx.fillStyle='#555555'; ctx.font='800 22px Arial'; ctx.textAlign='center'; ctx.fillText('Belum ada sponsor',W/2,y+98);
  }
- ctx.fillStyle='#111111'; ctx.font='800 17px Arial'; ctx.textAlign='center'; ctx.fillText('FC SOMBONG • COMMUNITY LEAGUE MANAGEMENT',W/2,H-14);
+ // Identitas liga ditempatkan di area footer paling bawah, kecil dan terpisah dari nama sponsor.
+ ctx.strokeStyle='#d9dfdc'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(90,H-31); ctx.lineTo(W-90,H-31); ctx.stroke();
+ ctx.fillStyle='#31463a'; ctx.font='700 11px Arial'; ctx.textAlign='center';
+ ctx.fillText('FC SOMBONG  •  COMMUNITY LEAGUE MANAGEMENT',W/2,H-11);
  ctx.restore();
 }
 
@@ -2034,7 +2037,7 @@ function drawFormPill(ctx,letter,cx,cy,r){
 }
 async function exportStandingsImage(){
  const x=currentStandingsForExport(); if(!x.rows.length)return showToast('Belum ada data','Klasemen masih kosong.','error');
- const W=1080, pad=50, rowH=76, headerH=232, footerH=170;
+ const W=1080, pad=50, rowH=76, headerH=232, footerH=190;
  const H=headerH+x.rows.length*rowH+footerH+24;
  const c=document.createElement('canvas'); c.width=W; c.height=H; const ctx=c.getContext('2d');
  // clean light background, Premier-League-style table
