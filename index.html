@@ -245,7 +245,11 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 @media(max-width:640px){.compactMatch .matchScorers{grid-template-columns:1fr;gap:4px}.compactMatch .scorerCol.away{text-align:left}.compactMatch .matchExtra{text-align:left;min-width:0}.historyDateGroup{margin-top:18px}}
 
 
-/* v2.32 Top Assist 10 + photo + export */
+/* v2.33 compact scorer + assist in recent/history */
+.compactGoalLine{font-weight:800;line-height:1.45;margin:2px 0;color:#0f172a}
+.compactAssist{font-weight:700;color:#64748b;font-size:.92em}
+
+/* v2.33 Top Assist 10 + photo + export */
 .assistTopRow{grid-template-columns:48px 52px minmax(0,1fr) auto}
 .assistTopPhoto{width:46px;height:46px;border-radius:999px;object-fit:cover;background:#f3f4f6;border:2px solid #bbf7d0}
 .assistTopTools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:12px 0 16px}
@@ -1376,6 +1380,14 @@ function fmtShortDate(dateStr){
  if(Number.isNaN(d.getTime())) return escapeHtml(dateStr||'-');
  return d.toLocaleDateString('id-ID',{day:'2-digit',month:'short'}).replace('.', '');
 }
+function compactGoalLines(scorers=[], assists=[]){
+ if(!scorers.length)return '<span class="muted">-</span>';
+ return scorers.map((name,i)=>{
+  const scorer=escapeHtml(name||'');
+  const assist=normalizeName((assists||[])[i]||'');
+  return `<div class="compactGoalLine">⚽ ${scorer}${assist?` <span class="compactAssist">(A: ${escapeHtml(assist)})</span>`:''}</div>`;
+ }).join('');
+}
 function renderMatches(matches, showActions=false, groupByDate=false){
  const all=load();
  const reversed=matches.slice().reverse();
@@ -1385,8 +1397,8 @@ function renderMatches(matches, showActions=false, groupByDate=false){
   let idx=-1;
   if(showActions && matches.length===all.length){idx=all.length-1-revIdx;}
   else if(showActions){idx=all.findIndex(x=>x.date===m.date&&x.home===m.home&&x.away===m.away&&+x.hs===+m.hs&&+x.as===+m.as&&JSON.stringify(x.homeScorers||[])===JSON.stringify(m.homeScorers||[])&&JSON.stringify(x.awayScorers||[])===JSON.stringify(m.awayScorers||[]));}
-  const homeGoals=(m.homeScorers||[]).map(escapeHtml).join(', ')||'-';
-  const awayGoals=(m.awayScorers||[]).map(escapeHtml).join(', ')||'-';
+  const homeGoals=compactGoalLines(m.homeScorers||[],m.homeAssists||[]);
+  const awayGoals=compactGoalLines(m.awayScorers||[],m.awayAssists||[]);
   const cardList=(m.cards||[]).map(c=>`${escapeHtml(c.player)} (${c.type==='red'?'Merah':'Kuning'})`).join(', ');
   const extras=[];
   extras.push(`<span>${fmtShortDate(m.date)}</span>`);
