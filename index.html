@@ -274,6 +274,9 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 @keyframes drawFlow{to{stroke-dashoffset:0}}@keyframes nodePop{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}@keyframes flowStageSwap{0%{opacity:.35;transform:translateY(6px) scale(.99)}100%{opacity:1;transform:none}}
 @media(max-width:760px){.analyticsLayout{grid-template-columns:1fr}.analyticsTeamList{grid-template-columns:repeat(3,minmax(0,1fr))}.analyticsTeamBtn{text-align:center;padding:11px 8px}.flowStage{padding:12px;min-height:330px}.flowCanvas{min-height:285px}.flowHeadline h3{font-size:19px}.analyticsActions{width:100%;margin-left:0}.analyticsActions button{flex:1}.playerEditActions{grid-template-columns:1fr}.h2hGrid{grid-template-columns:repeat(2,1fr)}}
 
+.smartNameHint{margin-top:8px;padding:10px 12px;border:1px solid #bbf7d0;background:#f0fdf4;color:#166534;border-radius:14px;font-size:12px;line-height:1.45}.smartNameHint b{color:#064e3b}
+
+/* v3.1 Hary merge + smart similar-name detection */
 </style>
 </head>
 <body>
@@ -1293,11 +1296,60 @@ function canonicalPlayerName(name){
  const k=keyName(name);
  const aliases={
   'paul sagna':'Paul Sanga',
-  'paul sanga':'Paul Sanga'
+  'paul sanga':'Paul Sanga',
+  'hari':'Hary',
+  'harry':'Hary',
+  'hary':'Hary'
  };
  if(aliases[k])return aliases[k];
  if(k==='carlos')return '';
  return name;
+}
+function smartNameKey(name){
+ return String(name||'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]/g,'');
+}
+function levenshteinDistance(a,b){
+ a=smartNameKey(a); b=smartNameKey(b);
+ const rows=Array.from({length:a.length+1},()=>Array(b.length+1).fill(0));
+ for(let i=0;i<=a.length;i++)rows[i][0]=i;
+ for(let j=0;j<=b.length;j++)rows[0][j]=j;
+ for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)rows[i][j]=Math.min(rows[i-1][j]+1,rows[i][j-1]+1,rows[i-1][j-1]+(a[i-1]===b[j-1]?0:1));
+ return rows[a.length][b.length];
+}
+function findSimilarPlayerName(name,candidates=[]){
+ const clean=canonicalPlayerName(name); if(!clean)return '';
+ const wanted=smartNameKey(clean); if(wanted.length<3)return '';
+ let best=null;
+ [...new Set(candidates.map(canonicalPlayerName).filter(Boolean))].forEach(candidate=>{
+  if(keyName(candidate)===keyName(clean))return;
+  const d=levenshteinDistance(clean,candidate); const maxLen=Math.max(wanted.length,smartNameKey(candidate).length)||1; const score=1-d/maxLen;
+  if((d<=1 || score>=0.78) && (!best || score>best.score))best={name:candidate,score};
+ });
+ return best?.name||'';
+}
+function resolveSmartPlayerName(name,candidates=[]){
+ const clean=canonicalPlayerName(name); if(!clean)return '';
+ const similar=findSimilarPlayerName(clean,candidates);
+ if(!similar)return clean;
+ return confirm(`Nama “${clean}” mirip dengan pemain “${similar}”.\n\nKlik OK untuk menggunakan ${similar}.\nKlik Batal untuk tetap menggunakan ${clean}.`)?similar:clean;
+}
+function migrateHaryAliases(){
+ if(localStorage.getItem('hary_alias_migration_v1')==='done')return;
+ const aliasKeys=new Set(['hari','harry','hary']);
+ const replace=n=>aliasKeys.has(keyName(n))?'Hary':canonicalPlayerName(n);
+ const matches=load().map(m=>({...m,
+  homeScorers:(m.homeScorers||[]).map(replace).filter(Boolean),
+  awayScorers:(m.awayScorers||[]).map(replace).filter(Boolean),
+  homeAssists:(m.homeAssists||[]).map(replace).filter(Boolean),
+  awayAssists:(m.awayAssists||[]).map(replace).filter(Boolean),
+  cards:(m.cards||[]).map(c=>({...c,player:replace(c.player)})).filter(c=>c.player)
+ })); save(matches);
+ const rosters=loadRosters(); Object.keys(rosters).forEach(team=>{const seen=new Set();rosters[team]=(rosters[team]||[]).map(replace).filter(Boolean).filter(n=>{const k=keyName(n);if(seen.has(k))return false;seen.add(k);return true})}); saveRosters(rosters);
+ const initial=initialGoals(); let goalSum=0,assistSum=0,found=false;
+ Object.entries(initial).forEach(([k,v])=>{if(aliasKeys.has(keyName(v?.name||k))){goalSum+=Number(v?.goals)||0;assistSum+=Number(v?.assists)||0;delete initial[k];found=true;}});
+ if(found || goalSum || assistSum){const existing=initial[keyName('Hary')]||{};initial[keyName('Hary')]={name:'Hary',goals:(Number(existing.goals)||0)+goalSum,assists:(Number(existing.assists)||0)+assistSum};saveInitialGoals(initial)}
+ const photos=playerPhotos(); let selected=''; Object.keys(photos).forEach(k=>{if(aliasKeys.has(keyName(k))){selected=selected||photoDataUrl(photos[k]);delete photos[k];}}); if(selected)photos[keyName('Hary')]=selected; savePlayerPhotos(photos);
+ localStorage.setItem('hary_alias_migration_v1','done');
 }
 function allPlayers(){
  const map={};
@@ -1373,10 +1425,10 @@ function refreshHistories(){
  $('awayPlayerHistory').innerHTML=ap.map(n=>`<option value="${escapeHtml(n)}"></option>`).join('');
 }
 function playerOptionHtml(names,current='',includeNone=false){
- const normalized=normalizeName(current); const seen=new Set(); let opts='';
+ const normalized=canonicalPlayerName(current); const seen=new Set(); let opts='';
  if(includeNone)opts+='<option value="">Tanpa Assist</option>';
  if(normalized && !names.some(n=>keyName(n)===keyName(normalized))) names=[normalized,...names];
- names.forEach(n=>{n=normalizeName(n); if(!n||seen.has(keyName(n)))return; seen.add(keyName(n)); opts+=`<option value="${escapeHtml(n)}" ${keyName(n)===keyName(normalized)?'selected':''}>${escapeHtml(n)}</option>`;});
+ names.forEach(n=>{n=canonicalPlayerName(n); if(!n||seen.has(keyName(n)))return; seen.add(keyName(n)); opts+=`<option value="${escapeHtml(n)}" ${keyName(n)===keyName(normalized)?'selected':''}>${escapeHtml(n)}</option>`;});
  return opts;
 }
 function scorerRow(side,goal={}){
@@ -1394,29 +1446,29 @@ function syncSide(side){
  $(`${side}GoalInfo`).textContent=`Skor ${score} = isi ${score} pencetak goal. Assist berada sejajar di sebelahnya dan boleh Tanpa Assist.`;
 }
 function syncScorerInputs(){syncSide('home');syncSide('away');updatePenaltyOptions()}
-function collectSide(side){return [...document.querySelectorAll('.'+side+'Scorer')].map(i=>normalizeName(i.value))}
-function collectAssists(side){return [...document.querySelectorAll('.'+side+'Assist')].map(i=>normalizeName(i.value))}
+function collectSide(side){return [...document.querySelectorAll('.'+side+'Scorer')].map(i=>canonicalPlayerName(i.value))}
+function collectAssists(side){return [...document.querySelectorAll('.'+side+'Assist')].map(i=>canonicalPlayerName(i.value))}
 
 function duplicated(arr){const s=new Set();for(const n of arr){const k=keyName(n); if(s.has(k))return n; s.add(k)} return ''}
 function addCardRow(card={}){const ts=[$('homeTeam').value,$('awayTeam').value]; const row=document.createElement('div'); row.className='cardRow'; row.innerHTML=`<input class="cardPlayer" list="allPlayerHistory" placeholder="Nama pemain" value="${escapeHtml(card.player||'')}"><select class="cardTeam">${ts.map(t=>`<option ${card.team===t?'selected':''}>${escapeHtml(t)}</option>`).join('')}</select><select class="cardType"><option value="yellow" ${card.type==='yellow'?'selected':''}>Kartu Kuning</option><option value="red" ${card.type==='red'?'selected':''}>Kartu Merah</option></select><button type="button" class="removeCard">×</button>`; row.querySelector('.removeCard').onclick=()=>row.remove(); $('cardRows').appendChild(row)}
-function collectCards(){return [...document.querySelectorAll('.cardRow')].map(r=>({player:normalizeName(r.querySelector('.cardPlayer').value),team:r.querySelector('.cardTeam').value,type:r.querySelector('.cardType').value})).filter(c=>c.player)}
+function collectCards(){const candidates=allPlayers();return [...document.querySelectorAll('.cardRow')].map(r=>({player:resolveSmartPlayerName(r.querySelector('.cardPlayer').value,candidates),team:r.querySelector('.cardTeam').value,type:r.querySelector('.cardType').value})).filter(c=>c.player)}
 function renderTeamPlayerColumns(){
  const box=$('teamPlayerColumns'); if(!box)return;
  const rosters=loadRosters();
- box.innerHTML=teams().map(team=>`<div class="teamRosterCard"><h3>${escapeHtml(team)}</h3><label>Pemain ${escapeHtml(team)}<textarea class="teamRosterInput" data-team="${escapeHtml(team)}" placeholder="Tulis 1 nama pemain per baris\nContoh:\nDimas\nRaka\nBima">${escapeHtml((rosters[team]||[]).join('\n'))}</textarea></label><p class="muted">Nama ini akan muncul di autocomplete scorer dan kartu untuk ${escapeHtml(team)}.</p></div>`).join('');
+ box.innerHTML=teams().map(team=>`<div class="teamRosterCard"><h3>${escapeHtml(team)}</h3><label>Pemain ${escapeHtml(team)}<textarea class="teamRosterInput" data-team="${escapeHtml(team)}" placeholder="Tulis 1 nama pemain per baris\nContoh:\nDimas\nRaka\nBima">${escapeHtml((rosters[team]||[]).join('\n'))}</textarea></label><p class="muted">Nama ini akan muncul di autocomplete scorer dan kartu untuk ${escapeHtml(team)}.</p><div class="smartNameHint"><b>Deteksi nama mirip aktif.</b> Saat menyimpan, sistem akan menawarkan nama pemain yang kemungkinan sama agar statistik tidak terpecah.</div></div>`).join('');
 }
 function collectRosters(){
- const obj={};
+ const obj={}; const existing=allPlayers();
  document.querySelectorAll('.teamRosterInput').forEach(t=>{
   const team=t.dataset.team; const seen=new Set();
-  obj[team]=t.value.split('\n').map(normalizeName).filter(Boolean).filter(n=>{const k=keyName(n); if(seen.has(k))return false; seen.add(k); return true});
+  obj[team]=t.value.split('\n').map(normalizeName).filter(Boolean).map(n=>resolveSmartPlayerName(n,[...existing,...Object.values(obj).flat()])).map(canonicalPlayerName).filter(Boolean).filter(n=>{const k=keyName(n); if(seen.has(k))return false; seen.add(k); return true});
  });
  return obj;
 }
 function syncRostersFromMatches(){
  const rosters=loadRosters();
  teams().forEach(t=>rosters[t]=rosters[t]||[]);
- const add=(team,name)=>{name=normalizeName(name); if(!team||!name)return; rosters[team]=rosters[team]||[]; if(!rosters[team].some(x=>keyName(x)===keyName(name)))rosters[team].push(name)};
+ const add=(team,name)=>{name=canonicalPlayerName(name); if(!team||!name)return; rosters[team]=rosters[team]||[]; if(!rosters[team].some(x=>keyName(x)===keyName(name)))rosters[team].push(name)};
  load().forEach(m=>{(m.homeScorers||[]).forEach(n=>add(m.home,n));(m.homeAssists||[]).forEach(n=>add(m.home,n));(m.awayScorers||[]).forEach(n=>add(m.away,n));(m.awayAssists||[]).forEach(n=>add(m.away,n));(m.cards||[]).forEach(c=>add(c.team,c.player));});
  saveRosters(rosters);
 }
@@ -2410,7 +2462,7 @@ function generateAiText(type){
 function copyAiOutput(){const el=$('aiOutput'); if(!el||!el.value)return showToast('Belum ada teks','Generate AI terlebih dahulu.','error'); navigator.clipboard?.writeText(el.value); showToast('Berhasil disalin','Teks AI siap ditempel ke WhatsApp.')}
 
 function exportCsv(){const rows=[['Tanggal','Home','Away','Skor Home','Skor Away','Scorer Home','Assist Home','Scorer Away','Assist Away','Penalty Winner','Cards']]; load().forEach(m=>rows.push([m.date,m.home,m.away,m.hs,m.as,(m.homeScorers||[]).join('; '),(m.homeAssists||[]).join('; '),(m.awayScorers||[]).join('; '),(m.awayAssists||[]).join('; '),m.penaltyWinner||'',(m.cards||[]).map(c=>`${c.player}-${c.team}-${c.type}`).join('; ')])); const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n'); const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='riwayat_pertandingan.csv'; a.click(); URL.revokeObjectURL(a.href)}
-function init(){document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); b.classList.add('active'); document.querySelectorAll('.page').forEach(p=>p.classList.remove('show')); $(b.dataset.page).classList.add('show');}); $('matchDate').value=new Date().toISOString().slice(0,10); if($('weekDate'))$('weekDate').value=new Date().toISOString().slice(0,10); fillSelects(); updateAccessUI(); if($('loginBtn'))$('loginBtn').onclick=loginAccessUser; if($('logoutBtn'))$('logoutBtn').onclick=()=>{clearCurrentAccessUser(); updateAccessUI(); const active=document.querySelector('.page.show'); if(active?.id==='admin'){document.querySelector('.tabs button[data-page="dashboard"]')?.click();} showToast('Logout berhasil','Input match dikunci kembali.')}; if($('generateAccessUser'))$('generateAccessUser').onclick=createAccessUser; document.querySelectorAll('.scoreBtn').forEach(btn=>btn.onclick=()=>{const input=$(btn.dataset.score); const next=Math.max(0,(+input.value||0)+(+btn.dataset.delta||0)); input.value=next; input.dispatchEvent(new Event('input',{bubbles:true}));}); if($('showYearStandings'))$('showYearStandings').onclick=()=>{standingsMode='year';$('showYearStandings').classList.add('activeMode');$('showWeekStandings')?.classList.remove('activeMode');$('showMonthStandings')?.classList.remove('activeMode');render()}; if($('showMonthStandings'))$('showMonthStandings').onclick=()=>{standingsMode='month';$('showMonthStandings').classList.add('activeMode');$('showWeekStandings')?.classList.remove('activeMode');$('showYearStandings')?.classList.remove('activeMode');render()}; if($('showWeekStandings'))$('showWeekStandings').onclick=()=>{standingsMode='week';$('showWeekStandings').classList.add('activeMode');$('showMonthStandings')?.classList.remove('activeMode');$('showYearStandings')?.classList.remove('activeMode');render()}; if($('weekDate'))$('weekDate').onchange=()=>{if(standingsMode==='year')standingsMode='week';$('showWeekStandings')?.classList.toggle('activeMode',standingsMode==='week');$('showMonthStandings')?.classList.toggle('activeMode',standingsMode==='month');$('showYearStandings')?.classList.remove('activeMode');render()}; if($('exportStandingsImage'))$('exportStandingsImage').onclick=exportStandingsImage; if($('copyStandingsWA'))$('copyStandingsWA').onclick=copyStandingsWA; ['homeScore','awayScore','homeTeam','awayTeam'].forEach(id=>$(id).addEventListener('input',()=>{refreshHistories();syncScorerInputs()})); $('enableCards').onchange=e=>{$('cardsBlock').classList.toggle('hidden',!e.target.checked); if(e.target.checked&&!document.querySelector('.cardRow'))addCardRow()}; $('addCard').onclick=()=>addCardRow(); $('playerSearch').oninput=renderPlayers; if($('savePlayers'))$('savePlayers').onclick=()=>{saveRosters(collectRosters()); refreshHistories(); renderPlayers(); showToast('Daftar pemain tersimpan','Autocomplete scorer dan kartu sudah diperbarui.');}; if($('cancelEditMatch'))$('cancelEditMatch').onclick=()=>{resetMatchEditMode(); $('matchForm').reset(); fillSelects();}; if($('chooseClubLogoBtn'))$('chooseClubLogoBtn').onclick=()=>$('clubLogoFile')?.click(); if($('clubLogoFile'))$('clubLogoFile').onchange=previewSelectedClubLogo; if($('saveClubLogo'))$('saveClubLogo').onclick=saveClubLogoFromForm; if($('clearClubLogo'))$('clearClubLogo').onclick=clearClubLogo; if($('addFinance'))$('addFinance').onclick=addFinance; if($('financeDate'))$('financeDate').value=new Date().toISOString().slice(0,10); if($('moreExportStandings'))$('moreExportStandings').onclick=exportStandingsImage; if($('moreCopyStandings'))$('moreCopyStandings').onclick=copyStandingsWA; if($('moreCopyTopScorer'))$('moreCopyTopScorer').onclick=copyTopScorerWA; if($('downloadBackupData'))$('downloadBackupData').onclick=downloadBackupData; if($('restoreBackupData'))$('restoreBackupData').onclick=restoreBackupData; $('exportCsv').onclick=exportCsv; $('exportPdf').onclick=()=>window.print(); bindExportButtonsForce();
+function init(){migrateHaryAliases();document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); b.classList.add('active'); document.querySelectorAll('.page').forEach(p=>p.classList.remove('show')); $(b.dataset.page).classList.add('show');}); $('matchDate').value=new Date().toISOString().slice(0,10); if($('weekDate'))$('weekDate').value=new Date().toISOString().slice(0,10); fillSelects(); updateAccessUI(); if($('loginBtn'))$('loginBtn').onclick=loginAccessUser; if($('logoutBtn'))$('logoutBtn').onclick=()=>{clearCurrentAccessUser(); updateAccessUI(); const active=document.querySelector('.page.show'); if(active?.id==='admin'){document.querySelector('.tabs button[data-page="dashboard"]')?.click();} showToast('Logout berhasil','Input match dikunci kembali.')}; if($('generateAccessUser'))$('generateAccessUser').onclick=createAccessUser; document.querySelectorAll('.scoreBtn').forEach(btn=>btn.onclick=()=>{const input=$(btn.dataset.score); const next=Math.max(0,(+input.value||0)+(+btn.dataset.delta||0)); input.value=next; input.dispatchEvent(new Event('input',{bubbles:true}));}); if($('showYearStandings'))$('showYearStandings').onclick=()=>{standingsMode='year';$('showYearStandings').classList.add('activeMode');$('showWeekStandings')?.classList.remove('activeMode');$('showMonthStandings')?.classList.remove('activeMode');render()}; if($('showMonthStandings'))$('showMonthStandings').onclick=()=>{standingsMode='month';$('showMonthStandings').classList.add('activeMode');$('showWeekStandings')?.classList.remove('activeMode');$('showYearStandings')?.classList.remove('activeMode');render()}; if($('showWeekStandings'))$('showWeekStandings').onclick=()=>{standingsMode='week';$('showWeekStandings').classList.add('activeMode');$('showMonthStandings')?.classList.remove('activeMode');$('showYearStandings')?.classList.remove('activeMode');render()}; if($('weekDate'))$('weekDate').onchange=()=>{if(standingsMode==='year')standingsMode='week';$('showWeekStandings')?.classList.toggle('activeMode',standingsMode==='week');$('showMonthStandings')?.classList.toggle('activeMode',standingsMode==='month');$('showYearStandings')?.classList.remove('activeMode');render()}; if($('exportStandingsImage'))$('exportStandingsImage').onclick=exportStandingsImage; if($('copyStandingsWA'))$('copyStandingsWA').onclick=copyStandingsWA; ['homeScore','awayScore','homeTeam','awayTeam'].forEach(id=>$(id).addEventListener('input',()=>{refreshHistories();syncScorerInputs()})); $('enableCards').onchange=e=>{$('cardsBlock').classList.toggle('hidden',!e.target.checked); if(e.target.checked&&!document.querySelector('.cardRow'))addCardRow()}; $('addCard').onclick=()=>addCardRow(); $('playerSearch').oninput=renderPlayers; if($('savePlayers'))$('savePlayers').onclick=()=>{saveRosters(collectRosters()); refreshHistories(); renderPlayers(); showToast('Daftar pemain tersimpan','Autocomplete scorer dan kartu sudah diperbarui.');}; if($('cancelEditMatch'))$('cancelEditMatch').onclick=()=>{resetMatchEditMode(); $('matchForm').reset(); fillSelects();}; if($('chooseClubLogoBtn'))$('chooseClubLogoBtn').onclick=()=>$('clubLogoFile')?.click(); if($('clubLogoFile'))$('clubLogoFile').onchange=previewSelectedClubLogo; if($('saveClubLogo'))$('saveClubLogo').onclick=saveClubLogoFromForm; if($('clearClubLogo'))$('clearClubLogo').onclick=clearClubLogo; if($('addFinance'))$('addFinance').onclick=addFinance; if($('financeDate'))$('financeDate').value=new Date().toISOString().slice(0,10); if($('moreExportStandings'))$('moreExportStandings').onclick=exportStandingsImage; if($('moreCopyStandings'))$('moreCopyStandings').onclick=copyStandingsWA; if($('moreCopyTopScorer'))$('moreCopyTopScorer').onclick=copyTopScorerWA; if($('downloadBackupData'))$('downloadBackupData').onclick=downloadBackupData; if($('restoreBackupData'))$('restoreBackupData').onclick=restoreBackupData; $('exportCsv').onclick=exportCsv; $('exportPdf').onclick=()=>window.print(); bindExportButtonsForce();
  $('matchForm').onsubmit=e=>{e.preventDefault(); if(!canInputMatch())return showToast('Akses ditolak','Login terlebih dahulu untuk input hasil pertandingan.','error'); const m={date:$('matchDate').value,home:$('homeTeam').value,away:$('awayTeam').value,hs:+$('homeScore').value,as:+$('awayScore').value,homeScorers:collectSide('home'),awayScorers:collectSide('away'),homeAssists:collectAssists('home'),awayAssists:collectAssists('away'),penaltyWinner:$('penaltyWinner').value,cards:$('enableCards').checked?collectCards():[]}; if(m.home===m.away)return showToast('Input belum valid','Home dan Away tidak boleh club yang sama.','error'); if(m.homeScorers.some(n=>!n)||m.homeScorers.length!==m.hs)return showToast('Pencetak goal Home belum sesuai',`Skor home ${m.hs}, maka wajib ${m.hs} nama. Terisi ${m.homeScorers.length}.`,'error'); if(m.awayScorers.some(n=>!n)||m.awayScorers.length!==m.as)return showToast('Pencetak goal Away belum sesuai',`Skor away ${m.as}, maka wajib ${m.as} nama. Terisi ${m.awayScorers.length}.`,'error'); if(compSettings().drawRule==='penalty' && m.hs===m.as && !m.penaltyWinner)return showToast('Penalty winner wajib dipilih','Karena skor seri, pilih pemenang penalty untuk poin 2/1.','error'); if(compSettings().drawRule!=='penalty')m.penaltyWinner=''; const data=load(); const editIdx=editingMatchIndex!==null?editingMatchIndex:($('editMatchIndex')?.value!==''?+$('editMatchIndex').value:null); if(editIdx!==null && isSuperAdmin() && data[editIdx]){data[editIdx]=m; save(data); showToast('Match diperbarui',`${m.home} ${m.hs} - ${m.as} ${m.away}`);} else {save([...data,m]); showToast('Match berhasil disimpan',`${m.home} ${m.hs} - ${m.as} ${m.away}`);} syncRostersFromMatches(); e.target.reset(); resetMatchEditMode(); $('matchDate').value=new Date().toISOString().slice(0,10); $('awayTeam').selectedIndex=1; $('cardRows').innerHTML=''; $('cardsBlock').classList.add('hidden'); fillSelects(); render();};
  $('saveSettings').onclick=()=>{const arr=$('teamSettings').value.split('\n').map(x=>x.trim()).filter(Boolean); if(arr.length<2)return showToast('Setting belum valid','Minimal input 2 club.','error'); const cfg=collectCompetitionSettings(); if(arr.length!==cfg.teamCount)return showToast('Jumlah team belum sesuai',`Setting jumlah team adalah ${cfg.teamCount}, tetapi daftar club berisi ${arr.length}.`,'error'); const oldRosters=loadRosters(); const unique=[...new Set(arr)]; const nextRosters={}; unique.forEach(t=>nextRosters[t]=oldRosters[t]||[]); saveTeams(unique); saveRosters(nextRosters); saveCompSettings(cfg); fillSelects(); render(); showToast('Setting kompetisi tersimpan','Format liga/piala, jumlah team, home-away, dan aturan seri sudah diperbarui.')}; if($('hardResetAll'))$('hardResetAll').onclick=hardResetAllData; if($('flowModePoint'))$('flowModePoint').onclick=()=>{analyticsFlowMode='point';renderAnalytics()}; if($('flowModeGoal'))$('flowModeGoal').onclick=()=>{analyticsFlowMode='goal';renderAnalytics()}; if($('exportAnalyticsImage'))$('exportAnalyticsImage').onclick=exportAnalyticsImage; if($('h2hClose'))$('h2hClose').onclick=closeH2H; if($('h2hModal'))$('h2hModal').onclick=e=>{if(e.target.id==='h2hModal')closeH2H()}; if($('playerEditSave'))$('playerEditSave').onclick=savePlayerEditor; if($('playerEditCancel'))$('playerEditCancel').onclick=closePlayerEditor; if($('playerEditModal'))$('playerEditModal').onclick=e=>{if(e.target.id==='playerEditModal')closePlayerEditor()}; if($('drawRule'))$('drawRule').onchange=updatePenaltyOptions; $('resetData').onclick=()=>{localStorage.removeItem('matches_v2');render();fillSelects()}; render();}
 window.__stateReady.then(init).catch(init);
