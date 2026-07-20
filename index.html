@@ -256,23 +256,15 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 .assistTopTools button{width:auto;padding:12px 16px;border-radius:14px}
 @media(max-width:560px){.assistTopRow{grid-template-columns:38px 44px minmax(0,1fr) auto}.assistTopPhoto{width:40px;height:40px}.assistTopStat{font-size:13px}}
 
-/* ===== Analytics Flow + Edit Pemain ===== */
+/* ===== Analytics Flow v3 + Edit Pemain ===== */
 .analyticsToolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 18px}
-.flowToggle{display:inline-flex;background:#eef2f7;border-radius:999px;padding:4px;gap:4px}
-.flowToggle button{border:0;background:transparent;color:#64748b;border-radius:999px;padding:10px 18px;font-weight:900;cursor:pointer}
-.flowToggle button.active{background:#138a3d;color:#fff;box-shadow:0 8px 18px rgba(19,138,61,.22)}
-.flowList{display:grid;gap:18px}
-.flowCard{border:1px solid #e5e7eb;border-radius:24px;background:linear-gradient(180deg,#fff,#f8fffa);padding:18px;overflow:hidden}
-.flowCardHead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
-.flowCardHead h3{margin:0;color:#064e3b;font-size:22px}.flowTotal{font-weight:950;color:#138a3d;font-size:18px}
-.flowCanvas{width:100%;min-height:280px;display:block;overflow:visible}.flowHint{font-size:12px;color:#64748b;margin-top:6px}
-.flowNodeText{font:800 14px Inter,Arial,sans-serif;fill:#0f172a}.flowValueText{font:900 13px Inter,Arial,sans-serif;fill:#0f5132}
-.flowLink{fill:none;stroke-linecap:round;opacity:.72;transition:opacity .2s ease,filter .2s ease}.flowLink:hover{opacity:1;filter:drop-shadow(0 4px 8px rgba(15,81,50,.22))}
-.editPlayerBtn{width:38px;height:38px;border:0;border-radius:12px;background:#dcfce7;color:#065f46;font-size:18px;cursor:pointer;font-weight:900}.editPlayerBtn:hover{background:#bbf7d0}
-.playerEditModal{position:fixed;inset:0;z-index:100000;background:rgba(2,6,23,.68);display:none;align-items:center;justify-content:center;padding:18px}.playerEditModal.show{display:flex}
-.playerEditCard{width:min(520px,100%);background:#fff;border-radius:24px;padding:22px;box-shadow:0 30px 90px rgba(0,0,0,.35)}
-.playerEditCard h3{margin:0 0 8px;color:#064e3b}.playerEditGrid{display:grid;gap:12px;margin-top:16px}.playerEditActions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.playerEditActions button{min-height:46px;border:0;border-radius:14px;font-weight:900;cursor:pointer}.playerEditSave{background:#138a3d;color:#fff}.playerEditCancel{background:#e5e7eb;color:#111827}
-@media(max-width:760px){.flowCanvas{min-height:250px}.flowCard{padding:14px}.flowCardHead h3{font-size:19px}.playerEditActions{grid-template-columns:1fr}}
+.flowToggle{display:inline-flex;background:#eef2f7;border-radius:999px;padding:4px;gap:4px}.flowToggle button{border:0;background:transparent;color:#64748b;border-radius:999px;padding:10px 18px;font-weight:900;cursor:pointer;transition:.22s ease}.flowToggle button.active{background:#138a3d;color:#fff;box-shadow:0 8px 18px rgba(19,138,61,.22)}
+.analyticsLayout{display:grid;grid-template-columns:150px minmax(0,1fr);gap:16px;align-items:stretch}.analyticsTeamList{display:grid;gap:10px;align-content:start}.analyticsTeamBtn{border:1px solid #dbe7df;background:#fff;color:#31503d;border-radius:18px;padding:14px 12px;text-align:left;font-weight:900;cursor:pointer;transition:transform .2s ease,background .2s ease,color .2s ease,box-shadow .2s ease}.analyticsTeamBtn:hover{transform:translateY(-2px)}.analyticsTeamBtn.active{background:#0f5132;color:#fff;border-color:#0f5132;box-shadow:0 12px 26px rgba(15,81,50,.22)}
+.flowStage{position:relative;min-height:390px;border:1px solid #e5e7eb;border-radius:26px;background:radial-gradient(circle at 15% 30%,rgba(34,197,94,.08),transparent 30%),linear-gradient(180deg,#fff,#f8fffa);padding:18px;overflow:hidden}.flowStage.switching{animation:flowStageSwap .36s ease}.flowCanvas{width:100%;height:auto;min-height:330px;display:block}.flowLink{fill:none;stroke-linecap:round;opacity:.76;cursor:pointer;transition:opacity .2s ease,filter .2s ease,stroke-width .35s ease;stroke-dasharray:1200;stroke-dashoffset:1200;animation:drawFlow .75s cubic-bezier(.2,.7,.2,1) forwards}.flowLink:hover{opacity:1;filter:drop-shadow(0 5px 10px rgba(15,81,50,.28))}.flowNode{animation:nodePop .45s cubic-bezier(.2,.8,.2,1) both}.flowNodeText{font:800 14px Inter,Arial,sans-serif;fill:#0f172a}.flowValueText{font:900 13px Inter,Arial,sans-serif;fill:#0f5132}.flowHeadline{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:8px}.flowHeadline h3{margin:0;color:#064e3b;font-size:22px}.flowTotal{font-weight:950;color:#138a3d;font-size:18px}.flowHint{font-size:12px;color:#64748b;margin-top:4px}.analyticsActions{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}.analyticsActions button{width:auto}.flowEmpty{display:flex;align-items:center;justify-content:center;min-height:300px;color:#64748b}.flowTooltip{position:absolute;z-index:5;pointer-events:none;background:#0f172a;color:#fff;padding:9px 11px;border-radius:12px;font-size:12px;font-weight:800;opacity:0;transform:translate(-50%,-110%);transition:opacity .15s ease;white-space:nowrap}.flowTooltip.show{opacity:1}
+.h2hModal{position:fixed;inset:0;z-index:100002;background:rgba(2,6,23,.7);display:none;align-items:center;justify-content:center;padding:18px}.h2hModal.show{display:flex}.h2hCard{width:min(560px,100%);background:#fff;border-radius:26px;padding:22px;box-shadow:0 32px 100px rgba(0,0,0,.36)}.h2hTitle{display:flex;align-items:center;justify-content:space-between;gap:12px}.h2hTitle h3{margin:0;color:#064e3b}.h2hClose{border:0;background:#eef2f7;border-radius:12px;width:40px;height:40px;font-size:20px;cursor:pointer}.h2hScore{font-family:'Roboto Mono',monospace;font-weight:900;font-size:30px;color:#0f5132;text-align:center;margin:18px 0}.h2hGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.h2hStat{border:1px solid #e5e7eb;border-radius:16px;padding:12px;text-align:center;background:#f8fafc}.h2hStat b{display:block;font-size:22px;color:#064e3b}.h2hStat small{color:#64748b;font-weight:700}
+.editPlayerBtn{width:38px;height:38px;border:0;border-radius:12px;background:#dcfce7;color:#065f46;font-size:18px;cursor:pointer;font-weight:900}.editPlayerBtn:hover{background:#bbf7d0}.playerEditModal{position:fixed;inset:0;z-index:100000;background:rgba(2,6,23,.68);display:none;align-items:center;justify-content:center;padding:18px}.playerEditModal.show{display:flex}.playerEditCard{width:min(520px,100%);background:#fff;border-radius:24px;padding:22px;box-shadow:0 30px 90px rgba(0,0,0,.35)}.playerEditCard h3{margin:0 0 8px;color:#064e3b}.playerEditGrid{display:grid;gap:12px;margin-top:16px}.playerEditActions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.playerEditActions button{min-height:46px;border:0;border-radius:14px;font-weight:900;cursor:pointer}.playerEditSave{background:#138a3d;color:#fff}.playerEditCancel{background:#e5e7eb;color:#111827}
+@keyframes drawFlow{to{stroke-dashoffset:0}}@keyframes nodePop{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}@keyframes flowStageSwap{0%{opacity:.35;transform:translateY(6px) scale(.99)}100%{opacity:1;transform:none}}
+@media(max-width:760px){.analyticsLayout{grid-template-columns:1fr}.analyticsTeamList{grid-template-columns:repeat(3,minmax(0,1fr))}.analyticsTeamBtn{text-align:center;padding:11px 8px}.flowStage{padding:12px;min-height:330px}.flowCanvas{min-height:285px}.flowHeadline h3{font-size:19px}.analyticsActions{width:100%;margin-left:0}.analyticsActions button{flex:1}.playerEditActions{grid-template-columns:1fr}.h2hGrid{grid-template-columns:repeat(2,1fr)}}
 
 </style>
 </head>
@@ -505,19 +497,17 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
   <section id="analytics" class="page">
     <div class="panel">
       <div class="panelHead">
-        <div>
-          <h2>📊 Tracking Flow</h2>
-          <p class="muted">Visual aliran ala orderbook. Ketebalan garis mengikuti jumlah point atau goal terhadap lawan.</p>
-        </div>
+        <div><h2>📊 Tracking Flow</h2><p class="muted">Pilih satu tim, lalu lihat sumber point atau tujuan goal dalam satu flow interaktif.</p></div>
       </div>
       <div class="analyticsToolbar">
-        <div class="flowToggle" aria-label="Pilih mode tracking">
-          <button type="button" id="flowModePoint" class="active">Point</button>
-          <button type="button" id="flowModeGoal">Goal</button>
-        </div>
+        <div class="flowToggle" aria-label="Pilih mode tracking"><button type="button" id="flowModePoint" class="active">Point</button><button type="button" id="flowModeGoal">Goal</button></div>
         <span id="flowModeLabel" class="badge">Point diperoleh dari lawan</span>
+        <div class="analyticsActions"><button type="button" class="smallBtn" id="exportAnalyticsImage">Export Gambar</button></div>
       </div>
-      <div id="flowList" class="flowList"></div>
+      <div class="analyticsLayout">
+        <div id="analyticsTeamList" class="analyticsTeamList"></div>
+        <div id="flowStage" class="flowStage"><div id="flowTooltip" class="flowTooltip"></div><div id="flowList"></div></div>
+      </div>
     </div>
   </section>
 
@@ -739,6 +729,13 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
         <button type="button" id="playerEditSave" class="playerEditSave">Simpan Perubahan</button>
         <button type="button" id="playerEditCancel" class="playerEditCancel">Batal</button>
       </div>
+    </div>
+  </div>
+
+  <div id="h2hModal" class="h2hModal" role="dialog" aria-modal="true" aria-labelledby="h2hTitleText">
+    <div class="h2hCard">
+      <div class="h2hTitle"><h3 id="h2hTitleText">Head to Head</h3><button type="button" id="h2hClose" class="h2hClose">×</button></div>
+      <div id="h2hContent"></div>
     </div>
   </div>
 
@@ -2227,11 +2224,12 @@ async function hardResetAllData(){
 }
 
 let analyticsFlowMode='point';
+let analyticsFocusTeam='';
 function pointsForTeamInMatch(m,team){
  if(m.hs>m.as)return team===m.home?3:0;
  if(m.hs<m.as)return team===m.away?3:0;
  const cfg=compSettings();
- if(cfg.drawRule==='penalty' && m.penaltyWinner){return m.penaltyWinner===team?2:1;}
+ if(cfg.drawRule==='penalty' && m.penaltyWinner)return m.penaltyWinner===team?2:1;
  return 1;
 }
 function buildFlowData(team,mode){
@@ -2247,57 +2245,58 @@ function buildFlowData(team,mode){
  return Object.values(totals).sort((a,b)=>b.value-a.value||a.opponent.localeCompare(b.opponent));
 }
 function flowColor(index){return ['#ef4444','#8b5cf6','#10b981','#f59e0b','#0ea5e9','#ec4899'][index%6]}
-function renderFlowCard(team,mode){
- const rows=buildFlowData(team,mode);
- const total=rows.reduce((s,r)=>s+r.value,0);
- const W=920,H=Math.max(250,110+rows.length*72);
- // Posisi fokus selalu di kiri. Lawan selalu di kanan.
- const focusX=150, otherX=770, centerY=H/2;
- const max=Math.max(1,...rows.map(r=>r.value));
-
- const links=rows.map((r,i)=>{
-  const y=70+i*72;
-  const width=4+(r.value/max)*28;
-  const c=flowColor(i);
-
-  // Point mengalir dari lawan (kanan) menuju team fokus (kiri).
-  // Goal mengalir dari team fokus (kiri) menuju lawan (kanan).
-  const startX=mode==='point'?otherX-16:focusX+16;
-  const startY=mode==='point'?y:centerY;
-  const endX=mode==='point'?focusX+16:otherX-16;
-  const endY=mode==='point'?centerY:y;
-  const cp1X=mode==='point'?620:330;
-  const cp2X=mode==='point'?330:620;
-  const path=`M ${startX} ${startY} C ${cp1X} ${startY}, ${cp2X} ${endY}, ${endX} ${endY}`;
-
-  return `<path class="flowLink" d="${path}" stroke="${c}" stroke-width="${width}"><title>${escapeHtml(r.opponent)}: ${r.value} ${mode==='point'?'point':'goal'} dari ${r.matches} match</title></path>`;
- }).join('');
-
- // Node dan teks dirender setelah garis supaya garis tidak menimpa node/label.
- const others=rows.map((r,i)=>{
-  const y=70+i*72,c=flowColor(i);
-  return `<rect x="${otherX-10}" y="${y-24}" width="20" height="48" rx="10" fill="${c}"/>
-  <text class="flowNodeText" x="${otherX+25}" y="${y-3}" text-anchor="start">${escapeHtml(r.opponent)}</text>
-  <text class="flowValueText" x="${otherX+25}" y="${y+17}" text-anchor="start">${r.value} ${mode==='point'?'pts':'gol'}</text>`;
- }).join('');
-
- const focusLabel=mode==='point'?`${total} Point`:`${total} Goal`;
- return `<div class="flowCard"><div class="flowCardHead"><h3>${escapeHtml(team)}</h3><div class="flowTotal">${focusLabel}</div></div>
- <svg class="flowCanvas" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
-  ${links}
-  <rect x="${focusX-14}" y="${centerY-48}" width="28" height="96" rx="14" fill="#138a3d"/>
-  <text class="flowNodeText" x="${focusX+30}" y="${centerY-8}" text-anchor="start">${escapeHtml(team)}</text>
-  <text class="flowValueText" x="${focusX+30}" y="${centerY+15}" text-anchor="start">${focusLabel}</text>
-  ${others}
- </svg>
- <div class="flowHint">${mode==='point'?'Aliran dari kanan menunjukkan point yang diperoleh dari setiap lawan.':'Aliran dari kiri menunjukkan goal yang dicetak ke setiap lawan.'}</div></div>`;
+function headToHeadStats(team,opponent){
+ const games=activeMatches(load()).filter(m=>(m.home===team&&m.away===opponent)||(m.home===opponent&&m.away===team));
+ let w=0,d=0,l=0,gf=0,ga=0,pts=0;
+ games.forEach(m=>{
+  const isHome=m.home===team, scored=isHome?(+m.hs||0):(+m.as||0), conceded=isHome?(+m.as||0):(+m.hs||0);
+  gf+=scored;ga+=conceded;pts+=pointsForTeamInMatch(m,team);
+  if(scored>conceded)w++; else if(scored<conceded)l++; else d++;
+ });
+ return {games:games.length,w,d,l,gf,ga,pts};
+}
+function animateCount(el,to){
+ const start=performance.now(),duration=520,from=0;
+ function step(now){const p=Math.min(1,(now-start)/duration);el.textContent=Math.round(from+(to-from)*(1-Math.pow(1-p,3)));if(p<1)requestAnimationFrame(step)}
+ requestAnimationFrame(step);
+}
+function renderFlowDiagram(team,mode){
+ const rows=buildFlowData(team,mode),total=rows.reduce((s,r)=>s+r.value,0),W=980,H=Math.max(320,130+rows.length*84),focusX=170,otherX=800,centerY=H/2,max=Math.max(1,...rows.map(r=>r.value));
+ if(!rows.length)return `<div class="flowEmpty">Belum ada data pertandingan untuk ${escapeHtml(team)}.</div>`;
+ const defs=`<defs><marker id="arrowFlow" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L8,3 z" fill="#0f5132"/></marker></defs>`;
+ const links=rows.map((r,i)=>{const y=82+i*84,width=4+(r.value/max)*25,c=flowColor(i),sx=mode==='point'?otherX-18:focusX+18,sy=mode==='point'?y:centerY,ex=mode==='point'?focusX+18:otherX-18,ey=mode==='point'?centerY:y,path=`M ${sx} ${sy} C ${mode==='point'?650:350} ${sy}, ${mode==='point'?350:650} ${ey}, ${ex} ${ey}`;return `<path class="flowLink" data-opponent="${escapeHtml(r.opponent)}" data-value="${r.value}" data-matches="${r.matches}" d="${path}" stroke="${c}" stroke-width="${width}" marker-end="url(#arrowFlow)"><title>${escapeHtml(r.opponent)}: ${r.value} ${mode==='point'?'point':'goal'} • ${r.matches} match</title></path>`}).join('');
+ const others=rows.map((r,i)=>{const y=82+i*84,c=flowColor(i);return `<g class="flowNode" style="animation-delay:${100+i*70}ms"><rect x="${otherX-12}" y="${y-28}" width="24" height="56" rx="12" fill="${c}"/><text class="flowNodeText" x="${otherX+28}" y="${y-5}">${escapeHtml(r.opponent)}</text><text class="flowValueText" x="${otherX+28}" y="${y+18}" data-count="${r.value}">0</text></g>`}).join('');
+ return `<div class="flowHeadline"><h3>${escapeHtml(team)}</h3><div class="flowTotal"><span id="analyticsTotalCount" data-count="${total}">0</span> ${mode==='point'?'Point':'Goal'}</div></div><svg id="analyticsSvg" class="flowCanvas" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">${defs}${links}<g class="flowNode"><rect x="${focusX-16}" y="${centerY-52}" width="32" height="104" rx="16" fill="#138a3d"/><text class="flowNodeText" x="${focusX+38}" y="${centerY-8}">${escapeHtml(team)}</text><text class="flowValueText" x="${focusX+38}" y="${centerY+17}">${total} ${mode==='point'?'pts':'gol'}</text></g>${others}</svg><div class="flowHint">${mode==='point'?'Lawan di kanan mengalirkan point ke tim fokus.':'Tim fokus di kiri mengalirkan goal ke masing-masing lawan.'} Klik garis untuk detail head-to-head.</div>`;
+}
+function bindFlowInteractions(){
+ const stage=$('flowStage'),tip=$('flowTooltip');
+ document.querySelectorAll('.flowLink').forEach(path=>{
+  path.addEventListener('mousemove',e=>{if(!tip)return;tip.textContent=`${path.dataset.opponent}: ${path.dataset.value} ${analyticsFlowMode==='point'?'point':'goal'} • ${path.dataset.matches} match`;const r=stage.getBoundingClientRect();tip.style.left=`${e.clientX-r.left}px`;tip.style.top=`${e.clientY-r.top}px`;tip.classList.add('show')});
+  path.addEventListener('mouseleave',()=>tip?.classList.remove('show'));
+  path.addEventListener('click',()=>openH2H(analyticsFocusTeam,path.dataset.opponent));
+ });
+ document.querySelectorAll('[data-count]').forEach(el=>animateCount(el,Number(el.dataset.count)||0));
 }
 function renderAnalytics(){
- const box=$('flowList'); if(!box)return;
- $('flowModePoint')?.classList.toggle('active',analyticsFlowMode==='point');
- $('flowModeGoal')?.classList.toggle('active',analyticsFlowMode==='goal');
+ const teams=activeTeams(); if(!teams.length)return;
+ if(!teams.includes(analyticsFocusTeam))analyticsFocusTeam=teams[0];
+ $('flowModePoint')?.classList.toggle('active',analyticsFlowMode==='point');$('flowModeGoal')?.classList.toggle('active',analyticsFlowMode==='goal');
  if($('flowModeLabel'))$('flowModeLabel').textContent=analyticsFlowMode==='point'?'Point diperoleh dari lawan':'Goal dicetak ke lawan';
- box.innerHTML=activeTeams().map(t=>renderFlowCard(t,analyticsFlowMode)).join('')||'<p class="muted">Belum ada team aktif.</p>';
+ const teamBox=$('analyticsTeamList'); if(teamBox)teamBox.innerHTML=teams.map(t=>`<button type="button" class="analyticsTeamBtn ${t===analyticsFocusTeam?'active':''}" data-team="${escapeHtml(t)}">${escapeHtml(t)}</button>`).join('');
+ const box=$('flowList'),stage=$('flowStage'); if(box){stage?.classList.remove('switching');void stage?.offsetWidth;stage?.classList.add('switching');box.innerHTML=renderFlowDiagram(analyticsFocusTeam,analyticsFlowMode);bindFlowInteractions()}
+ document.querySelectorAll('.analyticsTeamBtn').forEach(b=>b.onclick=()=>{analyticsFocusTeam=b.dataset.team;renderAnalytics()});
+}
+function openH2H(team,opponent){
+ const s=headToHeadStats(team,opponent);$('h2hTitleText').textContent=`${team} vs ${opponent}`;$('h2hContent').innerHTML=`<div class="h2hScore">${s.gf} - ${s.ga}</div><div class="h2hGrid"><div class="h2hStat"><b>${s.games}</b><small>Main</small></div><div class="h2hStat"><b>${s.w}</b><small>Menang</small></div><div class="h2hStat"><b>${s.d}</b><small>Seri</small></div><div class="h2hStat"><b>${s.l}</b><small>Kalah</small></div><div class="h2hStat"><b>${s.pts}</b><small>Point</small></div><div class="h2hStat"><b>${s.gf}:${s.ga}</b><small>Goal</small></div></div>`;$('h2hModal').classList.add('show');
+}
+function closeH2H(){$('h2hModal')?.classList.remove('show')}
+function exportAnalyticsImage(){
+ const team=analyticsFocusTeam||activeTeams()[0],rows=buildFlowData(team,analyticsFlowMode),W=1080,H=1350,c=document.createElement('canvas');c.width=W;c.height=H;const ctx=c.getContext('2d');
+ ctx.fillStyle='#f6fbf7';ctx.fillRect(0,0,W,H);ctx.fillStyle='#0f5132';ctx.fillRect(0,0,W,180);ctx.fillStyle='#fff';ctx.font='700 54px Inter,Arial';ctx.fillText('TRACKING FLOW',70,82);ctx.font='700 30px Inter,Arial';ctx.fillText(`${team} • ${analyticsFlowMode==='point'?'POINT':'GOAL'}`,70,133);
+ const total=rows.reduce((s,r)=>s+r.value,0);ctx.fillStyle='#0f172a';ctx.font='800 42px Inter,Arial';ctx.fillText(team,80,280);ctx.fillStyle='#138a3d';ctx.font='900 36px Inter,Arial';ctx.fillText(`${total} ${analyticsFlowMode==='point'?'Point':'Goal'}`,80,330);
+ const leftX=160,rightX=820,startY=430,gap=Math.min(150,680/Math.max(1,rows.length)),max=Math.max(1,...rows.map(r=>r.value));
+ rows.forEach((r,i)=>{const y=startY+i*gap,w=8+(r.value/max)*38,clr=flowColor(i);ctx.beginPath();ctx.moveTo(analyticsFlowMode==='point'?rightX:leftX,y);ctx.bezierCurveTo(analyticsFlowMode==='point'?650:350,y,analyticsFlowMode==='point'?350:650,y,analyticsFlowMode==='point'?leftX:rightX,y);ctx.strokeStyle=clr;ctx.lineWidth=w;ctx.lineCap='round';ctx.globalAlpha=.82;ctx.stroke();ctx.globalAlpha=1;ctx.fillStyle='#0f172a';ctx.font='700 28px Inter,Arial';ctx.fillText(r.opponent,rightX+45,y-5);ctx.fillStyle='#0f5132';ctx.font='800 24px Inter,Arial';ctx.fillText(`${r.value} ${analyticsFlowMode==='point'?'pts':'gol'} • ${r.matches} match`,rightX+45,y+28)});
+ ctx.fillStyle='#0f5132';ctx.fillRect(leftX-12,startY-45,24,Math.max(90,(rows.length-1)*gap+90));ctx.fillStyle='#64748b';ctx.font='600 22px Inter,Arial';ctx.fillText('FC Sombong • Community League Management',70,H-70);safeDownloadCanvas(c,`tracking-${analyticsFlowMode}-${team.toLowerCase().replace(/\s+/g,'-')}.png`);
 }
 function openPlayerEditor(name){
  const stats=playerStats().find(p=>keyName(p.name)===keyName(name)); const initial=initialGoals()[keyName(name)]||{};
@@ -2372,8 +2371,8 @@ function generateAiText(type){
    } else {
     narrative+='Tidak ada gol tercatat pada pertandingan hari ini.';
    }
-   const list=ranked.map((r,i)=>`${i+1}. ${r.name}`).join('\n');
-   text=ranked.length?`${narrative}\n\nDaftar pencetak gol hari ini:\n${list}`:narrative;
+   const list=ranked.map(r=>`${r.name} = ${r.goals} gol, ${r.assists} assist`).join('\n');
+   text=ranked.length?`${narrative}\n\n⚽ STATISTIK PEMAIN HARI INI\n\n${list}`:narrative;
   }
  }
  if($('aiOutput')) $('aiOutput').value=text;
@@ -2383,7 +2382,7 @@ function copyAiOutput(){const el=$('aiOutput'); if(!el||!el.value)return showToa
 function exportCsv(){const rows=[['Tanggal','Home','Away','Skor Home','Skor Away','Scorer Home','Assist Home','Scorer Away','Assist Away','Penalty Winner','Cards']]; load().forEach(m=>rows.push([m.date,m.home,m.away,m.hs,m.as,(m.homeScorers||[]).join('; '),(m.homeAssists||[]).join('; '),(m.awayScorers||[]).join('; '),(m.awayAssists||[]).join('; '),m.penaltyWinner||'',(m.cards||[]).map(c=>`${c.player}-${c.team}-${c.type}`).join('; ')])); const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n'); const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='riwayat_pertandingan.csv'; a.click(); URL.revokeObjectURL(a.href)}
 function init(){document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); b.classList.add('active'); document.querySelectorAll('.page').forEach(p=>p.classList.remove('show')); $(b.dataset.page).classList.add('show');}); $('matchDate').value=new Date().toISOString().slice(0,10); if($('weekDate'))$('weekDate').value=new Date().toISOString().slice(0,10); fillSelects(); updateAccessUI(); if($('loginBtn'))$('loginBtn').onclick=loginAccessUser; if($('logoutBtn'))$('logoutBtn').onclick=()=>{clearCurrentAccessUser(); updateAccessUI(); const active=document.querySelector('.page.show'); if(active?.id==='admin'){document.querySelector('.tabs button[data-page="dashboard"]')?.click();} showToast('Logout berhasil','Input match dikunci kembali.')}; if($('generateAccessUser'))$('generateAccessUser').onclick=createAccessUser; document.querySelectorAll('.scoreBtn').forEach(btn=>btn.onclick=()=>{const input=$(btn.dataset.score); const next=Math.max(0,(+input.value||0)+(+btn.dataset.delta||0)); input.value=next; input.dispatchEvent(new Event('input',{bubbles:true}));}); if($('showYearStandings'))$('showYearStandings').onclick=()=>{standingsMode='year';$('showYearStandings').classList.add('activeMode');$('showWeekStandings')?.classList.remove('activeMode');$('showMonthStandings')?.classList.remove('activeMode');render()}; if($('showMonthStandings'))$('showMonthStandings').onclick=()=>{standingsMode='month';$('showMonthStandings').classList.add('activeMode');$('showWeekStandings')?.classList.remove('activeMode');$('showYearStandings')?.classList.remove('activeMode');render()}; if($('showWeekStandings'))$('showWeekStandings').onclick=()=>{standingsMode='week';$('showWeekStandings').classList.add('activeMode');$('showMonthStandings')?.classList.remove('activeMode');$('showYearStandings')?.classList.remove('activeMode');render()}; if($('weekDate'))$('weekDate').onchange=()=>{if(standingsMode==='year')standingsMode='week';$('showWeekStandings')?.classList.toggle('activeMode',standingsMode==='week');$('showMonthStandings')?.classList.toggle('activeMode',standingsMode==='month');$('showYearStandings')?.classList.remove('activeMode');render()}; if($('exportStandingsImage'))$('exportStandingsImage').onclick=exportStandingsImage; if($('copyStandingsWA'))$('copyStandingsWA').onclick=copyStandingsWA; ['homeScore','awayScore','homeTeam','awayTeam'].forEach(id=>$(id).addEventListener('input',()=>{refreshHistories();syncScorerInputs()})); $('enableCards').onchange=e=>{$('cardsBlock').classList.toggle('hidden',!e.target.checked); if(e.target.checked&&!document.querySelector('.cardRow'))addCardRow()}; $('addCard').onclick=()=>addCardRow(); $('playerSearch').oninput=renderPlayers; if($('savePlayers'))$('savePlayers').onclick=()=>{saveRosters(collectRosters()); refreshHistories(); renderPlayers(); showToast('Daftar pemain tersimpan','Autocomplete scorer dan kartu sudah diperbarui.');}; if($('cancelEditMatch'))$('cancelEditMatch').onclick=()=>{resetMatchEditMode(); $('matchForm').reset(); fillSelects();}; if($('chooseClubLogoBtn'))$('chooseClubLogoBtn').onclick=()=>$('clubLogoFile')?.click(); if($('clubLogoFile'))$('clubLogoFile').onchange=previewSelectedClubLogo; if($('saveClubLogo'))$('saveClubLogo').onclick=saveClubLogoFromForm; if($('clearClubLogo'))$('clearClubLogo').onclick=clearClubLogo; if($('addFinance'))$('addFinance').onclick=addFinance; if($('financeDate'))$('financeDate').value=new Date().toISOString().slice(0,10); if($('moreExportStandings'))$('moreExportStandings').onclick=exportStandingsImage; if($('moreCopyStandings'))$('moreCopyStandings').onclick=copyStandingsWA; if($('moreCopyTopScorer'))$('moreCopyTopScorer').onclick=copyTopScorerWA; if($('downloadBackupData'))$('downloadBackupData').onclick=downloadBackupData; if($('restoreBackupData'))$('restoreBackupData').onclick=restoreBackupData; $('exportCsv').onclick=exportCsv; $('exportPdf').onclick=()=>window.print(); bindExportButtonsForce();
  $('matchForm').onsubmit=e=>{e.preventDefault(); if(!canInputMatch())return showToast('Akses ditolak','Login terlebih dahulu untuk input hasil pertandingan.','error'); const m={date:$('matchDate').value,home:$('homeTeam').value,away:$('awayTeam').value,hs:+$('homeScore').value,as:+$('awayScore').value,homeScorers:collectSide('home'),awayScorers:collectSide('away'),homeAssists:collectAssists('home'),awayAssists:collectAssists('away'),penaltyWinner:$('penaltyWinner').value,cards:$('enableCards').checked?collectCards():[]}; if(m.home===m.away)return showToast('Input belum valid','Home dan Away tidak boleh club yang sama.','error'); if(m.homeScorers.some(n=>!n)||m.homeScorers.length!==m.hs)return showToast('Pencetak goal Home belum sesuai',`Skor home ${m.hs}, maka wajib ${m.hs} nama. Terisi ${m.homeScorers.length}.`,'error'); if(m.awayScorers.some(n=>!n)||m.awayScorers.length!==m.as)return showToast('Pencetak goal Away belum sesuai',`Skor away ${m.as}, maka wajib ${m.as} nama. Terisi ${m.awayScorers.length}.`,'error'); if(compSettings().drawRule==='penalty' && m.hs===m.as && !m.penaltyWinner)return showToast('Penalty winner wajib dipilih','Karena skor seri, pilih pemenang penalty untuk poin 2/1.','error'); if(compSettings().drawRule!=='penalty')m.penaltyWinner=''; const data=load(); const editIdx=editingMatchIndex!==null?editingMatchIndex:($('editMatchIndex')?.value!==''?+$('editMatchIndex').value:null); if(editIdx!==null && isSuperAdmin() && data[editIdx]){data[editIdx]=m; save(data); showToast('Match diperbarui',`${m.home} ${m.hs} - ${m.as} ${m.away}`);} else {save([...data,m]); showToast('Match berhasil disimpan',`${m.home} ${m.hs} - ${m.as} ${m.away}`);} syncRostersFromMatches(); e.target.reset(); resetMatchEditMode(); $('matchDate').value=new Date().toISOString().slice(0,10); $('awayTeam').selectedIndex=1; $('cardRows').innerHTML=''; $('cardsBlock').classList.add('hidden'); fillSelects(); render();};
- $('saveSettings').onclick=()=>{const arr=$('teamSettings').value.split('\n').map(x=>x.trim()).filter(Boolean); if(arr.length<2)return showToast('Setting belum valid','Minimal input 2 club.','error'); const cfg=collectCompetitionSettings(); if(arr.length!==cfg.teamCount)return showToast('Jumlah team belum sesuai',`Setting jumlah team adalah ${cfg.teamCount}, tetapi daftar club berisi ${arr.length}.`,'error'); const oldRosters=loadRosters(); const unique=[...new Set(arr)]; const nextRosters={}; unique.forEach(t=>nextRosters[t]=oldRosters[t]||[]); saveTeams(unique); saveRosters(nextRosters); saveCompSettings(cfg); fillSelects(); render(); showToast('Setting kompetisi tersimpan','Format liga/piala, jumlah team, home-away, dan aturan seri sudah diperbarui.')}; if($('hardResetAll'))$('hardResetAll').onclick=hardResetAllData; if($('importInitialGoals'))$('importInitialGoals').onclick=importInitialGoals; if($('clearInitialGoals'))$('clearInitialGoals').onclick=clearInitialGoals; if($('flowModePoint'))$('flowModePoint').onclick=()=>{analyticsFlowMode='point';renderAnalytics()}; if($('flowModeGoal'))$('flowModeGoal').onclick=()=>{analyticsFlowMode='goal';renderAnalytics()}; if($('playerEditSave'))$('playerEditSave').onclick=savePlayerEditor; if($('playerEditCancel'))$('playerEditCancel').onclick=closePlayerEditor; if($('playerEditModal'))$('playerEditModal').onclick=e=>{if(e.target.id==='playerEditModal')closePlayerEditor()}; if($('drawRule'))$('drawRule').onchange=updatePenaltyOptions; $('resetData').onclick=()=>{localStorage.removeItem('matches_v2');render();fillSelects()}; render();}
+ $('saveSettings').onclick=()=>{const arr=$('teamSettings').value.split('\n').map(x=>x.trim()).filter(Boolean); if(arr.length<2)return showToast('Setting belum valid','Minimal input 2 club.','error'); const cfg=collectCompetitionSettings(); if(arr.length!==cfg.teamCount)return showToast('Jumlah team belum sesuai',`Setting jumlah team adalah ${cfg.teamCount}, tetapi daftar club berisi ${arr.length}.`,'error'); const oldRosters=loadRosters(); const unique=[...new Set(arr)]; const nextRosters={}; unique.forEach(t=>nextRosters[t]=oldRosters[t]||[]); saveTeams(unique); saveRosters(nextRosters); saveCompSettings(cfg); fillSelects(); render(); showToast('Setting kompetisi tersimpan','Format liga/piala, jumlah team, home-away, dan aturan seri sudah diperbarui.')}; if($('hardResetAll'))$('hardResetAll').onclick=hardResetAllData; if($('flowModePoint'))$('flowModePoint').onclick=()=>{analyticsFlowMode='point';renderAnalytics()}; if($('flowModeGoal'))$('flowModeGoal').onclick=()=>{analyticsFlowMode='goal';renderAnalytics()}; if($('exportAnalyticsImage'))$('exportAnalyticsImage').onclick=exportAnalyticsImage; if($('h2hClose'))$('h2hClose').onclick=closeH2H; if($('h2hModal'))$('h2hModal').onclick=e=>{if(e.target.id==='h2hModal')closeH2H()}; if($('playerEditSave'))$('playerEditSave').onclick=savePlayerEditor; if($('playerEditCancel'))$('playerEditCancel').onclick=closePlayerEditor; if($('playerEditModal'))$('playerEditModal').onclick=e=>{if(e.target.id==='playerEditModal')closePlayerEditor()}; if($('drawRule'))$('drawRule').onchange=updatePenaltyOptions; $('resetData').onclick=()=>{localStorage.removeItem('matches_v2');render();fillSelects()}; render();}
 window.__stateReady.then(init).catch(init);
 
 </script>
