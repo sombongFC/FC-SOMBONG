@@ -265,7 +265,7 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 .flowCard{border:1px solid #e5e7eb;border-radius:24px;background:linear-gradient(180deg,#fff,#f8fffa);padding:18px;overflow:hidden}
 .flowCardHead{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}
 .flowCardHead h3{margin:0;color:#064e3b;font-size:22px}.flowTotal{font-weight:950;color:#138a3d;font-size:18px}
-.flowCanvas{width:100%;min-height:280px;display:block}.flowHint{font-size:12px;color:#64748b;margin-top:6px}
+.flowCanvas{width:100%;min-height:280px;display:block;overflow:visible}.flowHint{font-size:12px;color:#64748b;margin-top:6px}
 .flowNodeText{font:800 14px Inter,Arial,sans-serif;fill:#0f172a}.flowValueText{font:900 13px Inter,Arial,sans-serif;fill:#0f5132}
 .flowLink{fill:none;stroke-linecap:round;opacity:.72;transition:opacity .2s ease,filter .2s ease}.flowLink:hover{opacity:1;filter:drop-shadow(0 4px 8px rgba(15,81,50,.22))}
 .editPlayerBtn{width:38px;height:38px;border:0;border-radius:12px;background:#dcfce7;color:#065f46;font-size:18px;cursor:pointer;font-weight:900}.editPlayerBtn:hover{background:#bbf7d0}
@@ -2248,17 +2248,49 @@ function buildFlowData(team,mode){
 }
 function flowColor(index){return ['#ef4444','#8b5cf6','#10b981','#f59e0b','#0ea5e9','#ec4899'][index%6]}
 function renderFlowCard(team,mode){
- const rows=buildFlowData(team,mode); const total=rows.reduce((s,r)=>s+r.value,0); const W=920,H=Math.max(250,110+rows.length*72); const focusX=mode==='point'?760:150; const otherX=mode==='point'?150:760; const centerY=H/2;
+ const rows=buildFlowData(team,mode);
+ const total=rows.reduce((s,r)=>s+r.value,0);
+ const W=920,H=Math.max(250,110+rows.length*72);
+ // Posisi fokus selalu di kiri. Lawan selalu di kanan.
+ const focusX=150, otherX=770, centerY=H/2;
  const max=Math.max(1,...rows.map(r=>r.value));
+
  const links=rows.map((r,i)=>{
-  const y=70+i*72; const width=4+(r.value/max)*28; const c=flowColor(i);
-  const x1=mode==='point'?otherX+70:focusX+70, x2=mode==='point'?focusX-70:otherX-70;
-  const path=`M ${x1} ${y} C ${W*.38} ${y}, ${W*.62} ${centerY}, ${x2} ${centerY}`;
+  const y=70+i*72;
+  const width=4+(r.value/max)*28;
+  const c=flowColor(i);
+
+  // Point mengalir dari lawan (kanan) menuju team fokus (kiri).
+  // Goal mengalir dari team fokus (kiri) menuju lawan (kanan).
+  const startX=mode==='point'?otherX-16:focusX+16;
+  const startY=mode==='point'?y:centerY;
+  const endX=mode==='point'?focusX+16:otherX-16;
+  const endY=mode==='point'?centerY:y;
+  const cp1X=mode==='point'?620:330;
+  const cp2X=mode==='point'?330:620;
+  const path=`M ${startX} ${startY} C ${cp1X} ${startY}, ${cp2X} ${endY}, ${endX} ${endY}`;
+
   return `<path class="flowLink" d="${path}" stroke="${c}" stroke-width="${width}"><title>${escapeHtml(r.opponent)}: ${r.value} ${mode==='point'?'point':'goal'} dari ${r.matches} match</title></path>`;
  }).join('');
- const others=rows.map((r,i)=>{const y=70+i*72,c=flowColor(i); return `<rect x="${otherX-10}" y="${y-24}" width="20" height="48" rx="10" fill="${c}"/><text class="flowNodeText" x="${mode==='point'?otherX+25:otherX-25}" y="${y-3}" text-anchor="${mode==='point'?'start':'end'}">${escapeHtml(r.opponent)}</text><text class="flowValueText" x="${mode==='point'?otherX+25:otherX-25}" y="${y+17}" text-anchor="${mode==='point'?'start':'end'}">${r.value} ${mode==='point'?'pts':'gol'}</text>`}).join('');
+
+ // Node dan teks dirender setelah garis supaya garis tidak menimpa node/label.
+ const others=rows.map((r,i)=>{
+  const y=70+i*72,c=flowColor(i);
+  return `<rect x="${otherX-10}" y="${y-24}" width="20" height="48" rx="10" fill="${c}"/>
+  <text class="flowNodeText" x="${otherX+25}" y="${y-3}" text-anchor="start">${escapeHtml(r.opponent)}</text>
+  <text class="flowValueText" x="${otherX+25}" y="${y+17}" text-anchor="start">${r.value} ${mode==='point'?'pts':'gol'}</text>`;
+ }).join('');
+
  const focusLabel=mode==='point'?`${total} Point`:`${total} Goal`;
- return `<div class="flowCard"><div class="flowCardHead"><h3>${escapeHtml(team)}</h3><div class="flowTotal">${focusLabel}</div></div><svg class="flowCanvas" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">${links}${others}<rect x="${focusX-14}" y="${centerY-48}" width="28" height="96" rx="14" fill="#138a3d"/><text class="flowNodeText" x="${mode==='point'?focusX-30:focusX+30}" y="${centerY-8}" text-anchor="${mode==='point'?'end':'start'}">${escapeHtml(team)}</text><text class="flowValueText" x="${mode==='point'?focusX-30:focusX+30}" y="${centerY+15}" text-anchor="${mode==='point'?'end':'start'}">${focusLabel}</text></svg><div class="flowHint">${mode==='point'?'Aliran menunjukkan point yang dikumpulkan dari setiap lawan.':'Aliran menunjukkan goal yang dicetak ke setiap lawan.'}</div></div>`;
+ return `<div class="flowCard"><div class="flowCardHead"><h3>${escapeHtml(team)}</h3><div class="flowTotal">${focusLabel}</div></div>
+ <svg class="flowCanvas" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
+  ${links}
+  <rect x="${focusX-14}" y="${centerY-48}" width="28" height="96" rx="14" fill="#138a3d"/>
+  <text class="flowNodeText" x="${focusX+30}" y="${centerY-8}" text-anchor="start">${escapeHtml(team)}</text>
+  <text class="flowValueText" x="${focusX+30}" y="${centerY+15}" text-anchor="start">${focusLabel}</text>
+  ${others}
+ </svg>
+ <div class="flowHint">${mode==='point'?'Aliran dari kanan menunjukkan point yang diperoleh dari setiap lawan.':'Aliran dari kiri menunjukkan goal yang dicetak ke setiap lawan.'}</div></div>`;
 }
 function renderAnalytics(){
  const box=$('flowList'); if(!box)return;
