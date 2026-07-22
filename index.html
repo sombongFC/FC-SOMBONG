@@ -277,6 +277,11 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 .smartNameHint{margin-top:8px;padding:10px 12px;border:1px solid #bbf7d0;background:#f0fdf4;color:#166534;border-radius:14px;font-size:12px;line-height:1.45}.smartNameHint b{color:#064e3b}
 
 /* v3.1 Hary merge + smart similar-name detection */
+/* v3.04 History: tanggal terbaru di atas, match kronologis per tanggal */
+.historyMatchNumber{display:inline-flex;align-items:center;gap:6px;margin:10px 0 5px;padding:5px 10px;border-radius:999px;background:#ecfdf5;border:1px solid #bbf7d0;color:#065f46;font-size:11px;font-weight:950;letter-spacing:.06em;text-transform:uppercase}
+.historyDateGroup + .historyMatchNumber{margin-top:12px}
+@media(max-width:640px){.historyMatchNumber{font-size:10px;padding:5px 9px}}
+
 </style>
 </head>
 <body>
@@ -1488,13 +1493,30 @@ function compactGoalLines(scorers=[], assists=[]){
 }
 function renderMatches(matches, showActions=false, groupByDate=false){
  const all=load();
- const ordered=matches.slice();
+ let ordered=matches.slice();
  if(!ordered.length)return '<p class="muted">Belum ada match.</p>';
+
+ // Riwayat: cluster tanggal terbaru dahulu, tetapi urutan match di tanggal yang sama tetap sesuai urutan input.
+ if(groupByDate){
+  const dateOrder=[...new Set(ordered.map(m=>m.date))].sort((a,b)=>String(b).localeCompare(String(a)));
+  ordered=dateOrder.flatMap(date=>ordered.filter(m=>m.date===date));
+ }
+
  let lastDate='';
+ const matchNoByDate={};
  return ordered.map((m,displayIdx)=>{
   let idx=-1;
-  if(showActions && matches.length===all.length){idx=displayIdx;}
-  else if(showActions){idx=all.findIndex(x=>x.date===m.date&&x.home===m.home&&x.away===m.away&&+x.hs===+m.hs&&+x.as===+m.as&&JSON.stringify(x.homeScorers||[])===JSON.stringify(m.homeScorers||[])&&JSON.stringify(x.awayScorers||[])===JSON.stringify(m.awayScorers||[]));}
+  if(showActions){
+   // Selalu cari indeks asli agar edit/hapus tetap mengarah ke data yang benar setelah pengurutan tampilan.
+   idx=all.findIndex((x,originalIdx)=>{
+    if(x===m)return true;
+    return x.date===m.date&&x.home===m.home&&x.away===m.away&&+x.hs===+m.hs&&+x.as===+m.as&&
+     JSON.stringify(x.homeScorers||[])===JSON.stringify(m.homeScorers||[])&&
+     JSON.stringify(x.awayScorers||[])===JSON.stringify(m.awayScorers||[])&&
+     JSON.stringify(x.homeAssists||[])===JSON.stringify(m.homeAssists||[])&&
+     JSON.stringify(x.awayAssists||[])===JSON.stringify(m.awayAssists||[]);
+   });
+  }
   const homeGoals=compactGoalLines(m.homeScorers||[],m.homeAssists||[]);
   const awayGoals=compactGoalLines(m.awayScorers||[],m.awayAssists||[]);
   const cardList=(m.cards||[]).map(c=>`${escapeHtml(c.player)} (${c.type==='red'?'Merah':'Kuning'})`).join(', ');
@@ -1504,8 +1526,17 @@ function renderMatches(matches, showActions=false, groupByDate=false){
   if(cardList) extras.push(`<span>Kartu: ${cardList}</span>`);
   const actions=showActions&&idx>-1?`<div class="adminActions"><button type="button" onclick="editMatch(${idx})">✏️ Edit</button><button type="button" class="dangerMini" onclick="deleteMatch(${idx})">🗑 Hapus</button></div>`:'';
   let group='';
-  if(groupByDate && m.date!==lastDate){lastDate=m.date; group=`<div class="historyDateGroup"><span class="historyDateTitle">${fmtShortDate(m.date)}</span></div>`;}
-  return `${group}<div class="match compactMatch"><div class="matchMain"><div class="matchLine"><span class="teamName">${escapeHtml(m.home)}</span><span class="scoreInline">${m.hs} - ${m.as}</span><span class="teamName">${escapeHtml(m.away)}</span></div><div class="matchScorers"><div class="scorerCol home">${homeGoals}</div><div class="matchExtra">${extras.join('')}</div><div class="scorerCol away">${awayGoals}</div></div>${actions}</div></div>`;
+  let matchLabel='';
+  if(groupByDate){
+   if(m.date!==lastDate){
+    lastDate=m.date;
+    matchNoByDate[m.date]=0;
+    group=`<div class="historyDateGroup"><span class="historyDateTitle">${fmtShortDate(m.date)}</span></div>`;
+   }
+   matchNoByDate[m.date]=(matchNoByDate[m.date]||0)+1;
+   matchLabel=`<div class="historyMatchNumber">Match #${matchNoByDate[m.date]}</div>`;
+  }
+  return `${group}${matchLabel}<div class="match compactMatch"><div class="matchMain"><div class="matchLine"><span class="teamName">${escapeHtml(m.home)}</span><span class="scoreInline">${m.hs} - ${m.as}</span><span class="teamName">${escapeHtml(m.away)}</span></div><div class="matchScorers"><div class="scorerCol home">${homeGoals}</div><div class="matchExtra">${extras.join('')}</div><div class="scorerCol away">${awayGoals}</div></div>${actions}</div></div>`;
  }).join('');
 }
 function renderAdminMatches(matches){
