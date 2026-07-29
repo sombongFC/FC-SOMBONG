@@ -288,10 +288,10 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 .pointProgressHead{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px}
 .pointProgressHead h3{margin:0;color:#064e3b;font-size:22px}.pointProgressHead p{margin:5px 0 0;color:#64748b;font-size:13px}
 .pointLegend{display:flex;gap:14px;align-items:center;flex-wrap:wrap}.pointLegendItem{display:inline-flex;align-items:center;gap:7px;font-weight:800;color:#334155;font-size:13px}.pointLegendDot{width:12px;height:12px;border-radius:999px;box-shadow:0 0 0 3px rgba(15,23,42,.05)}
-.pointChartScroll{overflow-x:auto;overflow-y:hidden;border-radius:16px;background:#fff;border:1px solid #e5e7eb;padding:8px 6px 2px;scrollbar-width:thin}.pointChartSvg{display:block;min-width:100%;height:410px}
+.pointChartScroll{overflow:hidden;border-radius:16px;background:#fff;border:1px solid #e5e7eb;padding:8px 6px 2px}.pointChartSvg{display:block;width:100%;height:auto;min-width:0;aspect-ratio:850/390}
 .pointGridLine{stroke:#d9e2dc;stroke-width:1}.pointAxisLine{stroke:#0f5132;stroke-width:2}.pointAxisText{font:700 12px Inter,Arial,sans-serif;fill:#64748b}.pointDateText{font:700 11px Inter,Arial,sans-serif;fill:#64748b}.pointSeries{fill:none;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 3px 5px rgba(15,23,42,.12));animation:pointLineDraw .9s ease both}.pointDot{stroke:#fff;stroke-width:3;cursor:pointer;transition:r .15s ease,filter .15s ease}.pointDot:hover{r:7;filter:drop-shadow(0 3px 6px rgba(0,0,0,.25))}.pointEndLabel{font:900 13px Inter,Arial,sans-serif}.pointEmpty{padding:36px 12px;text-align:center;color:#64748b}
 @keyframes pointLineDraw{from{stroke-dasharray:1;stroke-dashoffset:1}to{stroke-dasharray:1;stroke-dashoffset:0}}
-@media(max-width:760px){.pointProgressPanel{padding:14px}.pointChartSvg{height:360px}.pointProgressHead h3{font-size:19px}.pointLegend{gap:9px}.pointLegendItem{font-size:12px}}
+@media(max-width:760px){.pointProgressPanel{padding:14px}.pointChartSvg{height:auto;min-height:0}.pointProgressHead h3{font-size:19px}.pointLegend{gap:9px}.pointLegendItem{font-size:12px}}
 
 </style>
 </head>
@@ -469,7 +469,7 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
       <div class="tableWrap"><table id="standingsTable"></table></div>
       <div class="pointProgressPanel">
         <div class="pointProgressHead">
-          <div><h3>📈 Rally Point Tiap Team</h3><p>Perkembangan jumlah point setelah setiap pertandingan. Sumbu bawah menunjukkan tanggal pertandingan.</p></div>
+          <div><h3>📈 Rally Point Tiap Team</h3><p>Perkembangan jumlah point kumulatif per minggu. Sumbu bawah menunjukkan tanggal pertandingan tiap minggu.</p></div>
           <div id="pointProgressLegend" class="pointLegend"></div>
         </div>
         <div id="pointProgressChart" class="pointChartScroll"></div>
@@ -1685,14 +1685,24 @@ function pointsAwardedForMatch(m){
 function pointProgressionData(matches){
  const teamList=activeTeams().slice(0,3);
  const indexed=(matches||[]).map((m,i)=>({m,i})).sort((a,b)=>String(a.m.date||'').localeCompare(String(b.m.date||''))||a.i-b.i);
+ const groups=[];
+ indexed.forEach(({m})=>{
+  const date=String(m.date||'');
+  let group=groups[groups.length-1];
+  if(!group||group.date!==date){group={date,matches:[]};groups.push(group);}
+  group.matches.push(m);
+ });
  const totals={}; teamList.forEach(t=>totals[t]=0);
  const series={}; teamList.forEach(t=>series[t]=[0]);
  const labels=[];
- indexed.forEach(({m},idx)=>{
-  const award=pointsAwardedForMatch(m);
-  teamList.forEach(t=>{totals[t]+=Number(award[t]||0);series[t].push(totals[t]);});
-  const d=parseLocalDate(m.date); const dateLabel=isNaN(d)?String(m.date||''):d.toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit'});
-  labels.push({date:m.date,label:dateLabel,match:idx+1,home:m.home,away:m.away,score:`${m.hs}-${m.as}`});
+ groups.forEach((group,idx)=>{
+  group.matches.forEach(m=>{
+   const award=pointsAwardedForMatch(m);
+   teamList.forEach(t=>{totals[t]+=Number(award[t]||0);});
+  });
+  teamList.forEach(t=>series[t].push(totals[t]));
+  const d=parseLocalDate(group.date); const dateLabel=isNaN(d)?group.date:d.toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit'});
+  labels.push({date:group.date,label:dateLabel,week:idx+1,count:group.matches.length,matches:group.matches});
  });
  return {teamList,series,labels,matches:indexed.map(x=>x.m)};
 }
@@ -1710,18 +1720,18 @@ function renderPointProgression(matches){
  const data=pointProgressionData(matches), colors=progressionTeamColors(data.teamList);
  if(legend)legend.innerHTML=data.teamList.map(t=>`<span class="pointLegendItem"><span class="pointLegendDot" style="background:${colors[t]}"></span>${escapeHtml(t)}</span>`).join('');
  if(!data.labels.length){host.innerHTML='<div class="pointEmpty">Belum ada pertandingan pada periode ini.</div>';return;}
- const n=data.labels.length,W=Math.max(850,160+n*88),H=390,ml=62,mr=110,mt=28,mb=72,plotW=W-ml-mr,plotH=H-mt-mb;
+ const n=data.labels.length,W=850,H=390,ml=62,mr=110,mt=28,mb=64,plotW=W-ml-mr,plotH=H-mt-mb;
  let maxVal=0; data.teamList.forEach(t=>(data.series[t]||[]).forEach(v=>maxVal=Math.max(maxVal,v))); maxVal=Math.max(5,Math.ceil(maxVal/5)*5);
  const x=i=>ml+(i/n)*plotW, y=v=>mt+plotH-(v/maxVal)*plotH;
  let svg=`<svg class="pointChartSvg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Grafik perkembangan point">`;
  const step=maxVal<=20?5:(maxVal<=50?10:Math.ceil(maxVal/5/10)*10);
  for(let v=0;v<=maxVal;v+=step){const yy=y(v);svg+=`<line class="pointGridLine" x1="${ml}" y1="${yy}" x2="${W-mr+20}" y2="${yy}"></line><text class="pointAxisText" x="${ml-12}" y="${yy+4}" text-anchor="end">${v}</text>`;}
  svg+=`<line class="pointAxisLine" x1="${ml}" y1="${mt}" x2="${ml}" y2="${mt+plotH}"></line><line class="pointAxisLine" x1="${ml}" y1="${mt+plotH}" x2="${W-mr+20}" y2="${mt+plotH}"></line>`;
- data.labels.forEach((lab,i)=>{const xx=x(i+1);svg+=`<line class="pointGridLine" x1="${xx}" y1="${mt}" x2="${xx}" y2="${mt+plotH}" opacity=".55"></line><text class="pointDateText" x="${xx}" y="${H-39}" text-anchor="middle" transform="rotate(-35 ${xx} ${H-39})">${escapeHtml(lab.label)}</text><text class="pointDateText" x="${xx}" y="${H-8}" text-anchor="middle">M${lab.match}</text>`;});
+ data.labels.forEach((lab,i)=>{const xx=x(i+1);svg+=`<line class="pointGridLine" x1="${xx}" y1="${mt}" x2="${xx}" y2="${mt+plotH}" opacity=".55"></line><text class="pointDateText" x="${xx}" y="${H-27}" text-anchor="middle">${escapeHtml(lab.label)}</text><text class="pointDateText" x="${xx}" y="${H-9}" text-anchor="middle">Minggu ${lab.week}</text>`;});
  data.teamList.forEach((t,ti)=>{
   const vals=data.series[t],pts=vals.map((v,i)=>[x(i),y(v)]),path=smoothPointPath(pts),color=colors[t];
   svg+=`<path class="pointSeries" pathLength="1" d="${path}" stroke="${color}" style="animation-delay:${ti*.12}s"></path>`;
-  pts.forEach((pt,i)=>{const lab=i?data.labels[i-1]:null; const title=lab?`${t}: ${vals[i]} point setelah Match ${lab.match} (${lab.date}) — ${lab.home} ${lab.score} ${lab.away}`:`${t}: 0 point`;svg+=`<circle class="pointDot" cx="${pt[0]}" cy="${pt[1]}" r="5" fill="${color}"><title>${escapeHtml(title)}</title></circle>`;});
+  pts.forEach((pt,i)=>{const lab=i?data.labels[i-1]:null; const title=lab?`${t}: ${vals[i]} point setelah Minggu ${lab.week} (${lab.date}) — ${lab.count} pertandingan`:`${t}: 0 point`;svg+=`<circle class="pointDot" cx="${pt[0]}" cy="${pt[1]}" r="5" fill="${color}"><title>${escapeHtml(title)}</title></circle>`;});
   const end=pts[pts.length-1];svg+=`<text class="pointEndLabel" x="${end[0]+12}" y="${end[1]+4}" fill="${color}">${escapeHtml(t)} ${vals[vals.length-1]} pts</text>`;
  });
  svg+='</svg>';host.innerHTML=svg;
@@ -1736,7 +1746,7 @@ function drawPointProgressionCanvas(ctx,data,x0,y0,w,h){
  for(let v=0;v<=maxVal;v+=step){const yy=y(v);ctx.beginPath();ctx.moveTo(x0+ml,yy);ctx.lineTo(x0+w-mr+20,yy);ctx.stroke();ctx.fillStyle='#64748b';ctx.textAlign='right';ctx.fillText(String(v),x0+ml-9,yy+4);}
  ctx.strokeStyle='#0f5132';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x0+ml,y0+mt);ctx.lineTo(x0+ml,y0+mt+ph);ctx.lineTo(x0+w-mr+20,y0+mt+ph);ctx.stroke();
  data.teamList.forEach(t=>{const vals=data.series[t],color=colors[t];ctx.strokeStyle=color;ctx.lineWidth=4;ctx.lineJoin='round';ctx.lineCap='round';ctx.beginPath();vals.forEach((v,i)=>{const xx=x(i),yy=y(v);if(i===0)ctx.moveTo(xx,yy);else ctx.lineTo(xx,yy);});ctx.stroke();vals.forEach((v,i)=>{ctx.beginPath();ctx.arc(x(i),y(v),4.5,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();});const i=vals.length-1;ctx.fillStyle=color;ctx.font='800 13px Arial';ctx.textAlign='left';ctx.fillText(`${t} ${vals[i]} pts`,x(i)+10,y(vals[i])+4);});
- data.labels.forEach((lab,i)=>{const xx=x(i+1);ctx.save();ctx.translate(xx,y0+h-18);ctx.rotate(-.55);ctx.fillStyle='#64748b';ctx.font='700 10px Arial';ctx.textAlign='center';ctx.fillText(lab.label,0,0);ctx.restore();});ctx.restore();
+ data.labels.forEach((lab,i)=>{const xx=x(i+1);ctx.save();ctx.translate(xx,y0+h-22);ctx.fillStyle='#64748b';ctx.font='700 10px Arial';ctx.textAlign='center';ctx.fillText(lab.label,0,0);ctx.font='700 9px Arial';ctx.fillText(`Minggu ${lab.week}`,0,13);ctx.restore();});ctx.restore();
 }
 
 function renderInitialGoalsForm(){
