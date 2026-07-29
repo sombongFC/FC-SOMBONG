@@ -270,7 +270,7 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 .flowLegendDot{width:12px;height:12px;border-radius:999px;box-shadow:0 2px 7px rgba(15,23,42,.12)}
 
 .h2hModal{position:fixed;inset:0;z-index:100002;background:rgba(2,6,23,.7);display:none;align-items:center;justify-content:center;padding:18px}.h2hModal.show{display:flex}.h2hCard{width:min(560px,100%);background:#fff;border-radius:26px;padding:22px;box-shadow:0 32px 100px rgba(0,0,0,.36)}.h2hTitle{display:flex;align-items:center;justify-content:space-between;gap:12px}.h2hTitle h3{margin:0;color:#064e3b}.h2hClose{border:0;background:#eef2f7;border-radius:12px;width:40px;height:40px;font-size:20px;cursor:pointer}.h2hScore{font-family:'Roboto Mono',monospace;font-weight:900;font-size:30px;color:#0f5132;text-align:center;margin:18px 0}.h2hGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.h2hStat{border:1px solid #e5e7eb;border-radius:16px;padding:12px;text-align:center;background:#f8fafc}.h2hStat b{display:block;font-size:22px;color:#064e3b}.h2hStat small{color:#64748b;font-weight:700}
-.editPlayerBtn{width:38px;height:38px;border:0;border-radius:12px;background:#dcfce7;color:#065f46;font-size:18px;cursor:pointer;font-weight:900}.editPlayerBtn:hover{background:#bbf7d0}.playerEditModal{position:fixed;inset:0;z-index:100000;background:rgba(2,6,23,.68);display:none;align-items:center;justify-content:center;padding:18px}.playerEditModal.show{display:flex}.playerEditCard{width:min(520px,100%);background:#fff;border-radius:24px;padding:22px;box-shadow:0 30px 90px rgba(0,0,0,.35)}.playerEditCard h3{margin:0 0 8px;color:#064e3b}.playerEditGrid{display:grid;gap:12px;margin-top:16px}.playerEditActions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.playerEditActions button{min-height:46px;border:0;border-radius:14px;font-weight:900;cursor:pointer}.playerEditSave{background:#138a3d;color:#fff}.playerEditCancel{background:#e5e7eb;color:#111827}
+.editPlayerBtn{width:38px;height:38px;border:0;border-radius:12px;background:#dcfce7;color:#065f46;font-size:18px;cursor:pointer;font-weight:900}.editPlayerBtn:hover{background:#bbf7d0}.playerStatImageBtn{width:42px;height:38px;border:0;border-radius:12px;background:#0f5132;color:#fff;font-size:18px;cursor:pointer;font-weight:900;box-shadow:0 5px 12px rgba(15,81,50,.18)}.playerStatImageBtn:hover{background:#0a3a24;transform:translateY(-1px)}.playerEditModal{position:fixed;inset:0;z-index:100000;background:rgba(2,6,23,.68);display:none;align-items:center;justify-content:center;padding:18px}.playerEditModal.show{display:flex}.playerEditCard{width:min(520px,100%);background:#fff;border-radius:24px;padding:22px;box-shadow:0 30px 90px rgba(0,0,0,.35)}.playerEditCard h3{margin:0 0 8px;color:#064e3b}.playerEditGrid{display:grid;gap:12px;margin-top:16px}.playerEditActions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.playerEditActions button{min-height:46px;border:0;border-radius:14px;font-weight:900;cursor:pointer}.playerEditSave{background:#138a3d;color:#fff}.playerEditCancel{background:#e5e7eb;color:#111827}
 @keyframes drawFlow{to{stroke-dashoffset:0}}@keyframes nodePop{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}@keyframes flowStageSwap{0%{opacity:.35;transform:translateY(6px) scale(.99)}100%{opacity:1;transform:none}}
 @media(max-width:760px){.analyticsLayout{grid-template-columns:1fr}.analyticsTeamList{grid-template-columns:repeat(3,minmax(0,1fr))}.analyticsTeamBtn{text-align:center;padding:11px 8px}.flowStage{padding:12px;min-height:330px}.flowCanvas{min-height:285px}.flowHeadline h3{font-size:19px}.analyticsActions{width:100%;margin-left:0}.analyticsActions button{flex:1}.playerEditActions{grid-template-columns:1fr}.h2hGrid{grid-template-columns:repeat(2,1fr)}}
 
@@ -496,7 +496,7 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
     <div class="panel">
       <h2>Statistik & Pencarian Pemain</h2>
       <input id="playerSearch" class="searchBox" placeholder="Cari nama pemain...">
-      <p class="muted">Ganti foto pemain dilakukan dari halaman ini agar tampilan Top Skor tetap rapi. Foto otomatis muncul di Top Skor dan Top Assist.</p>
+      <p class="muted">Ganti foto pemain dilakukan dari halaman ini agar tampilan Top Skor tetap rapi. Klik tombol 📸 pada pemain untuk mengunduh poster statistik berisi Goal, Assist, GA, dan Main/Hadir.</p>
       <div class="tableWrap"><table id="playersTable"></table></div>
     </div>
   </section>
@@ -2326,14 +2326,81 @@ async function exportStandingsImage(){
  await drawSponsorFooter(ctx,W,H,{footerH});
  if(safeDownloadCanvas(c,'klasemen-fc-sombong-'+new Date().toISOString().slice(0,10)+'.png')) showToast('Export berhasil','Gambar klasemen sudah dibuat.');
 }
+async function exportPlayerStatImage(playerName){
+ const p=playerStats().find(row=>keyName(row.name)===keyName(playerName));
+ if(!p)return showToast('Pemain tidak ditemukan','Data statistik pemain tidak tersedia.','error');
+ const photos=playerPhotos();
+ const img=await loadCanvasImage(resolvePlayerPhoto(p.name,photos)||null);
+ const W=1080,H=1350,footerH=190,pad=54;
+ const c=document.createElement('canvas');c.width=W;c.height=H;
+ const ctx=c.getContext('2d');
+ const green='#0f5132',greenDark='#0a3a24',gold='#c9a227',paper='#f6f4ee',ink='#15181c',muted='#64748b';
+ const bg=ctx.createLinearGradient(0,0,W,H);bg.addColorStop(0,greenDark);bg.addColorStop(.58,green);bg.addColorStop(1,'#123e2b');
+ ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+ ctx.fillStyle='rgba(255,255,255,.06)';
+ for(let i=-200;i<W+300;i+=170){ctx.save();ctx.translate(i,0);ctx.rotate(-.18);ctx.fillRect(0,0,44,1160);ctx.restore();}
+ function fit(text,x,y,maxW,start=48,min=18,align='center',color=ink,weight='900'){
+  let size=start;ctx.textAlign=align;ctx.fillStyle=color;
+  while(size>min){ctx.font=`${weight} ${size}px Arial Black, Arial`;if(ctx.measureText(String(text)).width<=maxW)break;size-=2;}
+  ctx.fillText(String(text),x,y);return size;
+ }
+ function statBox(x,y,w,h,label,value,accent){
+  ctx.fillStyle='#fff';roundRect(ctx,x,y,w,h,24);ctx.fill();
+  ctx.strokeStyle='rgba(15,81,50,.14)';ctx.lineWidth=2;roundRect(ctx,x,y,w,h,24);ctx.stroke();
+  ctx.fillStyle=accent;ctx.fillRect(x,y,10,h);
+  ctx.fillStyle=muted;ctx.font='800 20px Arial';ctx.textAlign='left';ctx.fillText(label,x+34,y+42);
+  ctx.fillStyle=ink;ctx.font='900 62px Arial Black, Arial';ctx.fillText(String(value),x+34,y+112);
+ }
+ ctx.fillStyle='#fff';ctx.font='900 24px Arial Black, Arial';ctx.textAlign='left';ctx.fillText('FC SOMBONG',pad,66);
+ ctx.fillStyle=gold;ctx.font='800 19px Arial';ctx.textAlign='right';ctx.fillText('PLAYER STATISTICS',W-pad,65);
+ ctx.fillStyle='#fff';ctx.font='700 14px Arial';ctx.textAlign='right';ctx.fillText(new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'}).toUpperCase(),W-pad,94);
+ ctx.fillStyle=paper;roundRect(ctx,32,126,W-64,1020,38);ctx.fill();
+ ctx.strokeStyle=gold;ctx.lineWidth=4;roundRect(ctx,32,126,W-64,1020,38);ctx.stroke();
+
+ const cx=W/2,cy=334,r=154;
+ ctx.save();ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.clip();
+ if(img){
+  const scale=Math.max((r*2)/img.width,(r*2)/img.height);
+  const iw=img.width*scale,ih=img.height*scale;
+  ctx.drawImage(img,cx-iw/2,cy-ih/2,iw,ih);
+ }else{
+  ctx.fillStyle='#e5e7eb';ctx.fillRect(cx-r,cy-r,r*2,r*2);
+  const initials=String(p.name||'?').trim().split(/\s+/).filter(Boolean).map(v=>v[0]).join('').slice(0,2).toUpperCase();
+  ctx.fillStyle=greenDark;ctx.font='900 98px Arial Black, Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(initials||'?',cx,cy+4);ctx.textBaseline='alphabetic';
+ }
+ ctx.restore();
+ ctx.strokeStyle='#fff';ctx.lineWidth=18;ctx.beginPath();ctx.arc(cx,cy,r+4,0,Math.PI*2);ctx.stroke();
+ ctx.strokeStyle=gold;ctx.lineWidth=8;ctx.beginPath();ctx.arc(cx,cy,r+10,0,Math.PI*2);ctx.stroke();
+
+ fit(String(p.name||'PEMAIN').toUpperCase(),cx,560,890,58,28,'center',ink,'900');
+ fit(String(p.teams||'CLUB BELUM TERDATA').toUpperCase(),cx,610,820,30,17,'center',greenDark,'800');
+ ctx.fillStyle=gold;roundRect(ctx,cx-86,634,172,8,4);ctx.fill();
+
+ const gap=24,boxW=(W-pad*2-gap)/2,boxH=150,y1=690,y2=864;
+ statBox(pad,y1,boxW,boxH,'MAIN / HADIR',Number(p.appearances)||0,green);
+ statBox(pad+boxW+gap,y1,boxW,boxH,'GOAL',Number(p.goals)||0,'#dc2626');
+ statBox(pad,y2,boxW,boxH,'ASSIST',Number(p.assists)||0,'#2563eb');
+ statBox(pad+boxW+gap,y2,boxW,boxH,'GA • GOAL + ASSIST',(Number(p.goals)||0)+(Number(p.assists)||0),gold);
+
+ ctx.fillStyle='#fff7cc';roundRect(ctx,pad,1040,boxW,70,18);ctx.fill();
+ ctx.fillStyle='#765600';ctx.font='900 22px Arial';ctx.textAlign='center';ctx.fillText(`🟨 KARTU KUNING  ${Number(p.yellow)||0}`,pad+boxW/2,1084);
+ ctx.fillStyle='#ffe2e2';roundRect(ctx,pad+boxW+gap,1040,boxW,70,18);ctx.fill();
+ ctx.fillStyle='#9b1c1c';ctx.fillText(`🟥 KARTU MERAH  ${Number(p.red)||0}`,pad+boxW+gap+boxW/2,1084);
+
+ await drawSponsorFooter(ctx,W,H,{footerH});
+ const slug=keyName(p.name).replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'pemain';
+ if(safeDownloadCanvas(c,`statistik-pemain-${slug}.png`))showToast('Gambar pemain dibuat',`Poster statistik ${p.name} berhasil diunduh.`);
+}
+
 function renderPlayers(){
  const q=keyName($('playerSearch').value); const photos=playerPhotos(); const rows=playerStats().filter(p=>!q||keyName(p.name).includes(q));
- $('playersTable').innerHTML='<tr><th>Foto</th><th>Edit</th><th>Nama</th><th>Club History</th><th>Main/Hadir</th><th>Goal</th><th>Assist</th><th>GA</th><th>Kuning</th><th>Merah</th><th>Ganti Foto</th></tr>'+rows.map(p=>{
+ $('playersTable').innerHTML='<tr><th>Foto</th><th>Edit</th><th>Gambar</th><th>Nama</th><th>Club History</th><th>Main/Hadir</th><th>Goal</th><th>Assist</th><th>GA</th><th>Kuning</th><th>Merah</th><th>Ganti Foto</th></tr>'+rows.map(p=>{
   const src=resolvePlayerPhoto(p.name,photos); const ga=(Number(p.goals)||0)+(Number(p.assists)||0);
-  return `<tr><td>${src?`<img class="playerPhoto" src="${src}">`:'<div class="playerPhoto"></div>'}</td><td><button type="button" class="editPlayerBtn" data-player="${escapeHtml(p.name)}" title="Edit ${escapeHtml(p.name)}">✏️</button></td><td>${escapeHtml(p.name)}</td><td>${escapeHtml(p.teams)}</td><td>${p.appearances}</td><td>${p.goals}</td><td>${p.assists||0}</td><td><strong>${ga}</strong></td><td>${p.yellow}</td><td>${p.red}</td><td><input class="photoInput" type="file" accept="image/*" data-player="${escapeHtml(p.name)}"></td></tr>`;
+  return `<tr><td>${src?`<img class="playerPhoto" src="${src}">`:'<div class="playerPhoto"></div>'}</td><td><button type="button" class="editPlayerBtn" data-player="${escapeHtml(p.name)}" title="Edit ${escapeHtml(p.name)}">✏️</button></td><td><button type="button" class="playerStatImageBtn" data-player="${escapeHtml(p.name)}" title="Buat gambar statistik ${escapeHtml(p.name)}">📸</button></td><td>${escapeHtml(p.name)}</td><td>${escapeHtml(p.teams)}</td><td>${p.appearances}</td><td>${p.goals}</td><td>${p.assists||0}</td><td><strong>${ga}</strong></td><td>${p.yellow}</td><td>${p.red}</td><td><input class="photoInput" type="file" accept="image/*" data-player="${escapeHtml(p.name)}"></td></tr>`;
  }).join('');
  document.querySelectorAll('.photoInput').forEach(inp=>inp.onchange=e=>setPlayerPhoto(inp.dataset.player,e.target.files?.[0]));
  document.querySelectorAll('.editPlayerBtn').forEach(btn=>btn.onclick=()=>openPlayerEditor(btn.dataset.player));
+ document.querySelectorAll('.playerStatImageBtn').forEach(btn=>btn.onclick=()=>exportPlayerStatImage(btn.dataset.player));
 }
 
 function loadCompetitionSettingsForm(){
@@ -2659,4 +2726,3 @@ window.__stateReady.then(init).catch(init);
 
 </body>
 </html>
-
