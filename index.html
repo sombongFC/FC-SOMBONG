@@ -270,7 +270,7 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 .flowLegendDot{width:12px;height:12px;border-radius:999px;box-shadow:0 2px 7px rgba(15,23,42,.12)}
 
 .h2hModal{position:fixed;inset:0;z-index:100002;background:rgba(2,6,23,.7);display:none;align-items:center;justify-content:center;padding:18px}.h2hModal.show{display:flex}.h2hCard{width:min(560px,100%);background:#fff;border-radius:26px;padding:22px;box-shadow:0 32px 100px rgba(0,0,0,.36)}.h2hTitle{display:flex;align-items:center;justify-content:space-between;gap:12px}.h2hTitle h3{margin:0;color:#064e3b}.h2hClose{border:0;background:#eef2f7;border-radius:12px;width:40px;height:40px;font-size:20px;cursor:pointer}.h2hScore{font-family:'Roboto Mono',monospace;font-weight:900;font-size:30px;color:#0f5132;text-align:center;margin:18px 0}.h2hGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.h2hStat{border:1px solid #e5e7eb;border-radius:16px;padding:12px;text-align:center;background:#f8fafc}.h2hStat b{display:block;font-size:22px;color:#064e3b}.h2hStat small{color:#64748b;font-weight:700}
-.editPlayerBtn{width:38px;height:38px;border:0;border-radius:12px;background:#dcfce7;color:#065f46;font-size:18px;cursor:pointer;font-weight:900}.editPlayerBtn:hover{background:#bbf7d0}.playerStatImageBtn{width:42px;height:38px;border:0;border-radius:12px;background:#0f5132;color:#fff;font-size:18px;cursor:pointer;font-weight:900;box-shadow:0 5px 12px rgba(15,81,50,.18)}.playerStatImageBtn:hover{background:#0a3a24;transform:translateY(-1px)}.playerEditModal{position:fixed;inset:0;z-index:100000;background:rgba(2,6,23,.68);display:none;align-items:center;justify-content:center;padding:18px}.playerEditModal.show{display:flex}.playerEditCard{width:min(520px,100%);background:#fff;border-radius:24px;padding:22px;box-shadow:0 30px 90px rgba(0,0,0,.35)}.playerEditCard h3{margin:0 0 8px;color:#064e3b}.playerEditGrid{display:grid;gap:12px;margin-top:16px}.playerEditActions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.playerEditActions button{min-height:46px;border:0;border-radius:14px;font-weight:900;cursor:pointer}.playerEditSave{background:#138a3d;color:#fff}.playerEditCancel{background:#e5e7eb;color:#111827}
+.editPlayerBtn{width:38px;height:38px;border:0;border-radius:12px;background:#dcfce7;color:#065f46;font-size:18px;cursor:pointer;font-weight:900}.editPlayerBtn:hover{background:#bbf7d0}.deletePlayerBtn{width:38px;height:38px;border:0;border-radius:12px;background:#fee2e2;color:#991b1b;font-size:17px;cursor:pointer;font-weight:900;margin-left:5px}.deletePlayerBtn:hover{background:#fecaca}.playerActionCell{display:flex;align-items:center;gap:4px}.deletePlayerBtn:disabled{opacity:.45;cursor:not-allowed}.playerEditModal{position:fixed;inset:0;z-index:100000;background:rgba(2,6,23,.68);display:none;align-items:center;justify-content:center;padding:18px}.playerEditModal.show{display:flex}.playerEditCard{width:min(520px,100%);background:#fff;border-radius:24px;padding:22px;box-shadow:0 30px 90px rgba(0,0,0,.35)}.playerEditCard h3{margin:0 0 8px;color:#064e3b}.playerEditGrid{display:grid;gap:12px;margin-top:16px}.playerEditActions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}.playerEditActions button{min-height:46px;border:0;border-radius:14px;font-weight:900;cursor:pointer}.playerEditSave{background:#138a3d;color:#fff}.playerEditCancel{background:#e5e7eb;color:#111827}
 @keyframes drawFlow{to{stroke-dashoffset:0}}@keyframes nodePop{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}@keyframes flowStageSwap{0%{opacity:.35;transform:translateY(6px) scale(.99)}100%{opacity:1;transform:none}}
 @media(max-width:760px){.analyticsLayout{grid-template-columns:1fr}.analyticsTeamList{grid-template-columns:repeat(3,minmax(0,1fr))}.analyticsTeamBtn{text-align:center;padding:11px 8px}.flowStage{padding:12px;min-height:330px}.flowCanvas{min-height:285px}.flowHeadline h3{font-size:19px}.analyticsActions{width:100%;margin-left:0}.analyticsActions button{flex:1}.playerEditActions{grid-template-columns:1fr}.h2hGrid{grid-template-columns:repeat(2,1fr)}}
 
@@ -288,10 +288,10 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 .pointProgressHead{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px}
 .pointProgressHead h3{margin:0;color:#064e3b;font-size:22px}.pointProgressHead p{margin:5px 0 0;color:#64748b;font-size:13px}
 .pointLegend{display:flex;gap:14px;align-items:center;flex-wrap:wrap}.pointLegendItem{display:inline-flex;align-items:center;gap:7px;font-weight:800;color:#334155;font-size:13px}.pointLegendDot{width:12px;height:12px;border-radius:999px;box-shadow:0 0 0 3px rgba(15,23,42,.05)}
-.pointChartScroll{overflow:hidden;border-radius:16px;background:#fff;border:1px solid #e5e7eb;padding:8px 6px 2px}.pointChartSvg{display:block;width:100%;height:auto;min-width:0;aspect-ratio:850/390}
+.pointChartScroll{overflow-x:auto;overflow-y:hidden;border-radius:16px;background:#fff;border:1px solid #e5e7eb;padding:8px 6px 2px;scrollbar-width:thin}.pointChartSvg{display:block;min-width:100%;height:410px}
 .pointGridLine{stroke:#d9e2dc;stroke-width:1}.pointAxisLine{stroke:#0f5132;stroke-width:2}.pointAxisText{font:700 12px Inter,Arial,sans-serif;fill:#64748b}.pointDateText{font:700 11px Inter,Arial,sans-serif;fill:#64748b}.pointSeries{fill:none;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 3px 5px rgba(15,23,42,.12));animation:pointLineDraw .9s ease both}.pointDot{stroke:#fff;stroke-width:3;cursor:pointer;transition:r .15s ease,filter .15s ease}.pointDot:hover{r:7;filter:drop-shadow(0 3px 6px rgba(0,0,0,.25))}.pointEndLabel{font:900 13px Inter,Arial,sans-serif}.pointEmpty{padding:36px 12px;text-align:center;color:#64748b}
 @keyframes pointLineDraw{from{stroke-dasharray:1;stroke-dashoffset:1}to{stroke-dasharray:1;stroke-dashoffset:0}}
-@media(max-width:760px){.pointProgressPanel{padding:14px}.pointChartSvg{height:auto;min-height:0}.pointProgressHead h3{font-size:19px}.pointLegend{gap:9px}.pointLegendItem{font-size:12px}}
+@media(max-width:760px){.pointProgressPanel{padding:14px}.pointChartSvg{height:360px}.pointProgressHead h3{font-size:19px}.pointLegend{gap:9px}.pointLegendItem{font-size:12px}}
 
 </style>
 </head>
@@ -469,7 +469,7 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
       <div class="tableWrap"><table id="standingsTable"></table></div>
       <div class="pointProgressPanel">
         <div class="pointProgressHead">
-          <div><h3>📈 Rally Point Tiap Team</h3><p>Perkembangan jumlah point kumulatif per minggu. Sumbu bawah menunjukkan tanggal pertandingan tiap minggu.</p></div>
+          <div><h3>📈 Rally Point Tiap Team</h3><p>Perkembangan jumlah point setelah setiap pertandingan. Sumbu bawah menunjukkan tanggal pertandingan.</p></div>
           <div id="pointProgressLegend" class="pointLegend"></div>
         </div>
         <div id="pointProgressChart" class="pointChartScroll"></div>
@@ -496,7 +496,7 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
     <div class="panel">
       <h2>Statistik & Pencarian Pemain</h2>
       <input id="playerSearch" class="searchBox" placeholder="Cari nama pemain...">
-      <p class="muted">Ganti foto pemain dilakukan dari halaman ini agar tampilan Top Skor tetap rapi. Klik tombol 📸 pada pemain untuk mengunduh poster statistik berisi Goal, Assist, GA, dan Main/Hadir.</p>
+      <p class="muted">Ganti foto pemain dilakukan dari halaman ini agar tampilan Top Skor tetap rapi. Foto otomatis muncul di Top Skor dan Top Assist.</p><p class="muted" style="color:#991b1b"><b>DELETE permanen</b> hanya bisa dilakukan oleh Super Admin. Penghapusan akan menghilangkan nama dari statistik, Top Skor, Top Assist, roster, foto, pencetak goal, assist, kartu, dan rincian pertandingan lama. Skor akhir pertandingan tetap dipertahankan.</p>
       <div class="tableWrap"><table id="playersTable"></table></div>
     </div>
   </section>
@@ -1685,24 +1685,14 @@ function pointsAwardedForMatch(m){
 function pointProgressionData(matches){
  const teamList=activeTeams().slice(0,3);
  const indexed=(matches||[]).map((m,i)=>({m,i})).sort((a,b)=>String(a.m.date||'').localeCompare(String(b.m.date||''))||a.i-b.i);
- const groups=[];
- indexed.forEach(({m})=>{
-  const date=String(m.date||'');
-  let group=groups[groups.length-1];
-  if(!group||group.date!==date){group={date,matches:[]};groups.push(group);}
-  group.matches.push(m);
- });
  const totals={}; teamList.forEach(t=>totals[t]=0);
  const series={}; teamList.forEach(t=>series[t]=[0]);
  const labels=[];
- groups.forEach((group,idx)=>{
-  group.matches.forEach(m=>{
-   const award=pointsAwardedForMatch(m);
-   teamList.forEach(t=>{totals[t]+=Number(award[t]||0);});
-  });
-  teamList.forEach(t=>series[t].push(totals[t]));
-  const d=parseLocalDate(group.date); const dateLabel=isNaN(d)?group.date:d.toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit'});
-  labels.push({date:group.date,label:dateLabel,week:idx+1,count:group.matches.length,matches:group.matches});
+ indexed.forEach(({m},idx)=>{
+  const award=pointsAwardedForMatch(m);
+  teamList.forEach(t=>{totals[t]+=Number(award[t]||0);series[t].push(totals[t]);});
+  const d=parseLocalDate(m.date); const dateLabel=isNaN(d)?String(m.date||''):d.toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit'});
+  labels.push({date:m.date,label:dateLabel,match:idx+1,home:m.home,away:m.away,score:`${m.hs}-${m.as}`});
  });
  return {teamList,series,labels,matches:indexed.map(x=>x.m)};
 }
@@ -1720,18 +1710,18 @@ function renderPointProgression(matches){
  const data=pointProgressionData(matches), colors=progressionTeamColors(data.teamList);
  if(legend)legend.innerHTML=data.teamList.map(t=>`<span class="pointLegendItem"><span class="pointLegendDot" style="background:${colors[t]}"></span>${escapeHtml(t)}</span>`).join('');
  if(!data.labels.length){host.innerHTML='<div class="pointEmpty">Belum ada pertandingan pada periode ini.</div>';return;}
- const n=data.labels.length,W=850,H=390,ml=62,mr=110,mt=28,mb=64,plotW=W-ml-mr,plotH=H-mt-mb;
+ const n=data.labels.length,W=Math.max(850,160+n*88),H=390,ml=62,mr=110,mt=28,mb=72,plotW=W-ml-mr,plotH=H-mt-mb;
  let maxVal=0; data.teamList.forEach(t=>(data.series[t]||[]).forEach(v=>maxVal=Math.max(maxVal,v))); maxVal=Math.max(5,Math.ceil(maxVal/5)*5);
  const x=i=>ml+(i/n)*plotW, y=v=>mt+plotH-(v/maxVal)*plotH;
  let svg=`<svg class="pointChartSvg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Grafik perkembangan point">`;
  const step=maxVal<=20?5:(maxVal<=50?10:Math.ceil(maxVal/5/10)*10);
  for(let v=0;v<=maxVal;v+=step){const yy=y(v);svg+=`<line class="pointGridLine" x1="${ml}" y1="${yy}" x2="${W-mr+20}" y2="${yy}"></line><text class="pointAxisText" x="${ml-12}" y="${yy+4}" text-anchor="end">${v}</text>`;}
  svg+=`<line class="pointAxisLine" x1="${ml}" y1="${mt}" x2="${ml}" y2="${mt+plotH}"></line><line class="pointAxisLine" x1="${ml}" y1="${mt+plotH}" x2="${W-mr+20}" y2="${mt+plotH}"></line>`;
- data.labels.forEach((lab,i)=>{const xx=x(i+1);svg+=`<line class="pointGridLine" x1="${xx}" y1="${mt}" x2="${xx}" y2="${mt+plotH}" opacity=".55"></line><text class="pointDateText" x="${xx}" y="${H-27}" text-anchor="middle">${escapeHtml(lab.label)}</text><text class="pointDateText" x="${xx}" y="${H-9}" text-anchor="middle">Minggu ${lab.week}</text>`;});
+ data.labels.forEach((lab,i)=>{const xx=x(i+1);svg+=`<line class="pointGridLine" x1="${xx}" y1="${mt}" x2="${xx}" y2="${mt+plotH}" opacity=".55"></line><text class="pointDateText" x="${xx}" y="${H-39}" text-anchor="middle" transform="rotate(-35 ${xx} ${H-39})">${escapeHtml(lab.label)}</text><text class="pointDateText" x="${xx}" y="${H-8}" text-anchor="middle">M${lab.match}</text>`;});
  data.teamList.forEach((t,ti)=>{
   const vals=data.series[t],pts=vals.map((v,i)=>[x(i),y(v)]),path=smoothPointPath(pts),color=colors[t];
   svg+=`<path class="pointSeries" pathLength="1" d="${path}" stroke="${color}" style="animation-delay:${ti*.12}s"></path>`;
-  pts.forEach((pt,i)=>{const lab=i?data.labels[i-1]:null; const title=lab?`${t}: ${vals[i]} point setelah Minggu ${lab.week} (${lab.date}) — ${lab.count} pertandingan`:`${t}: 0 point`;svg+=`<circle class="pointDot" cx="${pt[0]}" cy="${pt[1]}" r="5" fill="${color}"><title>${escapeHtml(title)}</title></circle>`;});
+  pts.forEach((pt,i)=>{const lab=i?data.labels[i-1]:null; const title=lab?`${t}: ${vals[i]} point setelah Match ${lab.match} (${lab.date}) — ${lab.home} ${lab.score} ${lab.away}`:`${t}: 0 point`;svg+=`<circle class="pointDot" cx="${pt[0]}" cy="${pt[1]}" r="5" fill="${color}"><title>${escapeHtml(title)}</title></circle>`;});
   const end=pts[pts.length-1];svg+=`<text class="pointEndLabel" x="${end[0]+12}" y="${end[1]+4}" fill="${color}">${escapeHtml(t)} ${vals[vals.length-1]} pts</text>`;
  });
  svg+='</svg>';host.innerHTML=svg;
@@ -1746,7 +1736,7 @@ function drawPointProgressionCanvas(ctx,data,x0,y0,w,h){
  for(let v=0;v<=maxVal;v+=step){const yy=y(v);ctx.beginPath();ctx.moveTo(x0+ml,yy);ctx.lineTo(x0+w-mr+20,yy);ctx.stroke();ctx.fillStyle='#64748b';ctx.textAlign='right';ctx.fillText(String(v),x0+ml-9,yy+4);}
  ctx.strokeStyle='#0f5132';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x0+ml,y0+mt);ctx.lineTo(x0+ml,y0+mt+ph);ctx.lineTo(x0+w-mr+20,y0+mt+ph);ctx.stroke();
  data.teamList.forEach(t=>{const vals=data.series[t],color=colors[t];ctx.strokeStyle=color;ctx.lineWidth=4;ctx.lineJoin='round';ctx.lineCap='round';ctx.beginPath();vals.forEach((v,i)=>{const xx=x(i),yy=y(v);if(i===0)ctx.moveTo(xx,yy);else ctx.lineTo(xx,yy);});ctx.stroke();vals.forEach((v,i)=>{ctx.beginPath();ctx.arc(x(i),y(v),4.5,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();});const i=vals.length-1;ctx.fillStyle=color;ctx.font='800 13px Arial';ctx.textAlign='left';ctx.fillText(`${t} ${vals[i]} pts`,x(i)+10,y(vals[i])+4);});
- data.labels.forEach((lab,i)=>{const xx=x(i+1);ctx.save();ctx.translate(xx,y0+h-22);ctx.fillStyle='#64748b';ctx.font='700 10px Arial';ctx.textAlign='center';ctx.fillText(lab.label,0,0);ctx.font='700 9px Arial';ctx.fillText(`Minggu ${lab.week}`,0,13);ctx.restore();});ctx.restore();
+ data.labels.forEach((lab,i)=>{const xx=x(i+1);ctx.save();ctx.translate(xx,y0+h-18);ctx.rotate(-.55);ctx.fillStyle='#64748b';ctx.font='700 10px Arial';ctx.textAlign='center';ctx.fillText(lab.label,0,0);ctx.restore();});ctx.restore();
 }
 
 function renderInitialGoalsForm(){
@@ -2326,81 +2316,15 @@ async function exportStandingsImage(){
  await drawSponsorFooter(ctx,W,H,{footerH});
  if(safeDownloadCanvas(c,'klasemen-fc-sombong-'+new Date().toISOString().slice(0,10)+'.png')) showToast('Export berhasil','Gambar klasemen sudah dibuat.');
 }
-async function exportPlayerStatImage(playerName){
- const p=playerStats().find(row=>keyName(row.name)===keyName(playerName));
- if(!p)return showToast('Pemain tidak ditemukan','Data statistik pemain tidak tersedia.','error');
- const photos=playerPhotos();
- const img=await loadCanvasImage(resolvePlayerPhoto(p.name,photos)||null);
- const W=1080,H=1350,footerH=190,pad=54;
- const c=document.createElement('canvas');c.width=W;c.height=H;
- const ctx=c.getContext('2d');
- const green='#0f5132',greenDark='#0a3a24',gold='#c9a227',paper='#f6f4ee',ink='#15181c',muted='#64748b';
- const bg=ctx.createLinearGradient(0,0,W,H);bg.addColorStop(0,greenDark);bg.addColorStop(.58,green);bg.addColorStop(1,'#123e2b');
- ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
- ctx.fillStyle='rgba(255,255,255,.06)';
- for(let i=-200;i<W+300;i+=170){ctx.save();ctx.translate(i,0);ctx.rotate(-.18);ctx.fillRect(0,0,44,1160);ctx.restore();}
- function fit(text,x,y,maxW,start=48,min=18,align='center',color=ink,weight='900'){
-  let size=start;ctx.textAlign=align;ctx.fillStyle=color;
-  while(size>min){ctx.font=`${weight} ${size}px Arial Black, Arial`;if(ctx.measureText(String(text)).width<=maxW)break;size-=2;}
-  ctx.fillText(String(text),x,y);return size;
- }
- function statBox(x,y,w,h,label,value,accent){
-  ctx.fillStyle='#fff';roundRect(ctx,x,y,w,h,24);ctx.fill();
-  ctx.strokeStyle='rgba(15,81,50,.14)';ctx.lineWidth=2;roundRect(ctx,x,y,w,h,24);ctx.stroke();
-  ctx.fillStyle=accent;ctx.fillRect(x,y,10,h);
-  ctx.fillStyle=muted;ctx.font='800 20px Arial';ctx.textAlign='left';ctx.fillText(label,x+34,y+42);
-  ctx.fillStyle=ink;ctx.font='900 62px Arial Black, Arial';ctx.fillText(String(value),x+34,y+112);
- }
- ctx.fillStyle='#fff';ctx.font='900 24px Arial Black, Arial';ctx.textAlign='left';ctx.fillText('FC SOMBONG',pad,66);
- ctx.fillStyle=gold;ctx.font='800 19px Arial';ctx.textAlign='right';ctx.fillText('PLAYER STATISTICS',W-pad,65);
- ctx.fillStyle='#fff';ctx.font='700 14px Arial';ctx.textAlign='right';ctx.fillText(new Date().toLocaleDateString('id-ID',{day:'2-digit',month:'long',year:'numeric'}).toUpperCase(),W-pad,94);
- ctx.fillStyle=paper;roundRect(ctx,32,126,W-64,1020,38);ctx.fill();
- ctx.strokeStyle=gold;ctx.lineWidth=4;roundRect(ctx,32,126,W-64,1020,38);ctx.stroke();
-
- const cx=W/2,cy=334,r=154;
- ctx.save();ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.clip();
- if(img){
-  const scale=Math.max((r*2)/img.width,(r*2)/img.height);
-  const iw=img.width*scale,ih=img.height*scale;
-  ctx.drawImage(img,cx-iw/2,cy-ih/2,iw,ih);
- }else{
-  ctx.fillStyle='#e5e7eb';ctx.fillRect(cx-r,cy-r,r*2,r*2);
-  const initials=String(p.name||'?').trim().split(/\s+/).filter(Boolean).map(v=>v[0]).join('').slice(0,2).toUpperCase();
-  ctx.fillStyle=greenDark;ctx.font='900 98px Arial Black, Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(initials||'?',cx,cy+4);ctx.textBaseline='alphabetic';
- }
- ctx.restore();
- ctx.strokeStyle='#fff';ctx.lineWidth=18;ctx.beginPath();ctx.arc(cx,cy,r+4,0,Math.PI*2);ctx.stroke();
- ctx.strokeStyle=gold;ctx.lineWidth=8;ctx.beginPath();ctx.arc(cx,cy,r+10,0,Math.PI*2);ctx.stroke();
-
- fit(String(p.name||'PEMAIN').toUpperCase(),cx,560,890,58,28,'center',ink,'900');
- fit(String(p.teams||'CLUB BELUM TERDATA').toUpperCase(),cx,610,820,30,17,'center',greenDark,'800');
- ctx.fillStyle=gold;roundRect(ctx,cx-86,634,172,8,4);ctx.fill();
-
- const gap=24,boxW=(W-pad*2-gap)/2,boxH=150,y1=690,y2=864;
- statBox(pad,y1,boxW,boxH,'MAIN / HADIR',Number(p.appearances)||0,green);
- statBox(pad+boxW+gap,y1,boxW,boxH,'GOAL',Number(p.goals)||0,'#dc2626');
- statBox(pad,y2,boxW,boxH,'ASSIST',Number(p.assists)||0,'#2563eb');
- statBox(pad+boxW+gap,y2,boxW,boxH,'GA • GOAL + ASSIST',(Number(p.goals)||0)+(Number(p.assists)||0),gold);
-
- ctx.fillStyle='#fff7cc';roundRect(ctx,pad,1040,boxW,70,18);ctx.fill();
- ctx.fillStyle='#765600';ctx.font='900 22px Arial';ctx.textAlign='center';ctx.fillText(`🟨 KARTU KUNING  ${Number(p.yellow)||0}`,pad+boxW/2,1084);
- ctx.fillStyle='#ffe2e2';roundRect(ctx,pad+boxW+gap,1040,boxW,70,18);ctx.fill();
- ctx.fillStyle='#9b1c1c';ctx.fillText(`🟥 KARTU MERAH  ${Number(p.red)||0}`,pad+boxW+gap+boxW/2,1084);
-
- await drawSponsorFooter(ctx,W,H,{footerH});
- const slug=keyName(p.name).replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'pemain';
- if(safeDownloadCanvas(c,`statistik-pemain-${slug}.png`))showToast('Gambar pemain dibuat',`Poster statistik ${p.name} berhasil diunduh.`);
-}
-
 function renderPlayers(){
  const q=keyName($('playerSearch').value); const photos=playerPhotos(); const rows=playerStats().filter(p=>!q||keyName(p.name).includes(q));
- $('playersTable').innerHTML='<tr><th>Foto</th><th>Edit</th><th>Gambar</th><th>Nama</th><th>Club History</th><th>Main/Hadir</th><th>Goal</th><th>Assist</th><th>GA</th><th>Kuning</th><th>Merah</th><th>Ganti Foto</th></tr>'+rows.map(p=>{
+ $('playersTable').innerHTML='<tr><th>Foto</th><th>Aksi</th><th>Nama</th><th>Club History</th><th>Main/Hadir</th><th>Goal</th><th>Assist</th><th>GA</th><th>Kuning</th><th>Merah</th><th>Ganti Foto</th></tr>'+rows.map(p=>{
   const src=resolvePlayerPhoto(p.name,photos); const ga=(Number(p.goals)||0)+(Number(p.assists)||0);
-  return `<tr><td>${src?`<img class="playerPhoto" src="${src}">`:'<div class="playerPhoto"></div>'}</td><td><button type="button" class="editPlayerBtn" data-player="${escapeHtml(p.name)}" title="Edit ${escapeHtml(p.name)}">✏️</button></td><td><button type="button" class="playerStatImageBtn" data-player="${escapeHtml(p.name)}" title="Buat gambar statistik ${escapeHtml(p.name)}">📸</button></td><td>${escapeHtml(p.name)}</td><td>${escapeHtml(p.teams)}</td><td>${p.appearances}</td><td>${p.goals}</td><td>${p.assists||0}</td><td><strong>${ga}</strong></td><td>${p.yellow}</td><td>${p.red}</td><td><input class="photoInput" type="file" accept="image/*" data-player="${escapeHtml(p.name)}"></td></tr>`;
+  return `<tr><td>${src?`<img class="playerPhoto" src="${src}">`:'<div class="playerPhoto"></div>'}</td><td><div class="playerActionCell"><button type="button" class="editPlayerBtn" data-player="${escapeHtml(p.name)}" title="Edit ${escapeHtml(p.name)}">✏️</button><button type="button" class="deletePlayerBtn" data-player="${escapeHtml(p.name)}" title="Hapus permanen ${escapeHtml(p.name)}">🗑️</button></div></td><td>${escapeHtml(p.name)}</td><td>${escapeHtml(p.teams)}</td><td>${p.appearances}</td><td>${p.goals}</td><td>${p.assists||0}</td><td><strong>${ga}</strong></td><td>${p.yellow}</td><td>${p.red}</td><td><input class="photoInput" type="file" accept="image/*" data-player="${escapeHtml(p.name)}"></td></tr>`;
  }).join('');
  document.querySelectorAll('.photoInput').forEach(inp=>inp.onchange=e=>setPlayerPhoto(inp.dataset.player,e.target.files?.[0]));
  document.querySelectorAll('.editPlayerBtn').forEach(btn=>btn.onclick=()=>openPlayerEditor(btn.dataset.player));
- document.querySelectorAll('.playerStatImageBtn').forEach(btn=>btn.onclick=()=>exportPlayerStatImage(btn.dataset.player));
+ document.querySelectorAll('.deletePlayerBtn').forEach(btn=>btn.onclick=()=>deletePlayerPermanent(btn.dataset.player));
 }
 
 function loadCompetitionSettingsForm(){
@@ -2608,6 +2532,57 @@ function savePlayerEditor(){
  closePlayerEditor(); fillSelects(); render(); showToast('Pemain diperbarui',`${newName}: ${goals} goal awal, ${assists} assist awal.`);
 }
 
+async function deletePlayerPermanent(name){
+ const playerName=normalizeName(name||'');
+ if(!playerName)return;
+ if(!isSuperAdmin())return showToast('Akses ditolak','Login sebagai Super Admin untuk menghapus pemain permanen.','error');
+ const stats=playerStats().find(p=>keyName(p.name)===keyName(playerName));
+ const detail=stats?`${stats.goals||0} goal, ${stats.assists||0} assist, ${stats.appearances||0} penampilan`:'';
+ const ok=confirm(`HAPUS PERMANEN ${playerName}?\n\n${detail}\n\nNama ini akan dihapus dari roster, statistik awal, foto, pencetak goal, assist, kartu, Top Skor, Top Assist, dan rincian pertandingan. Skor akhir pertandingan tidak berubah. Tindakan ini tidak dapat dibatalkan kecuali melalui backup.`);
+ if(!ok)return;
+ const typed=prompt(`Ketik nama pemain persis untuk konfirmasi:\n${playerName}`,'');
+ if(normalizeName(typed)!==playerName)return showToast('Penghapusan dibatalkan','Nama konfirmasi tidak cocok.','error');
+ const targetKey=keyName(playerName);
+
+ // Hapus seluruh referensi pemain dari riwayat pertandingan, tetapi pertahankan skor akhir pertandingan.
+ const matches=load().map(m=>({...m,
+  homeScorers:(m.homeScorers||[]).filter(n=>keyName(n)!==targetKey),
+  awayScorers:(m.awayScorers||[]).filter(n=>keyName(n)!==targetKey),
+  homeAssists:(m.homeAssists||[]).filter(n=>keyName(n)!==targetKey),
+  awayAssists:(m.awayAssists||[]).filter(n=>keyName(n)!==targetKey),
+  cards:(m.cards||[]).filter(c=>keyName(c?.player)!==targetKey)
+ }));
+ save(matches);
+
+ // Hapus dari semua roster tim.
+ const rosters=loadRosters();
+ Object.keys(rosters).forEach(team=>{
+  rosters[team]=(rosters[team]||[]).filter(n=>keyName(n)!==targetKey);
+ });
+ saveRosters(rosters);
+
+ // Hapus statistik awal.
+ const initial=initialGoals();
+ Object.keys(initial).forEach(k=>{
+  const row=initial[k];
+  if(keyName(k)===targetKey||keyName(row?.name)===targetKey)delete initial[k];
+ });
+ saveInitialGoals(initial);
+
+ // Hapus seluruh key foto yang mengarah ke nama tersebut.
+ const photos=playerPhotos();
+ Object.keys(photos).forEach(k=>{
+  if(keyName(k)===targetKey||photoNameKey(k)===photoNameKey(playerName))delete photos[k];
+ });
+ savePlayerPhotos(photos);
+
+ // Pastikan data langsung dikirim ke server sebelum tampilan diperbarui.
+ if(typeof window.__scheduleFcStateSync==='function')window.__scheduleFcStateSync();
+ fillSelects();
+ render();
+ showToast('Pemain dihapus permanen',`${playerName} sudah dihilangkan dari statistik, Top Skor, Top Assist, roster, foto, dan rincian pertandingan.`);
+}
+
 function generateAiText(type){
  const matches=activeMatches(load()); const ps=playerStats(); const st=standings(matches);
  const totalGoals=matches.reduce((sum,m)=>sum+(+m.hs||0)+(+m.as||0),0);
@@ -2726,4 +2701,3 @@ window.__stateReady.then(init).catch(init);
 
 </body>
 </html>
-
