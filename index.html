@@ -1764,22 +1764,42 @@ function renderPointProgression(matches){
 }
 function drawPointProgressionCanvas(ctx,data,x0,y0,w,h){
  if(!data.labels.length)return;
- const colors=progressionTeamColors(data.teamList),ml=58,mr=135,mt=52,mb=92,pw=w-ml-mr,ph=h-mt-mb;
+ const isDense=data.labels.length>20;
+ const colors=progressionTeamColors(data.teamList);
+ const ml=isDense?68:58, mr=isDense?205:145, mt=52, mb=isDense?82:92;
+ const pw=w-ml-mr,ph=h-mt-mb;
  let maxVal=0;data.teamList.forEach(t=>data.series[t].forEach(v=>maxVal=Math.max(maxVal,v)));maxVal=Math.max(3,Math.ceil(maxVal/3)*3);
  const x=i=>x0+ml+(i/data.labels.length)*pw, y=v=>y0+mt+ph-(v/maxVal)*ph;
  ctx.save();ctx.fillStyle='#fff';ctx.fillRect(x0,y0,w,h);
  ctx.fillStyle='#064e3b';ctx.font='900 24px Arial';ctx.textAlign='left';ctx.fillText(`TRACKING POINT PER MATCH • ${data.labels.length} MATCH`,x0+20,y0+30);
  const step=maxVal<=12?3:(maxVal<=24?6:Math.ceil(maxVal/4/3)*3);ctx.font='700 12px Arial';ctx.strokeStyle='#d9e2dc';ctx.lineWidth=1;
- for(let v=0;v<=maxVal;v+=step){const yy=y(v);ctx.beginPath();ctx.moveTo(x0+ml,yy);ctx.lineTo(x0+w-mr+22,yy);ctx.stroke();ctx.fillStyle='#64748b';ctx.textAlign='right';ctx.fillText(String(v),x0+ml-9,yy+4);}
- ctx.strokeStyle='#0f5132';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x0+ml,y0+mt);ctx.lineTo(x0+ml,y0+mt+ph);ctx.lineTo(x0+w-mr+22,y0+mt+ph);ctx.stroke();
+ for(let v=0;v<=maxVal;v+=step){const yy=y(v);ctx.beginPath();ctx.moveTo(x0+ml,yy);ctx.lineTo(x0+ml+pw,yy);ctx.stroke();ctx.fillStyle='#64748b';ctx.textAlign='right';ctx.fillText(String(v),x0+ml-10,yy+4);}
+ ctx.strokeStyle='#0f5132';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x0+ml,y0+mt);ctx.lineTo(x0+ml,y0+mt+ph);ctx.lineTo(x0+ml+pw,y0+mt+ph);ctx.stroke();
+ const labelEvery=data.labels.length<=20?1:(data.labels.length<=40?2:(data.labels.length<=80?3:5));
  data.labels.forEach((lab,i)=>{const xx=x(i+1);ctx.strokeStyle='#e4ebe7';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(xx,y0+mt);ctx.lineTo(xx,y0+mt+ph);ctx.stroke();});
- data.teamList.forEach(t=>{
+ data.teamList.forEach((t,teamIndex)=>{
   const vals=data.series[t],color=colors[t];ctx.strokeStyle=color;ctx.lineWidth=4;ctx.lineJoin='round';ctx.lineCap='round';ctx.beginPath();
   vals.forEach((v,i)=>{const xx=x(i),yy=y(v);if(i===0)ctx.moveTo(xx,yy);else ctx.lineTo(xx,yy);});ctx.stroke();
-  vals.forEach((v,i)=>{ctx.beginPath();ctx.arc(x(i),y(v),i?5.5:4,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();if(i>0){ctx.fillStyle=color;ctx.font='800 11px Arial';ctx.textAlign='center';ctx.fillText(String(v),x(i),y(v)-9);}});
-  const i=vals.length-1;ctx.fillStyle=color;ctx.font='800 13px Arial';ctx.textAlign='left';ctx.fillText(`${t} ${vals[i]} pts`,x(i)+10,y(vals[i])+4);
+  vals.forEach((v,i)=>{
+   const changed=i===0||v!==vals[i-1];
+   ctx.beginPath();ctx.arc(x(i),y(v),i?5.2:4,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();
+   if(i>0 && (!isDense || changed)){
+    ctx.fillStyle=color;ctx.font='800 11px Arial';ctx.textAlign='center';ctx.fillText(String(v),x(i),y(v)-10);
+   }
+  });
+  const i=vals.length-1,endX=x(i),endY=y(vals[i]);
+  const labelX=x0+ml+pw+24;
+  ctx.strokeStyle=color;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(endX+7,endY);ctx.lineTo(labelX-8,endY);ctx.stroke();
+  ctx.fillStyle=color;ctx.textAlign='left';ctx.font='900 14px Arial';ctx.fillText(t,labelX,endY-3);
+  ctx.font='800 12px Arial';ctx.fillText(`${vals[i]} pts`,labelX,endY+14);
  });
- data.labels.forEach((lab,i)=>{const xx=x(i+1);ctx.fillStyle='#064e3b';ctx.font='900 13px Arial';ctx.textAlign='center';ctx.fillText(`M${lab.match}`,xx,y0+h-57);ctx.fillStyle='#334155';ctx.font='800 10px Arial';ctx.fillText(`${lab.homeShort} ${lab.score} ${lab.awayShort}`,xx,y0+h-39);ctx.fillStyle='#64748b';ctx.font='700 9px Arial';ctx.fillText(lab.label,xx,y0+h-23);});
+ data.labels.forEach((lab,i)=>{
+  const show=((i+1)%labelEvery===0)||i===0||i===data.labels.length-1;
+  if(!show)return;
+  const xx=x(i+1);ctx.fillStyle='#064e3b';ctx.font='900 12px Arial';ctx.textAlign='center';ctx.fillText(`M${lab.match}`,xx,y0+h-48);
+  if(!isDense){ctx.fillStyle='#334155';ctx.font='800 9px Arial';ctx.fillText(`${lab.homeShort} ${lab.score} ${lab.awayShort}`,xx,y0+h-31);ctx.fillStyle='#64748b';ctx.font='700 8px Arial';ctx.fillText(lab.label,xx,y0+h-16);}
+ });
+ if(isDense){ctx.fillStyle='#64748b';ctx.font='700 10px Arial';ctx.textAlign='left';ctx.fillText(`Label match ditampilkan tiap ${labelEvery} pertandingan agar tetap terbaca.`,x0+ml,y0+h-16);}
  ctx.restore();
 }
 
@@ -2302,7 +2322,7 @@ function drawFormPill(ctx,letter,cx,cy,r){
 }
 async function exportStandingsImage(){
  const x=currentStandingsForExport(); if(!x.rows.length)return showToast('Belum ada data','Klasemen masih kosong.','error');
- const W=1080, pad=50, rowH=76, headerH=232, chartH=430, footerH=190;
+ const W=1080, pad=50, rowH=76, headerH=232, chartH=(standingsMode==='year'?500:430), footerH=190;
  const H=headerH+x.rows.length*rowH+chartH+footerH+36;
  const c=document.createElement('canvas'); c.width=W; c.height=H; const ctx=c.getContext('2d');
  // clean light background, Premier-League-style table
