@@ -291,6 +291,17 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 .pointChartScroll{overflow-x:auto;overflow-y:hidden;border-radius:16px;background:#fff;border:1px solid #e5e7eb;padding:8px 6px 2px;scrollbar-width:thin}.pointChartSvg{display:block;min-width:100%;height:410px}
 .pointGridLine{stroke:#d9e2dc;stroke-width:1}.pointAxisLine{stroke:#0f5132;stroke-width:2}.pointAxisText{font:700 12px Inter,Arial,sans-serif;fill:#64748b}.pointDateText{font:700 11px Inter,Arial,sans-serif;fill:#64748b}.pointSeries{fill:none;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 3px 5px rgba(15,23,42,.12));animation:pointLineDraw .9s ease both}.pointDot{stroke:#fff;stroke-width:3;cursor:pointer;transition:r .15s ease,filter .15s ease}.pointDot:hover{r:7;filter:drop-shadow(0 3px 6px rgba(0,0,0,.25))}.pointEndLabel{font:900 13px Inter,Arial,sans-serif}.pointEmpty{padding:36px 12px;text-align:center;color:#64748b}
 @keyframes pointLineDraw{from{stroke-dasharray:1;stroke-dashoffset:1}to{stroke-dasharray:1;stroke-dashoffset:0}}
+
+.pointAxisTitle{font-size:11px;font-weight:900;fill:#475569;letter-spacing:.08em}
+.pointMatchLabel{font-size:14px;font-weight:900;fill:#064e3b}
+.pointFixtureLabel{font-size:11px;font-weight:900;fill:#334155}
+.pointValueLabel{font-size:11px;font-weight:900;paint-order:stroke;stroke:#fff;stroke-width:3px}
+.pointMatchDetails{margin-top:12px;border-top:1px solid #dfe7e2;padding-top:14px}
+.pointMatchDetailsTitle{font-size:12px;font-weight:900;color:#064e3b;letter-spacing:.08em;margin-bottom:10px}
+.pointMatchGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.pointMatchCard{border:1px solid #dfe7e2;background:#fff;border-radius:14px;padding:10px;display:grid;gap:4px}
+.pointMatchCard b{color:#138a3d;font-size:13px}.pointMatchCard span{font-size:12px;font-weight:800;color:#1f2937}.pointMatchCard small{font-size:10px;color:#64748b}
+@media(max-width:760px){.pointMatchGrid{grid-template-columns:1fr 1fr}.pointMatchCard span{font-size:11px}}
 @media(max-width:760px){.pointProgressPanel{padding:14px}.pointChartSvg{height:360px}.pointProgressHead h3{font-size:19px}.pointLegend{gap:9px}.pointLegendItem{font-size:12px}}
 
 </style>
@@ -1683,16 +1694,24 @@ function pointsAwardedForMatch(m){
  return out;
 }
 function pointProgressionData(matches){
- const teamList=activeTeams().slice(0,3);
+ const teamList=activeTeams();
  const indexed=(matches||[]).map((m,i)=>({m,i})).sort((a,b)=>String(a.m.date||'').localeCompare(String(b.m.date||''))||a.i-b.i);
  const totals={}; teamList.forEach(t=>totals[t]=0);
  const series={}; teamList.forEach(t=>series[t]=[0]);
  const labels=[];
+ const shortName=name=>String(name||'').trim().split(/\s+/).map(x=>x[0]||'').join('').slice(0,3).toUpperCase()||'-';
  indexed.forEach(({m},idx)=>{
   const award=pointsAwardedForMatch(m);
   teamList.forEach(t=>{totals[t]+=Number(award[t]||0);series[t].push(totals[t]);});
-  const d=parseLocalDate(m.date); const dateLabel=isNaN(d)?String(m.date||''):d.toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit'});
-  labels.push({date:m.date,label:dateLabel,match:idx+1,home:m.home,away:m.away,score:`${m.hs}-${m.as}`});
+  const d=parseLocalDate(m.date);
+  const dateLabel=isNaN(d)?String(m.date||''):d.toLocaleDateString('id-ID',{day:'2-digit',month:'short'});
+  const winner=Number(m.hs)>Number(m.as)?m.home:(Number(m.as)>Number(m.hs)?m.away:(m.penaltyWinner||'Seri'));
+  labels.push({
+   date:m.date,label:dateLabel,match:idx+1,home:m.home,away:m.away,
+   homeShort:shortName(m.home),awayShort:shortName(m.away),
+   score:`${m.hs}-${m.as}`,winner,
+   totals:Object.fromEntries(teamList.map(t=>[t,totals[t]]))
+  });
  });
  return {teamList,series,labels,matches:indexed.map(x=>x.m)};
 }
@@ -1710,33 +1729,58 @@ function renderPointProgression(matches){
  const data=pointProgressionData(matches), colors=progressionTeamColors(data.teamList);
  if(legend)legend.innerHTML=data.teamList.map(t=>`<span class="pointLegendItem"><span class="pointLegendDot" style="background:${colors[t]}"></span>${escapeHtml(t)}</span>`).join('');
  if(!data.labels.length){host.innerHTML='<div class="pointEmpty">Belum ada pertandingan pada periode ini.</div>';return;}
- const n=data.labels.length,W=Math.max(850,160+n*88),H=390,ml=62,mr=110,mt=28,mb=72,plotW=W-ml-mr,plotH=H-mt-mb;
- let maxVal=0; data.teamList.forEach(t=>(data.series[t]||[]).forEach(v=>maxVal=Math.max(maxVal,v))); maxVal=Math.max(5,Math.ceil(maxVal/5)*5);
+ const isWeekly=standingsMode==='week';
+ const n=data.labels.length,W=Math.max(900,190+n*110),H=430,ml=62,mr=145,mt=30,mb=105,plotW=W-ml-mr,plotH=H-mt-mb;
+ let maxVal=0; data.teamList.forEach(t=>(data.series[t]||[]).forEach(v=>maxVal=Math.max(maxVal,v))); maxVal=Math.max(3,Math.ceil(maxVal/3)*3);
  const x=i=>ml+(i/n)*plotW, y=v=>mt+plotH-(v/maxVal)*plotH;
- let svg=`<svg class="pointChartSvg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Grafik perkembangan point">`;
- const step=maxVal<=20?5:(maxVal<=50?10:Math.ceil(maxVal/5/10)*10);
- for(let v=0;v<=maxVal;v+=step){const yy=y(v);svg+=`<line class="pointGridLine" x1="${ml}" y1="${yy}" x2="${W-mr+20}" y2="${yy}"></line><text class="pointAxisText" x="${ml-12}" y="${yy+4}" text-anchor="end">${v}</text>`;}
- svg+=`<line class="pointAxisLine" x1="${ml}" y1="${mt}" x2="${ml}" y2="${mt+plotH}"></line><line class="pointAxisLine" x1="${ml}" y1="${mt+plotH}" x2="${W-mr+20}" y2="${mt+plotH}"></line>`;
- data.labels.forEach((lab,i)=>{const xx=x(i+1);svg+=`<line class="pointGridLine" x1="${xx}" y1="${mt}" x2="${xx}" y2="${mt+plotH}" opacity=".55"></line><text class="pointDateText" x="${xx}" y="${H-39}" text-anchor="middle" transform="rotate(-35 ${xx} ${H-39})">${escapeHtml(lab.label)}</text><text class="pointDateText" x="${xx}" y="${H-8}" text-anchor="middle">M${lab.match}</text>`;});
+ let svg=`<svg class="pointChartSvg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Tracking point per pertandingan">`;
+ const step=maxVal<=12?3:(maxVal<=24?6:Math.ceil(maxVal/4/3)*3);
+ for(let v=0;v<=maxVal;v+=step){const yy=y(v);svg+=`<line class="pointGridLine" x1="${ml}" y1="${yy}" x2="${W-mr+22}" y2="${yy}"></line><text class="pointAxisText" x="${ml-12}" y="${yy+4}" text-anchor="end">${v}</text>`;}
+ svg+=`<line class="pointAxisLine" x1="${ml}" y1="${mt}" x2="${ml}" y2="${mt+plotH}"></line><line class="pointAxisLine" x1="${ml}" y1="${mt+plotH}" x2="${W-mr+22}" y2="${mt+plotH}"></line>`;
+ svg+=`<text class="pointAxisTitle" x="${18}" y="${mt+plotH/2}" text-anchor="middle" transform="rotate(-90 18 ${mt+plotH/2})">TOTAL POINT</text>`;
+ data.labels.forEach((lab,i)=>{
+  const xx=x(i+1);
+  svg+=`<line class="pointGridLine" x1="${xx}" y1="${mt}" x2="${xx}" y2="${mt+plotH}" opacity=".55"></line>`;
+  svg+=`<text class="pointMatchLabel" x="${xx}" y="${H-66}" text-anchor="middle">M${lab.match}</text>`;
+  svg+=`<text class="pointFixtureLabel" x="${xx}" y="${H-46}" text-anchor="middle">${escapeHtml(lab.homeShort)} ${escapeHtml(lab.score)} ${escapeHtml(lab.awayShort)}</text>`;
+  svg+=`<text class="pointDateText" x="${xx}" y="${H-26}" text-anchor="middle">${escapeHtml(lab.label)}</text>`;
+ });
  data.teamList.forEach((t,ti)=>{
   const vals=data.series[t],pts=vals.map((v,i)=>[x(i),y(v)]),path=smoothPointPath(pts),color=colors[t];
   svg+=`<path class="pointSeries" pathLength="1" d="${path}" stroke="${color}" style="animation-delay:${ti*.12}s"></path>`;
-  pts.forEach((pt,i)=>{const lab=i?data.labels[i-1]:null; const title=lab?`${t}: ${vals[i]} point setelah Match ${lab.match} (${lab.date}) — ${lab.home} ${lab.score} ${lab.away}`:`${t}: 0 point`;svg+=`<circle class="pointDot" cx="${pt[0]}" cy="${pt[1]}" r="5" fill="${color}"><title>${escapeHtml(title)}</title></circle>`;});
-  const end=pts[pts.length-1];svg+=`<text class="pointEndLabel" x="${end[0]+12}" y="${end[1]+4}" fill="${color}">${escapeHtml(t)} ${vals[vals.length-1]} pts</text>`;
+  pts.forEach((pt,i)=>{
+   const lab=i?data.labels[i-1]:null;
+   const totals=lab?data.teamList.map(team=>`${team}: ${lab.totals[team]} poin`).join(' | '):'';
+   const title=lab?`${t}: ${vals[i]} poin setelah Match ${lab.match}\n${lab.date}\n${lab.home} ${lab.score} ${lab.away}\n${totals}`:`${t}: 0 poin`;
+   svg+=`<circle class="pointDot" cx="${pt[0]}" cy="${pt[1]}" r="${i?6:4.5}" fill="${color}"><title>${escapeHtml(title)}</title></circle>`;
+   if(i>0)svg+=`<text class="pointValueLabel" x="${pt[0]}" y="${pt[1]-10}" text-anchor="middle" fill="${color}">${vals[i]}</text>`;
+  });
+  const end=pts[pts.length-1];svg+=`<text class="pointEndLabel" x="${end[0]+13}" y="${end[1]+5}" fill="${color}">${escapeHtml(t)} ${vals[vals.length-1]} pts</text>`;
  });
- svg+='</svg>';host.innerHTML=svg;
+ svg+='</svg>';
+ const detailTitle=isWeekly?`DETAIL 1 MINGGU • ${data.labels.length} PERTANDINGAN`:`DETAIL PER MATCH • ${data.labels.length} PERTANDINGAN`;
+ const cards=`<div class="pointMatchDetails"><div class="pointMatchDetailsTitle">${detailTitle}</div><div class="pointMatchGrid">${data.labels.map(lab=>`<div class="pointMatchCard"><b>M${lab.match}</b><span>${escapeHtml(lab.home)} <strong>${escapeHtml(lab.score)}</strong> ${escapeHtml(lab.away)}</span><small>${escapeHtml(lab.label)} • ${lab.winner==='Seri'?'Seri':`Pemenang: ${escapeHtml(lab.winner)}`}</small></div>`).join('')}</div></div>`;
+ host.innerHTML=svg+cards;
 }
 function drawPointProgressionCanvas(ctx,data,x0,y0,w,h){
  if(!data.labels.length)return;
- const colors=progressionTeamColors(data.teamList),ml=56,mr=110,mt=42,mb=60,pw=w-ml-mr,ph=h-mt-mb;
- let maxVal=0;data.teamList.forEach(t=>data.series[t].forEach(v=>maxVal=Math.max(maxVal,v)));maxVal=Math.max(5,Math.ceil(maxVal/5)*5);
+ const colors=progressionTeamColors(data.teamList),ml=58,mr=135,mt=52,mb=92,pw=w-ml-mr,ph=h-mt-mb;
+ let maxVal=0;data.teamList.forEach(t=>data.series[t].forEach(v=>maxVal=Math.max(maxVal,v)));maxVal=Math.max(3,Math.ceil(maxVal/3)*3);
  const x=i=>x0+ml+(i/data.labels.length)*pw, y=v=>y0+mt+ph-(v/maxVal)*ph;
- ctx.save();ctx.fillStyle='#fff';ctx.fillRect(x0,y0,w,h);ctx.fillStyle='#064e3b';ctx.font='900 25px Arial';ctx.textAlign='left';ctx.fillText('PERKEMBANGAN POINT',x0+20,y0+27);
- const step=maxVal<=20?5:(maxVal<=50?10:Math.ceil(maxVal/5/10)*10);ctx.font='700 12px Arial';ctx.strokeStyle='#d9e2dc';ctx.lineWidth=1;
- for(let v=0;v<=maxVal;v+=step){const yy=y(v);ctx.beginPath();ctx.moveTo(x0+ml,yy);ctx.lineTo(x0+w-mr+20,yy);ctx.stroke();ctx.fillStyle='#64748b';ctx.textAlign='right';ctx.fillText(String(v),x0+ml-9,yy+4);}
- ctx.strokeStyle='#0f5132';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x0+ml,y0+mt);ctx.lineTo(x0+ml,y0+mt+ph);ctx.lineTo(x0+w-mr+20,y0+mt+ph);ctx.stroke();
- data.teamList.forEach(t=>{const vals=data.series[t],color=colors[t];ctx.strokeStyle=color;ctx.lineWidth=4;ctx.lineJoin='round';ctx.lineCap='round';ctx.beginPath();vals.forEach((v,i)=>{const xx=x(i),yy=y(v);if(i===0)ctx.moveTo(xx,yy);else ctx.lineTo(xx,yy);});ctx.stroke();vals.forEach((v,i)=>{ctx.beginPath();ctx.arc(x(i),y(v),4.5,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();});const i=vals.length-1;ctx.fillStyle=color;ctx.font='800 13px Arial';ctx.textAlign='left';ctx.fillText(`${t} ${vals[i]} pts`,x(i)+10,y(vals[i])+4);});
- data.labels.forEach((lab,i)=>{const xx=x(i+1);ctx.save();ctx.translate(xx,y0+h-18);ctx.rotate(-.55);ctx.fillStyle='#64748b';ctx.font='700 10px Arial';ctx.textAlign='center';ctx.fillText(lab.label,0,0);ctx.restore();});ctx.restore();
+ ctx.save();ctx.fillStyle='#fff';ctx.fillRect(x0,y0,w,h);
+ ctx.fillStyle='#064e3b';ctx.font='900 24px Arial';ctx.textAlign='left';ctx.fillText(`TRACKING POINT PER MATCH • ${data.labels.length} MATCH`,x0+20,y0+30);
+ const step=maxVal<=12?3:(maxVal<=24?6:Math.ceil(maxVal/4/3)*3);ctx.font='700 12px Arial';ctx.strokeStyle='#d9e2dc';ctx.lineWidth=1;
+ for(let v=0;v<=maxVal;v+=step){const yy=y(v);ctx.beginPath();ctx.moveTo(x0+ml,yy);ctx.lineTo(x0+w-mr+22,yy);ctx.stroke();ctx.fillStyle='#64748b';ctx.textAlign='right';ctx.fillText(String(v),x0+ml-9,yy+4);}
+ ctx.strokeStyle='#0f5132';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x0+ml,y0+mt);ctx.lineTo(x0+ml,y0+mt+ph);ctx.lineTo(x0+w-mr+22,y0+mt+ph);ctx.stroke();
+ data.labels.forEach((lab,i)=>{const xx=x(i+1);ctx.strokeStyle='#e4ebe7';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(xx,y0+mt);ctx.lineTo(xx,y0+mt+ph);ctx.stroke();});
+ data.teamList.forEach(t=>{
+  const vals=data.series[t],color=colors[t];ctx.strokeStyle=color;ctx.lineWidth=4;ctx.lineJoin='round';ctx.lineCap='round';ctx.beginPath();
+  vals.forEach((v,i)=>{const xx=x(i),yy=y(v);if(i===0)ctx.moveTo(xx,yy);else ctx.lineTo(xx,yy);});ctx.stroke();
+  vals.forEach((v,i)=>{ctx.beginPath();ctx.arc(x(i),y(v),i?5.5:4,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();if(i>0){ctx.fillStyle=color;ctx.font='800 11px Arial';ctx.textAlign='center';ctx.fillText(String(v),x(i),y(v)-9);}});
+  const i=vals.length-1;ctx.fillStyle=color;ctx.font='800 13px Arial';ctx.textAlign='left';ctx.fillText(`${t} ${vals[i]} pts`,x(i)+10,y(vals[i])+4);
+ });
+ data.labels.forEach((lab,i)=>{const xx=x(i+1);ctx.fillStyle='#064e3b';ctx.font='900 13px Arial';ctx.textAlign='center';ctx.fillText(`M${lab.match}`,xx,y0+h-57);ctx.fillStyle='#334155';ctx.font='800 10px Arial';ctx.fillText(`${lab.homeShort} ${lab.score} ${lab.awayShort}`,xx,y0+h-39);ctx.fillStyle='#64748b';ctx.font='700 9px Arial';ctx.fillText(lab.label,xx,y0+h-23);});
+ ctx.restore();
 }
 
 function renderInitialGoalsForm(){
