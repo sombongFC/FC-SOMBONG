@@ -795,7 +795,7 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 
 <script>
 window.__FC_SYNC_KEYS = ['competition_settings_v1','teams','team_rosters_v1','matches_v2','player_photos_v1','access_users_v1','initial_goals_v1','sponsors_v1','finance_reports_v1','club_logo_v1','dashboard_banner_v1'];
-window.__FC_BIG_IMAGE_KEYS = ['dashboard_banner_v1','sponsors_v1','club_logo_v1'];
+window.__FC_BIG_IMAGE_KEYS = ['dashboard_banner_v1','sponsors_v1','club_logo_v1','player_photos_v1'];
 window.__syncTimer = null;
 window.__FC_MEM_STATE = {};
 window.__stateReady = fetch('/api/state', { cache: 'no-store' })
@@ -954,9 +954,13 @@ function load(){
 }
 function save(data){localStorage.setItem('matches_v2',JSON.stringify(data))}
 function playerPhotos(){
- try{return JSON.parse(localStorage.getItem('player_photos_v1')||'{}')||{}}catch(_e){return {}}
+ // Foto pemain disimpan sebagai big state di memori + server, bukan dipaksa ke localStorage.
+ // Ini mencegah QuotaExceededError ketika jumlah foto/banner sudah banyak.
+ return readBigState('player_photos_v1','{}');
 }
-function savePlayerPhotos(obj){localStorage.setItem('player_photos_v1',JSON.stringify(obj))}
+function savePlayerPhotos(obj){
+ return saveBigState('player_photos_v1',obj||{});
+}
 
 // Pencarian foto dibuat toleran terhadap huruf besar/kecil, spasi, tanda baca,
 // key lama, serta value berbentuk string atau object.
@@ -1261,13 +1265,38 @@ function resizeImageFilePngTransparent(file,maxW,maxH){
   reader.readAsDataURL(file);
  });
 }
-function setPlayerPhoto(name,file){
+async function setPlayerPhoto(name,file){
  if(!file)return;
- if(file.size>15000000)return showToast('File terlalu besar','Gunakan foto di bawah 15 MB.','error');
- resizeImageFile(file,700,700,0.8).then(dataUrl=>{
-  const photos=playerPhotos(); photos[keyName(name)]=dataUrl; savePlayerPhotos(photos); render();
-  showToast('Foto pemain diganti',name);
- }).catch(()=>showToast('Gagal proses foto','Coba pilih foto lain.','error'));
+ const allowed=['image/jpeg','image/png','image/webp'];
+ if(file.type && !allowed.includes(file.type)){
+  return showToast('Format foto tidak didukung','Gunakan JPG, JPEG, PNG, atau WEBP. Foto HEIC perlu dikonversi terlebih dahulu.','error');
+ }
+ if(file.size>15000000){
+  return showToast('File terlalu besar','Gunakan foto di bawah 15 MB.','error');
+ }
+ try{
+  // Ukuran ini cukup tajam untuk avatar/top skor tetapi jauh lebih hemat penyimpanan.
+  const dataUrl=await resizeImageFile(file,512,512,0.76);
+  if(!dataUrl || typeof dataUrl!=='string')throw new Error('Hasil kompresi foto kosong');
+  const photos=playerPhotos();
+  photos[keyName(name)]={dataUrl,updatedAt:new Date().toISOString(),originalName:file.name||''};
+  savePlayerPhotos(photos);
+  if(typeof window.__syncFcStateNow==='function')await window.__syncFcStateNow();
+  render();
+  showToast('Foto pemain berhasil disimpan',`${name} • foto sudah dikompres dan disimpan ke server.`);
+ }catch(err){
+  console.error('PLAYER PHOTO ERROR:',err);
+  const msg=String(err?.message||err||'');
+  if(/quota|storage|exceed/i.test(msg)){
+   showToast('Penyimpanan browser penuh','Foto pemain sekarang memakai penyimpanan server. Refresh halaman lalu coba kembali.','error');
+  }else if(/decode|format|read|load|image/i.test(msg)){
+   showToast('Foto tidak dapat dibaca','Gunakan JPG, PNG, atau WEBP yang tidak rusak.','error');
+  }else if(/HTTP|server|fetch|network/i.test(msg)){
+   showToast('Gagal menyimpan ke server','Koneksi ke server bermasalah. Coba lagi setelah beberapa detik.','error');
+  }else{
+   showToast('Gagal proses foto',msg||'Coba pilih foto lain.','error');
+  }
+ }
 }
 
 function accessUsers(){return JSON.parse(localStorage.getItem('access_users_v1')||'[]')}
