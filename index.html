@@ -2361,7 +2361,7 @@ async function exportStandingsImage(){
  ctx.textAlign='center'; ctx.fillStyle='#fff'; ctx.font='900 52px Arial Black, Arial'; ctx.fillText(x.title,W/2,68);
  ctx.fillStyle='#ffd21a'; ctx.font='800 30px Arial'; ctx.fillText(x.subtitle,W/2,112);
  // column layout: P | CLUB | M W D L G+ G- GD PTS | FORM
- const colX={m:pad+470,w:pad+515,d:pad+555,l:pad+595,gf:pad+645,ga:pad+690,gd:pad+745,pts:pad+810};
+ const colX={m:pad+470,w:pad+515,d:pad+555,l:pad+595,gf:pad+640,ga:pad+682,gd:pad+725,pts:pad+780};
  const colY=headerH-40;
  ctx.fillStyle='#0f2e1d'; ctx.font='800 20px Arial'; ctx.textAlign='left';
  ctx.fillText('P',pad,colY);
@@ -2374,7 +2374,7 @@ async function exportStandingsImage(){
  ctx.fillText('G+',colX.gf,colY);
  ctx.fillText('G-',colX.ga,colY);
  ctx.fillText('GD',colX.gd,colY);
- ctx.fillText('PTS',colX.pts,colY);
+ ctx.save(); ctx.font='900 22px Arial Black, Arial'; ctx.fillText('PTS',colX.pts,colY); ctx.restore();
  ctx.textAlign='right';
  ctx.fillText('FORM',W-pad,colY);
  ctx.strokeStyle='#0f2e1d'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(pad,headerH-16); ctx.lineTo(W-pad,headerH-16); ctx.stroke();
@@ -2397,7 +2397,8 @@ async function exportStandingsImage(){
   ctx.fillText(String(r.ga),colX.ga,cy);
   ctx.font='800 22px Arial'; ctx.fillStyle=r.gd>0?'#16a34a':(r.gd<0?'#dc2626':'#374151');
   ctx.fillText((r.gd>0?'+':'')+r.gd,colX.gd,cy);
-  ctx.fillStyle='#0f2e1d'; ctx.font='900 26px Arial'; ctx.fillText(String(r.pts),colX.pts,cy);
+  ctx.fillStyle='#063d24'; ctx.font='900 31px Arial Black, Arial'; ctx.fillText(String(r.pts),colX.pts,cy);
+  ctx.strokeStyle='rgba(15,46,29,.18)'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(pad+820,y+12); ctx.lineTo(pad+820,y+rowH-12); ctx.stroke();
   const form=teamForm(x.data,r.team,5);
   const pr=13, gap=6; let fx=W-pad-pr;
   for(let k=form.length-1;k>=0;k--){ drawFormPill(ctx,form[k],fx,cy,pr); fx-=(pr*2+gap); }
