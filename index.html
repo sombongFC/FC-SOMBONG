@@ -343,6 +343,82 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
   }
 }
 
+
+/* vNext: Dashboard Recent Match spacing restored to moderate width */
+#recentMatches .compactMatch .matchLine{
+  max-width:980px!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+  grid-template-columns:minmax(220px,1fr) auto minmax(220px,1fr)!important;
+  gap:28px!important;
+}
+#recentMatches .compactMatch .matchScorers{
+  max-width:980px!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+  grid-template-columns:minmax(220px,1fr) auto minmax(220px,1fr)!important;
+  gap:28px!important;
+}
+@media(max-width:760px){
+  #recentMatches .compactMatch .matchLine,
+  #recentMatches .compactMatch .matchScorers{
+    max-width:none!important;
+    gap:7px!important;
+  }
+}
+
+
+/* vNext: History slightly tighter */
+#history .compactMatch .matchLine,
+#history .compactMatch .matchScorers{
+  max-width:760px!important;
+  margin-left:auto!important;
+  margin-right:auto!important;
+  grid-template-columns:minmax(180px,1fr) auto minmax(180px,1fr)!important;
+  gap:14px!important;
+}
+@media(max-width:760px){
+  #history .compactMatch .matchLine,
+  #history .compactMatch .matchScorers{
+    max-width:none!important;
+    gap:6px!important;
+  }
+}
+
+
+/* vNext: Export History per tanggal */
+.historyDateHeaderRow{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-wrap:wrap;
+  margin:22px 0 10px;
+  border-top:2px solid #0f172a;
+  padding-top:12px;
+}
+.historyDateHeaderRow:first-child{margin-top:4px}
+.historyDateHeaderRow .historyDateGroup{
+  margin:0!important;
+  border-top:0!important;
+  padding-top:0!important;
+}
+.exportHistoryDateBtn{
+  border:0;
+  background:#0f5132;
+  color:#fff;
+  border-radius:999px;
+  padding:8px 12px;
+  font-size:12px;
+  font-weight:900;
+  cursor:pointer;
+}
+.exportHistoryDateBtn:hover{background:#0a3a24}
+@media(max-width:640px){
+  .historyDateHeaderRow{align-items:flex-start}
+  .exportHistoryDateBtn{padding:7px 10px;font-size:11px}
+}
+
 </style>
 </head>
 <body>
@@ -2894,6 +2970,218 @@ window.__stateReady.then(init).catch(init);
     closeMore();
     navButtons.forEach(b=>b.classList.toggle('active',b.dataset.mobilePage===page));
   }));
+})();
+</script>
+
+
+<script>
+(function(){
+  function getHistoryContainer(){
+    return document.getElementById('historyList') ||
+           document.querySelector('#history .historyList') ||
+           document.querySelector('#history');
+  }
+
+  function enhanceHistoryDateExportButtons(){
+    const history = document.getElementById('history');
+    if(!history) return;
+
+    const groups = [...history.querySelectorAll('.historyDateGroup')];
+    groups.forEach(group=>{
+      if(group.closest('.historyDateHeaderRow')) return;
+
+      const wrapper=document.createElement('div');
+      wrapper.className='historyDateHeaderRow';
+      group.parentNode.insertBefore(wrapper,group);
+      wrapper.appendChild(group);
+
+      const titleEl=group.querySelector('.historyDateTitle');
+      const label=(titleEl?.textContent||'').trim();
+
+      const btn=document.createElement('button');
+      btn.type='button';
+      btn.className='exportHistoryDateBtn';
+      btn.textContent='📤 Export WA';
+      btn.dataset.historyDateLabel=label;
+      btn.addEventListener('click',()=>exportHistoryDateAsImage(group,label));
+      wrapper.appendChild(btn);
+    });
+  }
+
+  function collectDateMatchNodes(group){
+    const wrapper=group.closest('.historyDateHeaderRow') || group;
+    const nodes=[];
+    let node=wrapper.nextElementSibling;
+
+    while(node){
+      if(node.classList && node.classList.contains('historyDateHeaderRow')) break;
+      nodes.push(node);
+      node=node.nextElementSibling;
+    }
+    return nodes;
+  }
+
+  function exportHistoryDateAsImage(group,label){
+    const nodes=collectDateMatchNodes(group);
+    if(!nodes.length){
+      alert('Tidak ada pertandingan pada tanggal ini.');
+      return;
+    }
+
+    const W=1080, pad=60, rowGap=18;
+    const matches=[];
+
+    // Pair match number chips with compact match cards as rendered.
+    let currentNo='';
+    nodes.forEach(node=>{
+      if(node.classList?.contains('historyMatchNumber')){
+        currentNo=(node.textContent||'').trim();
+        return;
+      }
+      if(node.classList?.contains('compactMatch')){
+        const teams=[...node.querySelectorAll('.teamName')].map(x=>(x.textContent||'').trim());
+        const score=(node.querySelector('.scoreInline')?.textContent||'').trim();
+        const scorerCols=[...node.querySelectorAll('.scorerCol')].map(x=>(x.innerText||'').trim());
+        const extra=(node.querySelector('.matchExtra')?.innerText||'').trim();
+        matches.push({
+          no: currentNo || `MATCH #${matches.length+1}`,
+          home: teams[0]||'',
+          away: teams[1]||'',
+          score,
+          homeScorers: scorerCols[0]||'-',
+          awayScorers: scorerCols[1]||'-',
+          extra
+        });
+        currentNo='';
+      }
+    });
+
+    if(!matches.length){
+      alert('Pertandingan tidak dapat dibaca untuk export.');
+      return;
+    }
+
+    const rowH=190;
+    const H=220 + matches.length*rowH + 110;
+    const c=document.createElement('canvas');
+    c.width=W; c.height=H;
+    const ctx=c.getContext('2d');
+
+    ctx.fillStyle='#ffffff';
+    ctx.fillRect(0,0,W,H);
+
+    ctx.fillStyle='#0f5132';
+    ctx.fillRect(0,0,W,160);
+
+    ctx.fillStyle='#ffffff';
+    ctx.font='900 46px Arial';
+    ctx.textAlign='left';
+    ctx.fillText('RIWAYAT PERTANDINGAN',pad,72);
+    ctx.font='800 28px Arial';
+    ctx.fillText(label || 'HISTORY',pad,118);
+
+    let y=210;
+    matches.forEach((m,i)=>{
+      ctx.strokeStyle='#e5e7eb';
+      ctx.lineWidth=1;
+      if(i>0){
+        ctx.beginPath();
+        ctx.moveTo(pad,y-24);
+        ctx.lineTo(W-pad,y-24);
+        ctx.stroke();
+      }
+
+      ctx.fillStyle='#dcfce7';
+      roundRect(ctx,pad,y-10,150,34,17,true,false);
+      ctx.fillStyle='#065f46';
+      ctx.font='900 16px Arial';
+      ctx.fillText(m.no,pad+14,y+13);
+
+      const leftX=pad, centerX=W/2, rightX=W-pad;
+      ctx.fillStyle='#0f172a';
+      ctx.font='900 28px Arial';
+      ctx.textAlign='left';
+      ctx.fillText(m.home,leftX,y+62);
+      ctx.textAlign='right';
+      ctx.fillText(m.away,rightX,y+62);
+
+      ctx.fillStyle='#ecfdf5';
+      roundRect(ctx,centerX-55,y+28,110,46,23,true,false);
+      ctx.fillStyle='#047857';
+      ctx.font='900 26px Arial';
+      ctx.textAlign='center';
+      ctx.fillText(m.score,centerX,y+59);
+
+      ctx.font='700 17px Arial';
+      ctx.fillStyle='#334155';
+      ctx.textAlign='left';
+      wrapText(ctx,m.homeScorers,leftX,y+98,350,24,3);
+      ctx.textAlign='right';
+      wrapTextRight(ctx,m.awayScorers,rightX,y+98,350,24,3);
+
+      if(m.extra){
+        ctx.font='600 15px Arial';
+        ctx.fillStyle='#64748b';
+        ctx.textAlign='center';
+        wrapText(ctx,m.extra,centerX,y+98,230,21,3,true);
+      }
+
+      y += rowH;
+    });
+
+    ctx.fillStyle='#64748b';
+    ctx.font='600 16px Arial';
+    ctx.textAlign='center';
+    ctx.fillText('FC Sombong • Community League Management',W/2,H-42);
+
+    const safe=(label||'history').toLowerCase().replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'');
+    const a=document.createElement('a');
+    a.download=`history-${safe||'match'}.png`;
+    a.href=c.toDataURL('image/png',1);
+    a.click();
+  }
+
+  function roundRect(ctx,x,y,w,h,r,fill,stroke){
+    if(w<2*r)r=w/2;if(h<2*r)r=h/2;
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+    if(fill)ctx.fill();
+    if(stroke)ctx.stroke();
+  }
+
+  function wrapText(ctx,text,x,y,maxWidth,lineHeight,maxLines,centerMode){
+    const words=String(text||'').split(/\s+/);
+    let line='', lines=[];
+    for(const word of words){
+      const test=line?line+' '+word:word;
+      if(ctx.measureText(test).width>maxWidth && line){
+        lines.push(line); line=word;
+        if(lines.length>=maxLines-1)break;
+      }else line=test;
+    }
+    if(line && lines.length<maxLines)lines.push(line);
+    lines.forEach((ln,idx)=>ctx.fillText(ln,x,y+idx*lineHeight));
+  }
+
+  function wrapTextRight(ctx,text,x,y,maxWidth,lineHeight,maxLines){
+    wrapText(ctx,text,x,y,maxWidth,lineHeight,maxLines);
+  }
+
+  // Run initially and after render refreshes.
+  document.addEventListener('DOMContentLoaded',()=>{
+    setTimeout(enhanceHistoryDateExportButtons,300);
+  });
+
+  const observer=new MutationObserver(()=>{
+    clearTimeout(window.__historyExportTimer);
+    window.__historyExportTimer=setTimeout(enhanceHistoryDateExportButtons,120);
+  });
+  observer.observe(document.documentElement,{childList:true,subtree:true});
 })();
 </script>
 
