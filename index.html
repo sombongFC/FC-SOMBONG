@@ -305,22 +305,41 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 @media(max-width:760px){.pointProgressPanel{padding:14px}.pointChartSvg{height:360px}.pointProgressHead h3{font-size:19px}.pointLegend{gap:9px}.pointLegendItem{font-size:12px}}
 
 
-/* v3.7 Riwayat pertandingan desktop lebih rapat */
+/* v3.8 Recent Match + Riwayat dibuat lebih rapat */
 @media(min-width:761px){
+  /* Dashboard: Home - skor - Away dibuat lebih dekat */
+  #recentMatches .compactMatch .matchMain{
+    width:min(360px,100%);
+    margin:0 auto;
+  }
+  #recentMatches .compactMatch .matchLine{
+    grid-template-columns:minmax(110px,1fr) auto minmax(110px,1fr)!important;
+    column-gap:10px!important;
+  }
+  #recentMatches .compactMatch .matchScorers{
+    grid-template-columns:minmax(110px,1fr) 72px minmax(110px,1fr);
+    column-gap:10px;
+  }
+  #recentMatches .compactMatch .matchExtra{
+    min-width:72px;
+    font-size:10.5px;
+  }
+
+  /* History: lebih rapat lagi dibanding versi sebelumnya */
   #history .compactMatch .matchMain{
-    width:min(860px,100%);
+    width:min(690px,100%);
     margin:0 auto;
   }
   #history .compactMatch .matchLine{
-    grid-template-columns:minmax(180px,1fr) auto minmax(180px,1fr)!important;
-    column-gap:22px!important;
+    grid-template-columns:minmax(150px,1fr) auto minmax(150px,1fr)!important;
+    column-gap:14px!important;
   }
   #history .compactMatch .matchScorers{
-    grid-template-columns:minmax(180px,1fr) 110px minmax(180px,1fr);
-    column-gap:22px;
+    grid-template-columns:minmax(150px,1fr) 92px minmax(150px,1fr);
+    column-gap:14px;
   }
   #history .compactMatch .matchExtra{
-    min-width:110px;
+    min-width:92px;
   }
 }
 
