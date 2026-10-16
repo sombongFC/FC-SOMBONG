@@ -420,7 +420,7 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
     <div class="panel">
       <h2>Statistik & Pencarian Pemain</h2>
       <input id="playerSearch" class="searchBox" placeholder="Cari nama pemain...">
-      <p class="muted">Setiap pemain dapat di-export sebagai gambar 1080 × 1350 dengan foto jika tersedia. Superadmin dapat mengisi Assist, Own Goal, dan total pertandingan lewat Edit Statistik. <b>*Jumlah main dari data lama hanya mendeteksi pertandingan saat pemain mencetak gol atau mendapat kartu; koreksi jumlah sebenarnya agar rating adil.</b> Rating = batas 1–9 dari round(5 + (3×Goal + 2×Assist − Kuning − 4×Merah − 2×Own Goal) ÷ (Main + 6)). Rating 9 mensyaratkan minimal 10 pertandingan terverifikasi dan nilai mentah minimal 8,5; tanpa itu maksimum 8.</p>
+      <p class="muted">Setiap pemain dapat di-export sebagai gambar 1080 × 1350 dengan foto jika tersedia. Superadmin dapat mengisi Assist, Own Goal, dan total pertandingan lewat Edit Statistik. <b>*Jumlah main dari data lama hanya mendeteksi pertandingan saat pemain mencetak gol atau mendapat kartu; koreksi jumlah sebenarnya agar rating adil.</b> Rating baru memakai gol pertandingan yang tercatat (gol historis tetap ditampilkan, tetapi tidak dipakai karena jumlah main historis belum tersedia). Nilai = round(4,5 + (2,5×Gol + 1,5×Assist − 1,5×Kuning − 5×Merah − 3×Own Goal) ÷ (Main + 8)). Rating tanpa jumlah main terverifikasi maksimal 7; rating 8 memerlukan minimal 8 pertandingan terverifikasi; rating 9 memerlukan minimal 12 pertandingan dan nilai mentah minimal 8,5.</p>
       <div class="tableWrap"><table id="playersTable"></table></div>
     </div>
   </section>
@@ -819,7 +819,7 @@ function fcRetiredPlayers(){let x;try{x=JSON.parse(localStorage.getItem('retired
 function fcIsRetired(n){return fcRetiredPlayers().has(fcPlayerKey(n))}
 function fcActiveName(n){return fcPlayerKey(n)!=='SAMMY' && !fcIsRetired(n)}
 function fcApplyRosterCleanup(){const r=loadRosters();let changed=false;Object.keys(r).forEach(t=>{const old=r[t]||[];const updated=[...new Set(old.map(fcCanonicalPlayer).filter(fcActiveName))];if(JSON.stringify(old)!==JSON.stringify(updated)){r[t]=updated;changed=true}});if(changed)saveRosters(r)}
-function fcRetireNamedPlayers(){if(!isSuperAdmin())return showToast('Akses ditolak','Login Super Admin dahulu.','error');if(!confirm('Keluarkan 16 nama dari roster dan input baru? Riwayat pertandingan tetap utuh.'))return;localStorage.setItem('retired_players_v1',JSON.stringify(FC_RETIRED_DEFAULT));fcApplyRosterCleanup();renderTeamPlayerColumns();refreshHistories();render();showToast('Daftar aktif diperbarui','16 nama dikeluarkan; AGUS dan KO AGUS digabung dalam statistik sebagai KO AGUS.')}
+
 function loadRosters(){return JSON.parse(localStorage.getItem('team_rosters_v1')||'{}')}
 function saveRosters(obj){localStorage.setItem('team_rosters_v1',JSON.stringify(obj))}
 function rosterPlayers(team){return (loadRosters()[team]||[]).map(fcCanonicalPlayer).filter(fcActiveName).filter(Boolean)}
@@ -1800,20 +1800,29 @@ async function exportStandingsImage(){
 function performanceExtras(){try{return JSON.parse(localStorage.getItem('player_performance_extra_v1')||'{}')||{}}catch(e){return {}}}
 function performanceFor(p){
  const e=performanceExtras()[keyName(p.name)]||{};
- // Use the match ledger as the source of truth; older manual totals are
- // retained only if they exceed the recorded ledger totals (pre-ledger history).
  const assists=Math.max(p.assists||0,Number(e.assists)||0);
  const ownGoals=Math.max(p.ownGoals||0,Number(e.ownGoals)||0);
- const played=Math.max(0,Number(e.matches)||0,p.appearances||0);
- const contribution=3*p.goals+2*assists-p.yellow-4*p.red-2*ownGoals;
- // Conservative rating: 6-match shrinkage avoids inflated scores from tiny samples.
- // Nine is reserved for at least 10 VERIFIED appearances and exceptional output.
- const raw=played?5+contribution/(played+6):null;
+ const verified=Number.isInteger(Number(e.matches)) && e.matches!==undefined && e.matches!==null && Number(e.matches)>=p.appearances && Number(e.matches)>0;
+ const played=verified?Number(e.matches):(p.appearances||0);
+ // Historical starting goals are displayed, but excluded from rating because
+ // their corresponding appearances/cards are not available in the backup.
+ const recentGoals=Math.max(0,p.goals-(p.initialGoals||0));
+ const contribution=2.5*recentGoals+1.5*assists-1.5*p.yellow-5*p.red-3*ownGoals;
+ // Shrinkage: eight additional games in the denominator. A rating of 7
+ // requires sustained positive output, not one or two scoring events.
+ const raw=played>0?4.5+contribution/(played+8):null;
  let rating=raw===null?null:Math.max(1,Math.min(9,Math.round(raw)));
- if(rating===9 && (played<10 || e.matches===undefined || raw<8.5))rating=8;
- return {assists,ownGoals,played,contribution,rating,
-  hasManualMatches:e.matches!==undefined,hasAssist:true,hasOwn:true,
-  estimatedMatches:e.matches===undefined};
+ // No verified appearances = provisional, capped at 7. Eight and nine are
+ // earned only with a reliable match count and minimum sample sizes.
+ if(rating!==null){
+   if(!verified)rating=Math.min(rating,7);
+   else if(played<8)rating=Math.min(rating,7);
+   else if(played<12)rating=Math.min(rating,8);
+   if(rating===9 && (played<12 || raw<8.5))rating=8;
+ }
+ return {assists,ownGoals,played,contribution,rating,raw,recentGoals,
+  hasManualMatches:verified,hasAssist:true,hasOwn:true,
+  estimatedMatches:!verified};
 }
 function editPerformance(name){
  if(!isSuperAdmin())return showToast('Akses ditolak','Login superadmin untuk mengubah statistik.','error');
@@ -1856,9 +1865,9 @@ async function exportPlayerPerformance(name){
 
  const stats=[['GOAL',p.goals],['ASSIST',x.hasAssist?x.assists:'—'],['KARTU KUNING',p.yellow],['KARTU MERAH',p.red],['OWN GOAL',x.hasOwn?x.ownGoals:'—'],['PERTANDINGAN',x.played||'—']];
  stats.forEach(([label,val],i)=>{const col=i%3,row=Math.floor(i/3),sx=65+col*325,sy=830+row*160;ctx.fillStyle='#243f31';ctx.beginPath();ctx.roundRect(sx,sy,305,142,18);ctx.fill();ctx.fillStyle='#b9cabc';ctx.font='bold 22px Arial';ctx.fillText(label,sx+20,sy+43);ctx.fillStyle='#f2d37f';ctx.font='bold 57px Arial';ctx.fillText(String(val),sx+20,sy+110);});
- ctx.fillStyle='#d5b66d';ctx.fillRect(65,1184,950,2);ctx.fillStyle='#d6e2d8';ctx.font='23px Arial';ctx.fillText('Rating konservatif: 5 + kontribusi / (main + 6); 9 perlu 10 main valid',65,1232);
- ctx.font='19px Arial';ctx.fillStyle='#aebeb3';ctx.fillText('Kontribusi: 3×Goal + 2×Assist − Kuning − 4×Merah − 2×Own Goal',65,1273);
- if(!x.hasManualMatches){ctx.font='18px Arial';ctx.fillStyle='#f4c978';ctx.fillText('Catatan: jumlah main bisa merupakan minimum terdeteksi dari gol/kartu.',65,1311);}
+ ctx.fillStyle='#d5b66d';ctx.fillRect(65,1184,950,2);ctx.fillStyle='#d6e2d8';ctx.font='23px Arial';ctx.fillText('Rating ketat: 4,5 + kontribusi / (main + 8)',65,1232);
+ ctx.font='19px Arial';ctx.fillStyle='#aebeb3';ctx.fillText('Gol rating hanya dari match tercatat; 9 perlu 12 main terverifikasi',65,1273);
+ if(!x.hasManualMatches){ctx.font='18px Arial';ctx.fillStyle='#f4c978';ctx.fillText('Rating sementara (maks. 7): jumlah main belum diverifikasi.',65,1311);}
  const filename='statistik-'+p.name.toLowerCase().replace(/[^a-z0-9]+/g,'-')+'.png';
  if(safeDownloadCanvas(c,filename))showToast('Export berhasil','Kartu statistik '+p.name+' telah dibuat.');
 }
