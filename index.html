@@ -668,7 +668,7 @@ Koko Lobang,21"></textarea>
 
 <script>
 window.__FC_SYNC_KEYS = ['competition_settings_v1','teams','team_rosters_v1','matches_v2','player_photos_v1','access_users_v1','initial_goals_v1','retired_players_v1','sponsors_v1','finance_reports_v1','club_logo_v1','dashboard_banner_v1'];
-window.__FC_BIG_IMAGE_KEYS = ['dashboard_banner_v1','sponsors_v1','club_logo_v1'];
+window.__FC_BIG_IMAGE_KEYS = ['dashboard_banner_v1','sponsors_v1','club_logo_v1','player_photos_v1'];
 window.__syncTimer = null;
 window.__FC_MEM_STATE = {};
 window.__stateReady = fetch('/api/state', { cache: 'no-store' })
@@ -823,8 +823,27 @@ function load(){
  try{return JSON.parse(raw)||[]}catch(_e){return []}
 }
 function save(data){localStorage.setItem('matches_v2',JSON.stringify(data))}
-function playerPhotos(){return JSON.parse(localStorage.getItem('player_photos_v1')||'{}')}
-function savePlayerPhotos(obj){localStorage.setItem('player_photos_v1',JSON.stringify(obj))}
+// Foto disimpan di state server/memori agar tidak memenuhi quota localStorage.
+function playerPhotos(){return readBigState('player_photos_v1','{}')}
+function savePlayerPhotos(obj){
+ window.__FC_MEM_STATE.player_photos_v1=JSON.stringify(obj||{});
+ if(typeof window.__scheduleFcStateSync==='function') window.__scheduleFcStateSync();
+}
+function fcPhotoUrl(value){
+ if(typeof value==='string') return /^(data:image\/|blob:|https?:\/\/|\/)/i.test(value.trim()) ? value.trim() : '';
+ if(value && typeof value==='object'){
+  for(const key of ['dataUrl','dataURL','url','src','image','photo','photoUrl','photoURL','base64','data','value']){
+   if(value[key] && value[key]!==value) {const found=fcPhotoUrl(value[key]); if(found)return found;}
+  }
+ }
+ return '';
+}
+function fcPlayerPhoto(photos,name){
+ const target=keyName(name);
+ let v=photos[target];
+ if(v==null) {const k=Object.keys(photos||{}).find(k=>keyName(k)===target); if(k)v=photos[k];}
+ return fcPhotoUrl(v);
+}
 function initialGoals(){return JSON.parse(localStorage.getItem('initial_goals_v1')||'{}')}
 function saveInitialGoals(obj){localStorage.setItem('initial_goals_v1',JSON.stringify(obj||{}))}
 function readBigState(key, fallback='{}'){
@@ -1253,7 +1272,7 @@ function renderTopScorers(ps){
   topGroups.forEach(g=>{
    html+=`<div class="topRankGroup"><div class="topRankHead"><span class="topRankBadge">${medal(g.rank)} Rank #${g.rank}</span><span class="topRankGoals">${g.goals} goal</span></div><div class="topRankPlayers">`;
    g.players.forEach(p=>{
-    const src=photos[keyName(p.name)]||'';
+    const src=fcPlayerPhoto(photos,p.name);
     html+=`<div class="topRankPlayer"><div>${src?`<img class="rankPhoto" src="${src}" alt="${escapeHtml(p.name)}">`:'<div class="rankPhoto"></div>'}</div><div><strong>${escapeHtml(p.name)}</strong><small>${escapeHtml(p.teams)} • Main ${p.appearances}x${p.initialGoals?` • Goal awal ${p.initialGoals}`:''}</small></div></div>`;
    });
    html+='</div></div>';
@@ -1278,7 +1297,7 @@ function render(){applyLeagueTitle(); const matches=load(), st=standings(matches
   let avatars='';
   if(g.rank<=3){
    avatars='<span class="miniTopPhotos">'+g.players.map((p)=>{
-    const img=photos[keyName(p.name)]||'';
+    const img=fcPlayerPhoto(photos,p.name);
     return img?`<img class="miniTopAvatar" src="${img}" alt="${escapeHtml(p.name)}">`:`<span class="miniTopAvatar placeholder">👤</span>`;
    }).join('')+'</span>';
   } else {
@@ -1549,7 +1568,7 @@ async function exportTopScorerImage(){
  const topImgs=[];
  for(const g of topGroups){
   const imgs=[];
-  for(const p of g.players){ imgs.push(await loadCanvasImage(photos[keyName(p.name)]||null)); }
+  for(const p of g.players){ imgs.push(await loadCanvasImage(fcPlayerPhoto(photos,p.name)||null)); }
   topImgs.push(imgs);
  }
  const W=1080;
@@ -1763,7 +1782,7 @@ async function exportStandingsImage(){
  await drawSponsorFooter(ctx,W,H,{footerH});
  if(safeDownloadCanvas(c,'klasemen-fc-sombong-'+new Date().toISOString().slice(0,10)+'.png')) showToast('Export berhasil','Gambar klasemen sudah dibuat.');
 }
-function renderPlayers(){const q=keyName($('playerSearch').value); const photos=playerPhotos(); const rows=playerStats().filter(p=>fcActiveName(p.name)).filter(p=>!q||keyName(p.name).includes(q)); $('playersTable').innerHTML='<tr><th>Foto</th><th>Nama</th><th>Club History</th><th>Main/Hadir</th><th>Goal</th><th>Goal ÷ Main</th><th>Kuning</th><th>Merah</th><th>Ganti Foto</th></tr>'+rows.map(p=>{const src=photos[keyName(p.name)]||''; return `<tr><td>${src?`<img class="playerPhoto" src="${src}">`:'<div class="playerPhoto"></div>'}</td><td>${escapeHtml(p.name)}</td><td>${escapeHtml(p.teams)}</td><td>${p.appearances}</td><td>${p.goals}</td><td>${p.goalPerMatch}</td><td>${p.yellow}</td><td>${p.red}</td><td><input class="photoInput" type="file" accept="image/*" data-player="${escapeHtml(p.name)}"></td></tr>`}).join(''); document.querySelectorAll('.photoInput').forEach(inp=>inp.onchange=e=>setPlayerPhoto(inp.dataset.player,e.target.files?.[0]));}
+function renderPlayers(){const q=keyName($('playerSearch').value); const photos=playerPhotos(); const rows=playerStats().filter(p=>fcActiveName(p.name)).filter(p=>!q||keyName(p.name).includes(q)); $('playersTable').innerHTML='<tr><th>Foto</th><th>Nama</th><th>Club History</th><th>Main/Hadir</th><th>Goal</th><th>Goal ÷ Main</th><th>Kuning</th><th>Merah</th><th>Ganti Foto</th></tr>'+rows.map(p=>{const src=fcPlayerPhoto(photos,p.name); return `<tr><td>${src?`<img class="playerPhoto" src="${src}">`:'<div class="playerPhoto"></div>'}</td><td>${escapeHtml(p.name)}</td><td>${escapeHtml(p.teams)}</td><td>${p.appearances}</td><td>${p.goals}</td><td>${p.goalPerMatch}</td><td>${p.yellow}</td><td>${p.red}</td><td><input class="photoInput" type="file" accept="image/*" data-player="${escapeHtml(p.name)}"></td></tr>`}).join(''); document.querySelectorAll('.photoInput').forEach(inp=>inp.onchange=e=>setPlayerPhoto(inp.dataset.player,e.target.files?.[0]));}
 
 function loadCompetitionSettingsForm(){
  const cfg=compSettings();
