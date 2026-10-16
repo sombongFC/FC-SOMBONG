@@ -218,6 +218,13 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 .topRankPlayer strong{word-break:break-word}
 @media(max-width:760px){.miniTopPhotos{max-width:128px}.topRankPlayers{grid-template-columns:1fr!important}}
 
+
+/* Player rating: nine-block performance meter */
+.playerRatingCell{min-width:145px;display:flex;flex-direction:column;gap:7px}
+.playerRatingCell b{font-family:Roboto Mono,monospace;font-size:15px}
+.playerRatingBars{display:flex;gap:3px;align-items:center}
+.playerRatingBars span{height:15px;width:12px;min-width:8px;flex:1;background:#e2e8e4;border-radius:3px}
+.playerRatingBars span.filled{background:var(--rating-color,#21a36b)}
 </style>
 </head>
 <body>
@@ -1171,12 +1178,20 @@ function weeklyHallOfFame(matches){
  });
 }
 function playerStats(){
- const map={}; const ensure=(name,team='')=>{name=normalizeName(name); if(!name)return null; name=fcCanonicalPlayer(name); const k=keyName(name); if(!map[k])map[k]={name,teams:new Set(),appearances:0,goals:0,initialGoals:0,yellow:0,red:0,goalRate:0}; if(team)map[k].teams.add(team); return map[k]};
+ const map={}; const ensure=(name,team='')=>{name=normalizeName(name); if(!name)return null; name=fcCanonicalPlayer(name); const k=keyName(name); if(!map[k])map[k]={name,teams:new Set(),appearances:0,goals:0,initialGoals:0,yellow:0,red:0,assists:0,ownGoals:0,goalRate:0}; if(team)map[k].teams.add(team); return map[k]};
  Object.values(initialGoals()).forEach(g=>{const s=ensure(g.name,'Statistik awal'); if(s){s.initialGoals+=Number(g.goals)||0; s.goals += Number(g.goals)||0;}});
  load().forEach(m=>{
   const playedHome=new Set(), playedAway=new Set();
   (m.homeScorers||[]).forEach(n=>{const s=ensure(n,m.home); if(s){s.goals++; playedHome.add(keyName(fcCanonicalPlayer(n)))}});
   (m.awayScorers||[]).forEach(n=>{const s=ensure(n,m.away); if(s){s.goals++; playedAway.add(keyName(fcCanonicalPlayer(n)))}});
+  // Own-goal fields are aligned with scoring slots. The player named here
+  // is the defender responsible, not the scorer receiving the goal.
+  for(const field of ['homeOwnGoals','awayOwnGoals']){
+   (m[field]||[]).forEach(n=>{if(!normalizeName(n))return;const s=ensure(n);if(s)s.ownGoals++;});
+  }
+  for(const [field,team] of [['homeAssists',m.home],['awayAssists',m.away]]){
+   (m[field]||[]).forEach(n=>{if(!normalizeName(n))return;const s=ensure(n,team);if(s)s.assists++;});
+  }
   (m.cards||[]).forEach(c=>{const s=ensure(c.player,c.team); if(s){if(c.type==='red')s.red++; else s.yellow++; (c.team===m.home?playedHome:playedAway).add(keyName(fcCanonicalPlayer(c.player)))}});
   playedHome.forEach(k=>{if(map[k])map[k].appearances++}); playedAway.forEach(k=>{if(map[k])map[k].appearances++});
  });
@@ -1786,18 +1801,23 @@ async function exportStandingsImage(){
 function performanceExtras(){try{return JSON.parse(localStorage.getItem('player_performance_extra_v1')||'{}')||{}}catch(e){return {}}}
 function performanceFor(p){
  const e=performanceExtras()[keyName(p.name)]||{};
- const assists=Math.max(0,Number(e.assists)||0), ownGoals=Math.max(0,Number(e.ownGoals)||0);
+ // Use the match ledger as the source of truth; older manual totals are
+ // retained only if they exceed the recorded ledger totals (pre-ledger history).
+ const assists=Math.max(p.assists||0,Number(e.assists)||0);
+ const ownGoals=Math.max(p.ownGoals||0,Number(e.ownGoals)||0);
  const played=Math.max(0,Number(e.matches)||0,p.appearances||0);
  const contribution=3*p.goals+2*assists-p.yellow-4*p.red-2*ownGoals;
- const rating=(played && e.matches!==undefined && e.assists!==undefined && e.ownGoals!==undefined)?Math.max(1,Math.min(9,Math.round(5+contribution/played))):null;
- return {assists,ownGoals,played,contribution,rating,hasManualMatches:e.matches!==undefined,hasAssist:e.assists!==undefined,hasOwn:e.ownGoals!==undefined};
+ const rating=played?Math.max(1,Math.min(9,Math.round(5+contribution/played))):null;
+ return {assists,ownGoals,played,contribution,rating,
+  hasManualMatches:e.matches!==undefined,hasAssist:true,hasOwn:true,
+  estimatedMatches:e.matches===undefined};
 }
 function editPerformance(name){
  if(!isSuperAdmin())return showToast('Akses ditolak','Login superadmin untuk mengubah statistik.','error');
  const p=playerStats().find(x=>keyName(x.name)===keyName(name));if(!p)return;
  const all=performanceExtras(), k=keyName(p.name), old=all[k]||{};
- const a=prompt('Assist '+p.name+' (isi jumlah total, bukan penambahan)',old.assists??'0');if(a===null)return;
- const o=prompt('Own Goal '+p.name+' (jumlah total)',old.ownGoals??'0');if(o===null)return;
+ const a=prompt('Assist '+p.name+' (isi jumlah total, bukan penambahan)',Math.max(p.assists||0,Number(old.assists)||0));if(a===null)return;
+ const o=prompt('Own Goal '+p.name+' (jumlah total)',Math.max(p.ownGoals||0,Number(old.ownGoals)||0));if(o===null)return;
  const m=prompt('Total pertandingan dimainkan '+p.name+' (data lama hanya menghitung match dengan gol/kartu, jadi masukkan jumlah sebenarnya)',old.matches??String(p.appearances));if(m===null)return;
  if(![a,o,m].every(x=>/^\d+$/.test(x.trim())))return showToast('Angka tidak valid','Gunakan bilangan bulat nol atau lebih.','error');
  if(Number(m)<p.appearances)return showToast('Jumlah main tidak valid','Tidak boleh lebih kecil dari match yang sudah terdeteksi.','error');
@@ -1820,15 +1840,26 @@ async function exportPlayerPerformance(name){
  ctx.fillStyle='#d5b66d';ctx.font='bold 31px Arial';ctx.fillText('PERFORMANCE RATING',535,405);
  ctx.fillStyle='#fff';ctx.font='bold 145px Arial';ctx.fillText(x.rating===null?'—':String(x.rating),535,585);ctx.font='bold 53px Arial';ctx.fillStyle='#d5b66d';ctx.fillText('/ 9',760,580);
  ctx.font='bold 26px Arial';ctx.fillStyle='#c4d2c7';ctx.fillText(x.rating===null?'BELUM TERSEDIA':(['','CRITICAL','VERY POOR','POOR','BELOW AVERAGE','AVERAGE','GOOD','VERY GOOD','EXCELLENT','OUTSTANDING'][x.rating]),540,645);
+ // Nine-segment rating bar. Under 6 = red, 6-7 = green, 8 = silver, 9 = gold.
+ const barRating=x.rating===null?0:x.rating;
+ const barColor=barRating<6?'#ef4444':barRating===9?'#e7bb47':barRating===8?'#a8c5cf':'#35c47a';
+ const barEmpty='#314b3c',barX=535,barY=689,barW=47,barGap=7,barH=48;
+ for(let i=0;i<9;i++){
+   ctx.fillStyle=i<barRating?barColor:barEmpty;
+   ctx.beginPath();ctx.roundRect(barX+i*(barW+barGap),barY,barW,barH,7);ctx.fill();
+ }
+ ctx.fillStyle='#b8c9be';ctx.font='bold 19px Arial';ctx.fillText('1',barX,barY+75);
+ ctx.textAlign='right';ctx.fillText('9',barX+9*(barW+barGap)-barGap,barY+75);ctx.textAlign='left';
+
  const stats=[['GOAL',p.goals],['ASSIST',x.hasAssist?x.assists:'—'],['KARTU KUNING',p.yellow],['KARTU MERAH',p.red],['OWN GOAL',x.hasOwn?x.ownGoals:'—'],['PERTANDINGAN',x.played||'—']];
  stats.forEach(([label,val],i)=>{const col=i%3,row=Math.floor(i/3),sx=65+col*325,sy=830+row*160;ctx.fillStyle='#243f31';ctx.beginPath();ctx.roundRect(sx,sy,305,142,18);ctx.fill();ctx.fillStyle='#b9cabc';ctx.font='bold 22px Arial';ctx.fillText(label,sx+20,sy+43);ctx.fillStyle='#f2d37f';ctx.font='bold 57px Arial';ctx.fillText(String(val),sx+20,sy+110);});
  ctx.fillStyle='#d5b66d';ctx.fillRect(65,1184,950,2);ctx.fillStyle='#d6e2d8';ctx.font='23px Arial';ctx.fillText('Rating = batas 1–9 dari pembulatan (5 + kontribusi / main)',65,1232);
  ctx.font='19px Arial';ctx.fillStyle='#aebeb3';ctx.fillText('Kontribusi: 3×Goal + 2×Assist − Kuning − 4×Merah − 2×Own Goal',65,1273);
- if(!x.hasAssist||!x.hasOwn||!x.hasManualMatches){ctx.font='18px Arial';ctx.fillStyle='#f4c978';ctx.fillText('Catatan: sebagian statistik belum dicatat / jumlah main belum diverifikasi.',65,1311);}
+ if(!x.hasManualMatches){ctx.font='18px Arial';ctx.fillStyle='#f4c978';ctx.fillText('Catatan: jumlah main bisa merupakan minimum terdeteksi dari gol/kartu.',65,1311);}
  const filename='statistik-'+p.name.toLowerCase().replace(/[^a-z0-9]+/g,'-')+'.png';
  if(safeDownloadCanvas(c,filename))showToast('Export berhasil','Kartu statistik '+p.name+' telah dibuat.');
 }
-function renderPlayers(){const q=keyName($('playerSearch').value);const photos=playerPhotos();const rows=playerStats().filter(p=>fcActiveName(p.name)).filter(p=>!q||keyName(p.name).includes(q));$('playersTable').innerHTML='<tr><th>Foto</th><th>Nama</th><th>Club</th><th>Main*</th><th>Goal</th><th>Assist</th><th>Kuning</th><th>Merah</th><th>Own Goal</th><th>Rating</th><th>Statistik</th><th>Ganti Foto</th></tr>'+rows.map(p=>{const src=fcPlayerPhoto(photos,p.name),x=performanceFor(p),encoded=encodeURIComponent(p.name);return `<tr><td>${src?`<img class="playerPhoto" src="${escapeHtml(src)}">`:'<div class="playerPhoto"></div>'}</td><td><b>${escapeHtml(p.name)}</b></td><td>${escapeHtml(p.teams)}</td><td>${x.played}</td><td>${p.goals}</td><td>${x.hasAssist?x.assists:'—'}</td><td>${p.yellow}</td><td>${p.red}</td><td>${x.hasOwn?x.ownGoals:'—'}</td><td><b>${x.rating===null?'—':x.rating+'/9'}</b></td><td><button type="button" class="smallBtn playerExportBtn" data-player="${encoded}">Export Gambar</button>${isSuperAdmin()?`<button type="button" class="smallBtn playerEditBtn" data-player="${encoded}">Edit Statistik</button>`:''}</td><td><input class="photoInput" type="file" accept="image/*" data-player="${escapeHtml(p.name)}"></td></tr>`}).join('');document.querySelectorAll('.photoInput').forEach(inp=>inp.onchange=e=>setPlayerPhoto(inp.dataset.player,e.target.files?.[0]));document.querySelectorAll('.playerExportBtn').forEach(b=>b.onclick=()=>exportPlayerPerformance(decodeURIComponent(b.dataset.player)));document.querySelectorAll('.playerEditBtn').forEach(b=>b.onclick=()=>editPerformance(decodeURIComponent(b.dataset.player)));}
+function renderPlayers(){const q=keyName($('playerSearch').value);const photos=playerPhotos();const rows=playerStats().filter(p=>fcActiveName(p.name)).filter(p=>!q||keyName(p.name).includes(q));$('playersTable').innerHTML='<tr><th>Foto</th><th>Nama</th><th>Club</th><th>Main*</th><th>Goal</th><th>Assist</th><th>Kuning</th><th>Merah</th><th>Own Goal</th><th>Rating</th><th>Statistik</th><th>Ganti Foto</th></tr>'+rows.map(p=>{const src=fcPlayerPhoto(photos,p.name),x=performanceFor(p),encoded=encodeURIComponent(p.name);return `<tr><td>${src?`<img class="playerPhoto" src="${escapeHtml(src)}">`:'<div class="playerPhoto"></div>'}</td><td><b>${escapeHtml(p.name)}</b></td><td>${escapeHtml(p.teams)}</td><td>${x.played}</td><td>${p.goals}</td><td>${x.hasAssist?x.assists:'—'}</td><td>${p.yellow}</td><td>${p.red}</td><td>${x.hasOwn?x.ownGoals:'—'}</td><td><div class="playerRatingCell"><b>${x.rating===null?'—':x.rating+'/9'}</b><div class="playerRatingBars" style="--rating-color:${x.rating<6?'#ef4444':x.rating===9?'#d6a932':x.rating===8?'#8ca9b4':'#21a36b'}">${Array.from({length:9},(_,i)=>`<span class="${i<(x.rating||0)?'filled':''}"></span>`).join('')}</div></div></td><td><button type="button" class="smallBtn playerExportBtn" data-player="${encoded}">Export Gambar</button>${isSuperAdmin()?`<button type="button" class="smallBtn playerEditBtn" data-player="${encoded}">Edit Statistik</button>`:''}</td><td><input class="photoInput" type="file" accept="image/*" data-player="${escapeHtml(p.name)}"></td></tr>`}).join('');document.querySelectorAll('.photoInput').forEach(inp=>inp.onchange=e=>setPlayerPhoto(inp.dataset.player,e.target.files?.[0]));document.querySelectorAll('.playerExportBtn').forEach(b=>b.onclick=()=>exportPlayerPerformance(decodeURIComponent(b.dataset.player)));document.querySelectorAll('.playerEditBtn').forEach(b=>b.onclick=()=>editPerformance(decodeURIComponent(b.dataset.player)));}
 
 function loadCompetitionSettingsForm(){
  const cfg=compSettings();
