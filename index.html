@@ -414,7 +414,7 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
     <div class="panel">
       <h2>Statistik & Pencarian Pemain</h2>
       <input id="playerSearch" class="searchBox" placeholder="Cari nama pemain...">
-      <p class="muted">Ganti foto pemain dilakukan dari halaman ini agar tampilan Top Skor tetap rapi. Foto otomatis muncul di Top Skor.</p>
+      <p class="muted">Setiap pemain dapat di-export sebagai gambar 1080 × 1350 dengan foto jika tersedia. Superadmin dapat mengisi Assist, Own Goal, dan total pertandingan lewat Edit Statistik. <b>*Jumlah main dari data lama hanya mendeteksi pertandingan saat pemain mencetak gol atau mendapat kartu; koreksi jumlah sebenarnya agar rating adil.</b> Rating = min(9, max(1, round(5 + (3×Goal + 2×Assist − Kuning − 4×Merah − 2×Own Goal) ÷ Main))).</p>
       <div class="tableWrap"><table id="playersTable"></table></div>
     </div>
   </section>
@@ -667,7 +667,7 @@ Koko Lobang,21"></textarea>
 <div id="toast" class="toast hidden"><div class="toastIcon">✓</div><div><strong id="toastTitle">Berhasil</strong><p id="toastMsg">Data tersimpan.</p></div></div>
 
 <script>
-window.__FC_SYNC_KEYS = ['competition_settings_v1','teams','team_rosters_v1','matches_v2','player_photos_v1','access_users_v1','initial_goals_v1','retired_players_v1','sponsors_v1','finance_reports_v1','club_logo_v1','dashboard_banner_v1'];
+window.__FC_SYNC_KEYS = ['competition_settings_v1','teams','team_rosters_v1','matches_v2','player_photos_v1','access_users_v1','initial_goals_v1','retired_players_v1','player_performance_extra_v1','sponsors_v1','finance_reports_v1','club_logo_v1','dashboard_banner_v1'];
 window.__FC_BIG_IMAGE_KEYS = ['dashboard_banner_v1','sponsors_v1','club_logo_v1','player_photos_v1'];
 window.__syncTimer = null;
 window.__FC_MEM_STATE = {};
@@ -1782,7 +1782,53 @@ async function exportStandingsImage(){
  await drawSponsorFooter(ctx,W,H,{footerH});
  if(safeDownloadCanvas(c,'klasemen-fc-sombong-'+new Date().toISOString().slice(0,10)+'.png')) showToast('Export berhasil','Gambar klasemen sudah dibuat.');
 }
-function renderPlayers(){const q=keyName($('playerSearch').value); const photos=playerPhotos(); const rows=playerStats().filter(p=>fcActiveName(p.name)).filter(p=>!q||keyName(p.name).includes(q)); $('playersTable').innerHTML='<tr><th>Foto</th><th>Nama</th><th>Club History</th><th>Main/Hadir</th><th>Goal</th><th>Goal ÷ Main</th><th>Kuning</th><th>Merah</th><th>Ganti Foto</th></tr>'+rows.map(p=>{const src=fcPlayerPhoto(photos,p.name); return `<tr><td>${src?`<img class="playerPhoto" src="${src}">`:'<div class="playerPhoto"></div>'}</td><td>${escapeHtml(p.name)}</td><td>${escapeHtml(p.teams)}</td><td>${p.appearances}</td><td>${p.goals}</td><td>${p.goalPerMatch}</td><td>${p.yellow}</td><td>${p.red}</td><td><input class="photoInput" type="file" accept="image/*" data-player="${escapeHtml(p.name)}"></td></tr>`}).join(''); document.querySelectorAll('.photoInput').forEach(inp=>inp.onchange=e=>setPlayerPhoto(inp.dataset.player,e.target.files?.[0]));}
+// Player Performance 1-9. Assist/own-goal and match-count corrections are manually recorded by superadmin.
+function performanceExtras(){try{return JSON.parse(localStorage.getItem('player_performance_extra_v1')||'{}')||{}}catch(e){return {}}}
+function performanceFor(p){
+ const e=performanceExtras()[keyName(p.name)]||{};
+ const assists=Math.max(0,Number(e.assists)||0), ownGoals=Math.max(0,Number(e.ownGoals)||0);
+ const played=Math.max(0,Number(e.matches)||0,p.appearances||0);
+ const contribution=3*p.goals+2*assists-p.yellow-4*p.red-2*ownGoals;
+ const rating=(played && e.matches!==undefined && e.assists!==undefined && e.ownGoals!==undefined)?Math.max(1,Math.min(9,Math.round(5+contribution/played))):null;
+ return {assists,ownGoals,played,contribution,rating,hasManualMatches:e.matches!==undefined,hasAssist:e.assists!==undefined,hasOwn:e.ownGoals!==undefined};
+}
+function editPerformance(name){
+ if(!isSuperAdmin())return showToast('Akses ditolak','Login superadmin untuk mengubah statistik.','error');
+ const p=playerStats().find(x=>keyName(x.name)===keyName(name));if(!p)return;
+ const all=performanceExtras(), k=keyName(p.name), old=all[k]||{};
+ const a=prompt('Assist '+p.name+' (isi jumlah total, bukan penambahan)',old.assists??'0');if(a===null)return;
+ const o=prompt('Own Goal '+p.name+' (jumlah total)',old.ownGoals??'0');if(o===null)return;
+ const m=prompt('Total pertandingan dimainkan '+p.name+' (data lama hanya menghitung match dengan gol/kartu, jadi masukkan jumlah sebenarnya)',old.matches??String(p.appearances));if(m===null)return;
+ if(![a,o,m].every(x=>/^\d+$/.test(x.trim())))return showToast('Angka tidak valid','Gunakan bilangan bulat nol atau lebih.','error');
+ if(Number(m)<p.appearances)return showToast('Jumlah main tidak valid','Tidak boleh lebih kecil dari match yang sudah terdeteksi.','error');
+ all[k]={assists:+a,ownGoals:+o,matches:+m};localStorage.setItem('player_performance_extra_v1',JSON.stringify(all));renderPlayers();showToast('Statistik tersimpan',p.name);
+}
+async function exportPlayerPerformance(name){
+ const p=playerStats().find(x=>keyName(x.name)===keyName(name));if(!p)return;
+ const x=performanceFor(p), W=1080,H=1350;
+ const c=document.createElement('canvas');c.width=W;c.height=H;const ctx=c.getContext('2d');
+ const bg=ctx.createLinearGradient(0,0,W,H);bg.addColorStop(0,'#071c14');bg.addColorStop(1,'#183e2b');ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+ ctx.fillStyle='#d5b66d';ctx.fillRect(60,72,960,8);
+ ctx.textAlign='left';ctx.fillStyle='#e7cb81';ctx.font='bold 32px Arial';ctx.fillText('FC SOMBONG  •  PLAYER PERFORMANCE',65,138);
+ ctx.fillStyle='#ffffff';ctx.font='bold 65px Arial';let nm=p.name.toUpperCase();while(ctx.measureText(nm).width>940&&ctx.font.includes('65px')){ctx.font='bold 48px Arial';}ctx.fillText(nm,65,235);
+ ctx.font='27px Arial';ctx.fillStyle='#b8c9be';ctx.fillText(p.teams||'FC SOMBONG',65,285);
+ const photo=await loadCanvasImage(fcPlayerPhoto(playerPhotos(),p.name)||null);
+ const px=70,py=340,pw=410,ph=440;
+ ctx.fillStyle='#294335';ctx.fillRect(px,py,pw,ph);
+ if(photo){const sw=photo.width,sh=photo.height,scale=Math.max(pw/sw,ph/sh),dw=sw*scale,dh=sh*scale;ctx.save();ctx.beginPath();ctx.roundRect(px,py,pw,ph,22);ctx.clip();ctx.drawImage(photo,px+(pw-dw)/2,py+(ph-dh)/2,dw,dh);ctx.restore();}
+ else {ctx.fillStyle='#d5b66d';ctx.textAlign='center';ctx.font='bold 150px Arial';ctx.fillText('⚽',px+pw/2,py+270);ctx.textAlign='left';}
+ ctx.fillStyle='#d5b66d';ctx.font='bold 31px Arial';ctx.fillText('PERFORMANCE RATING',535,405);
+ ctx.fillStyle='#fff';ctx.font='bold 145px Arial';ctx.fillText(x.rating===null?'—':String(x.rating),535,585);ctx.font='bold 53px Arial';ctx.fillStyle='#d5b66d';ctx.fillText('/ 9',760,580);
+ ctx.font='bold 26px Arial';ctx.fillStyle='#c4d2c7';ctx.fillText(x.rating===null?'BELUM TERSEDIA':(['','CRITICAL','VERY POOR','POOR','BELOW AVERAGE','AVERAGE','GOOD','VERY GOOD','EXCELLENT','OUTSTANDING'][x.rating]),540,645);
+ const stats=[['GOAL',p.goals],['ASSIST',x.hasAssist?x.assists:'—'],['KARTU KUNING',p.yellow],['KARTU MERAH',p.red],['OWN GOAL',x.hasOwn?x.ownGoals:'—'],['PERTANDINGAN',x.played||'—']];
+ stats.forEach(([label,val],i)=>{const col=i%3,row=Math.floor(i/3),sx=65+col*325,sy=830+row*160;ctx.fillStyle='#243f31';ctx.beginPath();ctx.roundRect(sx,sy,305,142,18);ctx.fill();ctx.fillStyle='#b9cabc';ctx.font='bold 22px Arial';ctx.fillText(label,sx+20,sy+43);ctx.fillStyle='#f2d37f';ctx.font='bold 57px Arial';ctx.fillText(String(val),sx+20,sy+110);});
+ ctx.fillStyle='#d5b66d';ctx.fillRect(65,1184,950,2);ctx.fillStyle='#d6e2d8';ctx.font='23px Arial';ctx.fillText('Rating = batas 1–9 dari pembulatan (5 + kontribusi / main)',65,1232);
+ ctx.font='19px Arial';ctx.fillStyle='#aebeb3';ctx.fillText('Kontribusi: 3×Goal + 2×Assist − Kuning − 4×Merah − 2×Own Goal',65,1273);
+ if(!x.hasAssist||!x.hasOwn||!x.hasManualMatches){ctx.font='18px Arial';ctx.fillStyle='#f4c978';ctx.fillText('Catatan: sebagian statistik belum dicatat / jumlah main belum diverifikasi.',65,1311);}
+ const filename='statistik-'+p.name.toLowerCase().replace(/[^a-z0-9]+/g,'-')+'.png';
+ if(safeDownloadCanvas(c,filename))showToast('Export berhasil','Kartu statistik '+p.name+' telah dibuat.');
+}
+function renderPlayers(){const q=keyName($('playerSearch').value);const photos=playerPhotos();const rows=playerStats().filter(p=>fcActiveName(p.name)).filter(p=>!q||keyName(p.name).includes(q));$('playersTable').innerHTML='<tr><th>Foto</th><th>Nama</th><th>Club</th><th>Main*</th><th>Goal</th><th>Assist</th><th>Kuning</th><th>Merah</th><th>Own Goal</th><th>Rating</th><th>Statistik</th><th>Ganti Foto</th></tr>'+rows.map(p=>{const src=fcPlayerPhoto(photos,p.name),x=performanceFor(p),encoded=encodeURIComponent(p.name);return `<tr><td>${src?`<img class="playerPhoto" src="${escapeHtml(src)}">`:'<div class="playerPhoto"></div>'}</td><td><b>${escapeHtml(p.name)}</b></td><td>${escapeHtml(p.teams)}</td><td>${x.played}</td><td>${p.goals}</td><td>${x.hasAssist?x.assists:'—'}</td><td>${p.yellow}</td><td>${p.red}</td><td>${x.hasOwn?x.ownGoals:'—'}</td><td><b>${x.rating===null?'—':x.rating+'/9'}</b></td><td><button type="button" class="smallBtn playerExportBtn" data-player="${encoded}">Export Gambar</button>${isSuperAdmin()?`<button type="button" class="smallBtn playerEditBtn" data-player="${encoded}">Edit Statistik</button>`:''}</td><td><input class="photoInput" type="file" accept="image/*" data-player="${escapeHtml(p.name)}"></td></tr>`}).join('');document.querySelectorAll('.photoInput').forEach(inp=>inp.onchange=e=>setPlayerPhoto(inp.dataset.player,e.target.files?.[0]));document.querySelectorAll('.playerExportBtn').forEach(b=>b.onclick=()=>exportPlayerPerformance(decodeURIComponent(b.dataset.player)));document.querySelectorAll('.playerEditBtn').forEach(b=>b.onclick=()=>editPerformance(decodeURIComponent(b.dataset.player)));}
 
 function loadCompetitionSettingsForm(){
  const cfg=compSettings();
