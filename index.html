@@ -1564,7 +1564,7 @@ async function exportTopScorerImage(){
  if(!groups.length)return showToast('Belum ada data','Top skor masih kosong.','error');
  const photos=playerPhotos();
  const topGroups=groups.filter(g=>g.rank<=3);
- const restGroups=groups.filter(g=>g.rank>3).slice(0,8);
+ const restGroups=groups.filter(g=>g.rank>3);
  const topImgs=[];
  for(const g of topGroups){
   const imgs=[];
@@ -1575,9 +1575,9 @@ async function exportTopScorerImage(){
  const pad=56;
  const headerH=250;
  const topH=topGroups.reduce((sum,g)=>sum+(g.players.length>1?250:190),0);
- const restH=restGroups.reduce((sum,g)=>sum+82,0);
+ const restH=restGroups.reduce((sum,g)=>sum+76,0);
  const footerH=180;
- const H=Math.max(1350,headerH+topH+(restGroups.length?54+restH:20)+footerH+42);
+ const H=Math.max(1350,258+topGroups.reduce((sum,g)=>sum+(g.players.length>1?230:170)+18,0)+(restGroups.length?38+restH:0)+100+footerH);
  const c=document.createElement('canvas'); c.width=W; c.height=H; const ctx=c.getContext('2d');
 
  // v2.24: export WA putih-hitam, kontras tinggi, foto tidak menutup nama.
