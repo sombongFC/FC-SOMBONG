@@ -2172,7 +2172,7 @@ window.__stateReady.then(init).catch(init);
   return lines;
  }
  function fit(ctx,text,maxWidth,size=17){let z=size;do{ctx.font='700 '+z+'px Arial';if(ctx.measureText(text).width<=maxWidth)break;z--}while(z>11);return z}
- window.exportHistoryImageCompact=function(){
+ window.exportHistoryImageCompact=async function(){
   const date=$id('historyExportDate')?.value||$id('mdDate')?.value||new Date().toLocaleDateString('en-CA');
   const matches=load().filter(m=>m.date===date);
   if(!matches.length)return showToast('Tidak ada pertandingan','Pilih tanggal dengan riwayat pertandingan.','error');
@@ -2191,9 +2191,9 @@ window.__stateReady.then(init).catch(init);
     .filter(name=>name.length>0&&!/^(undefined|null|none|n\/a|—|-|false|0)$/i.test(name));
   });
   const scorerLines=m=>Math.max(goalText(m.homeScorers).length,goalText(m.awayScorers).length,1);
-  const details=m=>(m.cards||[]).filter(x=>/yellow|kuning|red|merah/i.test(x.type||'')).length+ownGoalNames(m).length;
+  const details=m=>(m.cards||[]).filter(x=>/yellow|kuning|red|merah/i.test(x.type||'')).length+ownGoalNames(m).length+(Number(m.hs)===Number(m.as)&&m.penaltyWinner?1:0);
   const heights=matches.map(m=>Math.max(109,64+scorerLines(m)*22+(details(m)?28:0)));
-  const top=126,gap=9,motmHeight=motm?158:0,footer=45;
+  const top=126,gap=9,motmHeight=motm?188:0,footer=45;
   const natural=heights.reduce((x,y)=>x+y,0)+gap*(matches.length-1);
   const available=H-top-motmHeight-footer-(motm?17:0);
   const scale=Math.min(1,available/natural);
@@ -2223,11 +2223,21 @@ window.__stateReady.then(init).catch(init);
    const yellows=(m.cards||[]).filter(x=>/yellow|kuning/i.test(x.type||''));
    const reds=(m.cards||[]).filter(x=>/red|merah/i.test(x.type||''));
    const og=ownGoalNames(m);
+   // Show the stored shootout winner only when the regulation score is tied.
+   const penaltyWinner=Number(m.hs)===Number(m.as)&&[m.home,m.away].includes(m.penaltyWinner)?m.penaltyWinner:'';
    const notes=[
     ...yellows.map(x=>({type:'yellow',label:String(x.player||'')+' ('+String(x.team||'')+')'})),
     ...reds.map(x=>({type:'red',label:String(x.player||'')+' ('+String(x.team||'')+')'})),
     ...og.map(x=>({type:'own',label:'OWN GOAL: '+x}))
    ];
+   if(penaltyWinner){
+    const py=y+Math.min(h-16,75+count*11*scale);
+    ctx.textAlign='center';ctx.fillStyle='#e4b64d';ctx.font='bold 16px Arial';
+    const caption='PEMENANG ADU PENALTI: '+String(penaltyWinner).toUpperCase();
+    const bw=Math.min(470,ctx.measureText(caption).width+42);
+    ctx.strokeStyle='#d4a33a';ctx.lineWidth=1.4;ctx.beginPath();ctx.roundRect(540-bw/2,py-19,bw,27,10);ctx.stroke();
+    drawText(caption,540,py,450,'center');
+   }
    if(notes.length){
     const yy=y+h-13;let xx=151;
     for(const note of notes){
@@ -2243,12 +2253,34 @@ window.__stateReady.then(init).catch(init);
    y+=h+gap;
   });
   if(motm){
-   const fy=Math.max(y+8,1095),fh=Math.min(175,1301-fy);
+   const fy=Math.max(y+8,1065),fh=Math.min(198,1301-fy);
    ctx.fillStyle='#251c10';ctx.strokeStyle=gold;ctx.lineWidth=3;ctx.beginPath();ctx.roundRect(30,fy,1020,fh,14);ctx.fill();ctx.stroke();
-   ctx.textAlign='center';ctx.fillStyle=gold;ctx.font='900 25px Arial';ctx.fillText('🏆 MAN OF THE MATCH 🏆',540,fy+37);
-   ctx.font='900 62px Arial';ctx.fillText(String(motm).toUpperCase(),540,fy+101,940);
-   const session=allSessions()[date],team=['A','B','C'].find(t=>(session?.teams?.[t]||[]).some(n=>key(n)===key(motm)));
-   if(team){ctx.fillStyle=white;ctx.font='bold 22px Arial';ctx.fillText('TEAM '+team,540,fy+fh-17)}
+   const photoX=48,photoY=fy+15,photoW=145,photoH=Math.max(80,fh-30);
+   ctx.fillStyle='#303845';ctx.beginPath();ctx.roundRect(photoX,photoY,photoW,photoH,10);ctx.fill();
+   const silhouette=()=>{
+    ctx.save();ctx.beginPath();ctx.roundRect(photoX,photoY,photoW,photoH,10);ctx.clip();
+    ctx.fillStyle='#a6b0bd';ctx.beginPath();ctx.arc(photoX+photoW/2,photoY+photoH*.34,photoW*.20,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(photoX+photoW/2,photoY+photoH*1.05,photoW*.43,photoH*.43,0,0,Math.PI*2);ctx.fill();ctx.restore();
+   };
+   let imageLoaded=false;
+   try{
+    const src=fcPlayerPhoto(playerPhotos(),motm);
+    if(src){
+     const img=new Image();img.crossOrigin='anonymous';
+     await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;img.src=src;});
+     const ratio=Math.max(photoW/img.width,photoH/img.height),iw=img.width*ratio,ih=img.height*ratio;
+     ctx.save();ctx.beginPath();ctx.roundRect(photoX,photoY,photoW,photoH,10);ctx.clip();
+     ctx.drawImage(img,photoX+(photoW-iw)/2,photoY+(photoH-ih)/2,iw,ih);ctx.restore();
+     imageLoaded=true;
+    }
+   }catch(_e){}
+   if(!imageLoaded)silhouette();
+   ctx.textAlign='center';ctx.fillStyle=gold;ctx.font='900 26px Arial';ctx.fillText('MAN OF THE MATCH',622,fy+45);
+   ctx.font='900 60px Arial';ctx.fillText(String(motm).toUpperCase(),622,fy+113,790);
+   const session=allSessions()[date];
+   const teams=session?.teams||{};
+   const team=Object.keys(teams).find(t=>Array.isArray(teams[t])&&teams[t].some(n=>keyName(n)===keyName(motm)));
+   if(team){ctx.fillStyle=white;ctx.font='bold 23px Arial';ctx.fillText('TEAM '+team.replace(/^TEAM\s*/i,''),622,fy+fh-18)}
   }
   ctx.textAlign='center';ctx.fillStyle='#aab8cc';ctx.font='17px Arial';ctx.fillText('FC SOMBONG • OFFICIAL MATCHDAY RESULTS',540,1330);
   safeDownloadCanvas(c,'fc-sombong-history-'+date+'.png');
