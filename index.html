@@ -2183,8 +2183,15 @@ window.__stateReady.then(init).catch(init);
   ctx.fillStyle=gold;ctx.font='900 27px Arial';ctx.textAlign='left';ctx.fillText('FC SOMBONG LEAGUE',38,46);
   ctx.fillStyle=white;ctx.font='900 55px Arial';ctx.fillText('MATCHDAY RECAP',38,103);
   ctx.textAlign='right';ctx.fillStyle=muted;ctx.font='bold 21px Arial';ctx.fillText(date,1041,47);
+  // Export only named own-goal events. Empty slots and placeholder values are not events.
+  const ownGoalNames=m=>['homeOwnGoals','awayOwnGoals'].flatMap(field=>{
+   const entries=m[field];if(!Array.isArray(entries))return [];
+   return entries.map(item=>typeof item==='string'?item:(item&&typeof item==='object'?(item.player||item.name||''):''))
+    .map(name=>String(name).trim())
+    .filter(name=>name.length>0&&!/^(undefined|null|none|n\/a|—|-|false|0)$/i.test(name));
+  });
   const scorerLines=m=>Math.max(goalText(m.homeScorers).length,goalText(m.awayScorers).length,1);
-  const details=m=>(m.cards||[]).filter(x=>/yellow|kuning|red|merah/i.test(x.type||'')).length+(m.homeOwnGoals||[]).length+(m.awayOwnGoals||[]).length;
+  const details=m=>(m.cards||[]).filter(x=>/yellow|kuning|red|merah/i.test(x.type||'')).length+ownGoalNames(m).length;
   const heights=matches.map(m=>Math.max(109,64+scorerLines(m)*22+(details(m)?28:0)));
   const top=126,gap=9,motmHeight=motm?158:0,footer=45;
   const natural=heights.reduce((x,y)=>x+y,0)+gap*(matches.length-1);
@@ -2215,11 +2222,11 @@ window.__stateReady.then(init).catch(init);
    }
    const yellows=(m.cards||[]).filter(x=>/yellow|kuning/i.test(x.type||''));
    const reds=(m.cards||[]).filter(x=>/red|merah/i.test(x.type||''));
-   const og=[...(m.homeOwnGoals||[]),...(m.awayOwnGoals||[])];
+   const og=ownGoalNames(m);
    const notes=[
     ...yellows.map(x=>({type:'yellow',label:String(x.player||'')+' ('+String(x.team||'')+')'})),
     ...reds.map(x=>({type:'red',label:String(x.player||'')+' ('+String(x.team||'')+')'})),
-    ...og.map(x=>({type:'own',label:'OWN GOAL: '+(typeof x==='string'?x:String(x.player||x.name||''))}))
+    ...og.map(x=>({type:'own',label:'OWN GOAL: '+x}))
    ];
    if(notes.length){
     const yy=y+h-13;let xx=151;
