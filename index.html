@@ -2187,7 +2187,8 @@ window.__stateReady.then(init).catch(init);
   const ownGoalNames=m=>['homeOwnGoals','awayOwnGoals'].flatMap(field=>{
    const entries=m[field];if(!Array.isArray(entries))return [];
    return entries.map(item=>typeof item==='string'?item:(item&&typeof item==='object'?(item.player||item.name||''):''))
-    .map(name=>String(name).trim()).filter(name=>name&&!/^(undefined|null|none|n\/a|—|-)$/i.test(name));
+    .map(name=>String(name).trim())
+    .filter(name=>name.length>0&&!/^(undefined|null|none|n\/a|—|-|false|0)$/i.test(name));
   });
   const scorerLines=m=>Math.max(goalText(m.homeScorers).length,goalText(m.awayScorers).length,1);
   const details=m=>(m.cards||[]).filter(x=>/yellow|kuning|red|merah/i.test(x.type||'')).length+ownGoalNames(m).length;
