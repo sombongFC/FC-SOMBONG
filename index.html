@@ -2191,7 +2191,7 @@ window.__stateReady.then(init).catch(init);
     .filter(name=>name.length>0&&!/^(undefined|null|none|n\/a|—|-|false|0)$/i.test(name));
   });
   const scorerLines=m=>Math.max(goalText(m.homeScorers).length,goalText(m.awayScorers).length,1);
-  const details=m=>(m.cards||[]).filter(x=>/yellow|kuning|red|merah/i.test(x.type||'')).length+ownGoalNames(m).length;
+  const details=m=>(m.cards||[]).filter(x=>/yellow|kuning|red|merah/i.test(x.type||'')).length+ownGoalNames(m).length+(Number(m.hs)===Number(m.as)&&m.penaltyWinner?1:0);
   const heights=matches.map(m=>Math.max(109,64+scorerLines(m)*22+(details(m)?28:0)));
   const top=126,gap=9,motmHeight=motm?158:0,footer=45;
   const natural=heights.reduce((x,y)=>x+y,0)+gap*(matches.length-1);
@@ -2223,13 +2223,20 @@ window.__stateReady.then(init).catch(init);
    const yellows=(m.cards||[]).filter(x=>/yellow|kuning/i.test(x.type||''));
    const reds=(m.cards||[]).filter(x=>/red|merah/i.test(x.type||''));
    const og=ownGoalNames(m);
+   // Show the stored shootout winner only when the regulation score is tied.
+   const penaltyWinner=Number(m.hs)===Number(m.as)&&[m.home,m.away].includes(m.penaltyWinner)?m.penaltyWinner:'';
    const notes=[
     ...yellows.map(x=>({type:'yellow',label:String(x.player||'')+' ('+String(x.team||'')+')'})),
     ...reds.map(x=>({type:'red',label:String(x.player||'')+' ('+String(x.team||'')+')'})),
     ...og.map(x=>({type:'own',label:'OWN GOAL: '+x}))
    ];
-   if(notes.length){
+   if(notes.length||penaltyWinner){
     const yy=y+h-13;let xx=151;
+    if(penaltyWinner){
+     ctx.fillStyle=gold;ctx.font='bold 16px Arial';
+     drawText('🏆 PEMENANG ADU PENALTI: '+String(penaltyWinner).toUpperCase(),151,yy,720);
+     xx=720;
+    }
     for(const note of notes){
      const col=note.type==='yellow'?'#ffd451':red;
      ctx.font='bold 15px Arial';const width=Math.min(ctx.measureText(note.label).width,790);
