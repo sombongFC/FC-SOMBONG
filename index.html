@@ -422,7 +422,7 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
     <div class="panel">
       <h2>Statistik & Pencarian Pemain</h2>
       <input id="playerSearch" class="searchBox" placeholder="Cari nama pemain...">
-      <p class="muted">Setiap pemain dapat di-export sebagai gambar 1080 × 1350 dengan foto jika tersedia. Superadmin dapat mengisi Assist, Own Goal, dan total pertandingan lewat Edit Statistik. <b>*Jumlah main dari data lama hanya mendeteksi pertandingan saat pemain mencetak gol atau mendapat kartu; koreksi jumlah sebenarnya agar rating adil.</b> Rating baru memakai gol pertandingan yang tercatat (gol historis tetap ditampilkan, tetapi tidak dipakai karena jumlah main historis belum tersedia). Nilai = round(4,5 + (2,5×Gol + 1,5×Assist − 1,5×Kuning − 5×Merah − 3×Own Goal) ÷ (Main + 8)). Rating tanpa jumlah main terverifikasi maksimal 7; rating 8 memerlukan minimal 8 pertandingan terverifikasi; rating 9 memerlukan minimal 12 pertandingan dan nilai mentah minimal 8,5.</p>
+      <p class="muted">Setiap pemain dapat di-export sebagai gambar 1080 × 1350 dengan foto jika tersedia. Superadmin dapat mengisi Assist, Own Goal, dan total pertandingan lewat Edit Statistik. <b>*Jumlah main dari data lama hanya mendeteksi pertandingan saat pemain mencetak gol atau mendapat kartu; koreksi jumlah sebenarnya agar rating adil.</b> Rating baru memakai gol pertandingan yang tercatat (gol historis tetap ditampilkan, tetapi tidak dipakai karena jumlah main historis belum tersedia). Nilai = pembulatan 1 desimal dari 4,5 + (2,5×Gol + 1,5×Assist + 3×MOTM − 1,5×Kuning − 4×Merah − 3×Own Goal) ÷ (Main + 8). Setiap match yang benar-benar dimainkan menambah 1 poin dasar; penampilan saja tidak menaikkan rating.  Rating tanpa jumlah main terverifikasi maksimal 7,9; rating 8,0 memerlukan minimal 8 pertandingan terverifikasi; rating 9,0 memerlukan minimal 12 pertandingan dan nilai mentah minimal 8,5.</p>
       <div class="tableWrap"><table id="playersTable"></table></div>
     </div>
   </section>
@@ -1849,28 +1849,24 @@ function performanceFor(p){
  const e=performanceExtras()[keyName(p.name)]||{};
  const assists=Math.max(p.assists||0,Number(e.assists)||0);
  const ownGoals=Math.max(p.ownGoals||0,Number(e.ownGoals)||0);
+ // Verified appearances must be entered as actual matches played; being on a matchday squad alone does not count as six appearances.
  const verified=Number.isInteger(Number(e.matches)) && e.matches!==undefined && e.matches!==null && Number(e.matches)>=p.appearances && Number(e.matches)>0;
  const played=verified?Number(e.matches):(p.appearances||0);
- // Historical starting goals are displayed, but excluded from rating because
- // their corresponding appearances/cards are not available in the backup.
  const recentGoals=Math.max(0,p.goals-(p.initialGoals||0));
  const motm=mdAwards(p.name);
- const contribution=2.5*recentGoals+1.5*assists-1.5*p.yellow-5*p.red-3*ownGoals+2*motm;
- // Shrinkage: eight additional games in the denominator. A rating of 7
- // requires sustained positive output, not one or two scoring events.
- const raw=played>0?4.5+contribution/(played+8):null;
- let rating=raw===null?null:Math.max(1,Math.min(9,Math.round(raw)));
- // No verified appearances = provisional, capped at 7. Eight and nine are
- // earned only with a reliable match count and minimum sample sizes.
+ // Base +1 per appearance is kept in totalPoints; baseline is subtracted in rating so merely attending cannot inflate rating.
+ const contribution=2.5*recentGoals+1.5*assists+3*motm-1.5*p.yellow-4*p.red-3*ownGoals;
+ const totalPoints=played+contribution;
+ const raw=played>0?4.5+(totalPoints-played)/(played+8):null;
+ let rating=raw===null?null:Math.max(1,Math.min(9,Math.round(raw*10)/10));
+ // High ratings require verified appearance history and sufficient sample size.
  if(rating!==null){
-   if(!verified)rating=Math.min(rating,7);
-   else if(played<8)rating=Math.min(rating,7);
-   else if(played<12)rating=Math.min(rating,8);
-   if(rating===9 && (played<12 || raw<8.5))rating=8;
+  if(!verified||played<8)rating=Math.min(rating,7.9);
+  else if(played<12)rating=Math.min(rating,8.9);
+  if(rating===9 && raw<8.5)rating=8.9;
  }
- return {assists,ownGoals,played,contribution,rating,raw,recentGoals,motm,
-  hasManualMatches:verified,hasAssist:true,hasOwn:true,
-  estimatedMatches:!verified};
+ return {assists,ownGoals,played,contribution,totalPoints,rating,raw,recentGoals,motm,
+  hasManualMatches:verified,hasAssist:true,hasOwn:true,estimatedMatches:!verified};
 }
 function editPerformance(name){
  if(!isSuperAdmin())return showToast('Akses ditolak','Login superadmin untuk mengubah statistik.','error');
@@ -1898,11 +1894,11 @@ async function exportPlayerPerformance(name){
  if(photo){const sw=photo.width,sh=photo.height,scale=Math.max(pw/sw,ph/sh),dw=sw*scale,dh=sh*scale;ctx.save();ctx.beginPath();ctx.roundRect(px,py,pw,ph,22);ctx.clip();ctx.drawImage(photo,px+(pw-dw)/2,py+(ph-dh)/2,dw,dh);ctx.restore();}
  else {ctx.fillStyle='#d5b66d';ctx.textAlign='center';ctx.font='bold 150px Arial';ctx.fillText('⚽',px+pw/2,py+270);ctx.textAlign='left';}
  ctx.fillStyle='#d5b66d';ctx.font='bold 31px Arial';ctx.fillText('PERFORMANCE RATING',535,405);
- ctx.fillStyle='#fff';ctx.font='bold 145px Arial';ctx.fillText(x.rating===null?'—':String(x.rating),535,585);ctx.font='bold 53px Arial';ctx.fillStyle='#d5b66d';ctx.fillText('/ 9',760,580);
- ctx.font='bold 26px Arial';ctx.fillStyle='#c4d2c7';ctx.fillText(x.rating===null?'BELUM TERSEDIA':(['','CRITICAL','VERY POOR','POOR','BELOW AVERAGE','AVERAGE','GOOD','VERY GOOD','EXCELLENT','OUTSTANDING'][x.rating]),540,645);
+ ctx.fillStyle='#fff';ctx.font='bold 145px Arial';ctx.fillText(x.rating===null?'—':x.rating.toFixed(1).replace('.',','),535,585);ctx.font='bold 53px Arial';ctx.fillStyle='#d5b66d';ctx.fillText('/ 9',760,580);
+ ctx.font='bold 26px Arial';ctx.fillStyle='#c4d2c7';ctx.fillText(x.rating===null?'BELUM TERSEDIA':(['CRITICAL','VERY POOR','POOR','BELOW AVERAGE','AVERAGE','GOOD','VERY GOOD','EXCELLENT','OUTSTANDING'][Math.max(0,Math.min(8,Math.floor(x.rating)-1))]),540,645);
  // Nine-segment rating bar. Under 6 = red, 6-7 = green, 8 = silver, 9 = gold.
  const barRating=x.rating===null?0:x.rating;
- const barColor=barRating<6?'#ef4444':barRating===9?'#e7bb47':barRating===8?'#a8c5cf':'#35c47a';
+ const barColor=barRating<6?'#ef4444':barRating===9?'#e7bb47':barRating>=8?'#a8c5cf':'#35c47a';
  const barEmpty='#314b3c',barX=535,barY=689,barW=47,barGap=7,barH=48;
  for(let i=0;i<9;i++){
    ctx.fillStyle=i<barRating?barColor:barEmpty;
@@ -1919,7 +1915,7 @@ async function exportPlayerPerformance(name){
  const filename='statistik-'+p.name.toLowerCase().replace(/[^a-z0-9]+/g,'-')+'.png';
  if(safeDownloadCanvas(c,filename))showToast('Export berhasil','Kartu statistik '+p.name+' telah dibuat.');
 }
-function renderPlayers(){const q=keyName($('playerSearch').value);const photos=playerPhotos();const rows=playerStats().filter(p=>fcActiveName(p.name)).filter(p=>!q||keyName(p.name).includes(q));$('playersTable').innerHTML='<tr><th>Foto</th><th>Nama</th><th>Club</th><th>Main*</th><th>Goal</th><th>Assist</th><th>Kuning</th><th>Merah</th><th>Own Goal</th><th>MOTM 🏆</th><th>Rating</th><th>Statistik</th><th>Ganti Foto</th></tr>'+rows.map(p=>{const src=fcPlayerPhoto(photos,p.name),x=performanceFor(p),encoded=encodeURIComponent(p.name);return `<tr><td>${src?`<img class="playerPhoto" src="${escapeHtml(src)}">`:'<div class="playerPhoto"></div>'}</td><td><b>${escapeHtml(p.name)}</b></td><td>${escapeHtml(p.teams)}</td><td>${x.played}</td><td>${p.goals}</td><td>${x.hasAssist?x.assists:'—'}</td><td>${p.yellow}</td><td>${p.red}</td><td>${x.hasOwn?x.ownGoals:'—'}</td><td>${x.motm}</td><td><div class="playerRatingCell"><b>${x.rating===null?'—':x.rating+'/9'}</b><div class="playerRatingBars" style="--rating-color:${x.rating<6?'#ef4444':x.rating===9?'#d6a932':x.rating===8?'#8ca9b4':'#21a36b'}">${Array.from({length:9},(_,i)=>`<span class="${i<(x.rating||0)?'filled':''}"></span>`).join('')}</div></div></td><td><button type="button" class="smallBtn playerExportBtn" data-player="${encoded}">Export Gambar</button>${isSuperAdmin()?`<button type="button" class="smallBtn playerEditBtn" data-player="${encoded}">Edit Statistik</button>`:''}</td><td><input class="photoInput" type="file" accept="image/*" data-player="${escapeHtml(p.name)}"></td></tr>`}).join('');document.querySelectorAll('.photoInput').forEach(inp=>inp.onchange=e=>setPlayerPhoto(inp.dataset.player,e.target.files?.[0]));document.querySelectorAll('.playerExportBtn').forEach(b=>b.onclick=()=>exportPlayerPerformance(decodeURIComponent(b.dataset.player)));document.querySelectorAll('.playerEditBtn').forEach(b=>b.onclick=()=>editPerformance(decodeURIComponent(b.dataset.player)));}
+function renderPlayers(){const q=keyName($('playerSearch').value);const photos=playerPhotos();const rows=playerStats().filter(p=>fcActiveName(p.name)).filter(p=>!q||keyName(p.name).includes(q));$('playersTable').innerHTML='<tr><th>Foto</th><th>Nama</th><th>Club</th><th>Main*</th><th>Goal</th><th>Assist</th><th>Kuning</th><th>Merah</th><th>Own Goal</th><th>MOTM 🏆</th><th>Rating</th><th>Statistik</th><th>Ganti Foto</th></tr>'+rows.map(p=>{const src=fcPlayerPhoto(photos,p.name),x=performanceFor(p),encoded=encodeURIComponent(p.name);return `<tr><td>${src?`<img class="playerPhoto" src="${escapeHtml(src)}">`:'<div class="playerPhoto"></div>'}</td><td><b>${escapeHtml(p.name)}</b></td><td>${escapeHtml(p.teams)}</td><td>${x.played}</td><td>${p.goals}</td><td>${x.hasAssist?x.assists:'—'}</td><td>${p.yellow}</td><td>${p.red}</td><td>${x.hasOwn?x.ownGoals:'—'}</td><td>${x.motm}</td><td><div class="playerRatingCell"><b>${x.rating===null?'—':x.rating.toFixed(1).replace('.',',')+'/9'}</b><div class="playerRatingBars" style="--rating-color:${x.rating<6?'#ef4444':x.rating===9?'#d6a932':x.rating>=8?'#8ca9b4':'#21a36b'}">${Array.from({length:9},(_,i)=>`<span class="${i<Math.floor(x.rating||0)?'filled':''}"></span>`).join('')}</div></div></td><td><button type="button" class="smallBtn playerExportBtn" data-player="${encoded}">Export Gambar</button>${isSuperAdmin()?`<button type="button" class="smallBtn playerEditBtn" data-player="${encoded}">Edit Statistik</button>`:''}</td><td><input class="photoInput" type="file" accept="image/*" data-player="${escapeHtml(p.name)}"></td></tr>`}).join('');document.querySelectorAll('.photoInput').forEach(inp=>inp.onchange=e=>setPlayerPhoto(inp.dataset.player,e.target.files?.[0]));document.querySelectorAll('.playerExportBtn').forEach(b=>b.onclick=()=>exportPlayerPerformance(decodeURIComponent(b.dataset.player)));document.querySelectorAll('.playerEditBtn').forEach(b=>b.onclick=()=>editPerformance(decodeURIComponent(b.dataset.player)));}
 
 function loadCompetitionSettingsForm(){
  const cfg=compSettings();
