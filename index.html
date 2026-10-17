@@ -354,7 +354,7 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
   <section id="history" class="page">
     <div class="panel">
       <div class="panelHead"><h2>Riwayat Pertandingan</h2><div><button class="smallBtn" id="exportCsv">Export Excel</button><button class="smallBtn" id="exportPdf">Export PDF</button></div></div>
-      <div class="superOnlyNote">Riwayat pertandingan untuk viewer dibuat bersih tanpa tombol edit/hapus. Untuk mengelola pertandingan, login sebagai <b>superadmin</b>, lalu buka tab <b>Admin</b>.</div><div id="matchList"></div>
+      <div class="mdToolbar"><label>Tanggal export <input type="date" id="historyExportDate"></label><button type="button" class="smallBtn" id="exportHistoryImage">Export Gambar 1 Lembar (PNG)</button></div><div class="superOnlyNote">Riwayat pertandingan untuk viewer dibuat bersih tanpa tombol edit/hapus. Untuk mengelola pertandingan, login sebagai <b>superadmin</b>, lalu buka tab <b>Admin</b>.</div><div id="matchList"></div>
     </div>
   </section>
 
@@ -433,7 +433,7 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
       <label for="mdDate"><b>Tanggal sesi pertandingan</b></label><input type="date" id="mdDate">
       <div class="mdToolbar"><b id="mdSelectedCount">0 pemain dipilih</b><div><button type="button" class="smallBtn" id="mdSelectAll">Pilih Semua</button><button type="button" class="smallBtn" id="mdClearAll">Kosongkan</button></div></div>
       <input id="mdSearch" placeholder="Cari nama pemain aktif..." aria-label="Cari pemain">
-      <div id="mdPlayerList" class="mdPlayerGrid"></div>
+      <div class="mdToolbar"><label>Tim <select id="mdTeam"><option value="A">Team A</option><option value="B">Team B</option><option value="C">Team C</option></select></label><span id="mdTeamSummary" class="muted"></span></div><div id="mdPlayerList" class="mdPlayerGrid"></div>
       <button type="button" class="smallBtn" id="mdSaveSquad">💾 Simpan Daftar Pemain</button>
       <p class="muted">Pilih hanya pemain yang benar-benar turun bermain. Daftar hadir tidak otomatis berarti 6 kali tampil.</p>
     </div>
@@ -2113,5 +2113,106 @@ window.__stateReady.then(init).catch(init);
 })();
 </script>
 
+
+<script>
+/* FC Sombong: Matchday per team, inherited drafts and compact history PNG. */
+(function(){
+ const $id=id=>document.getElementById(id);
+ const key=n=>String(n||'').trim().toLocaleLowerCase('id');
+ const allSessions=()=>{try{return JSON.parse(localStorage.getItem('matchday_sessions_v1')||'{}')||{}}catch(e){return {}}};
+ const allNames=()=>typeof mdAllPlayers==='function'?mdAllPlayers():[];
+ const dateSession=date=>{
+  const all=allSessions();if(all[date])return all[date];
+  const prev=Object.keys(all).filter(d=>d<date&&(all[d]?.players||[]).length).sort().pop();
+  const prior=prev?all[prev]:{},active=new Set(allNames().map(key)),used=new Set(),teams={A:[],B:[],C:[]};
+  for(const t of ['A','B','C'])for(const n of (prior.teams?.[t]||[])){if(active.has(key(n))&&!used.has(key(n))){teams[t].push(n);used.add(key(n))}}
+  for(const n of (prior.players||[])){if(active.has(key(n))&&!used.has(key(n))){teams.A.push(n);used.add(key(n))}}
+  return {players:Object.values(teams).flat(),teams,motm:'',inheritedFrom:prev||''};
+ };
+ window.mdSession=dateSession;
+ window.renderMatchday=function(){
+  const date=$id('mdDate')?.value;if(!date)return;
+  const s=dateSession(date),admin=isSuperAdmin(),cnt=mdCounts(date),t=$id('mdTeam')?.value||'A',names=allNames();
+  if(window.__mdDraftDate!==date){window.__mdDraftDate=date;window.__mdTeams={A:[...(s.teams?.A||(!s.teams?s.players||[]:[]))],B:[...(s.teams?.B||[])],C:[...(s.teams?.C||[])]}}
+  const teams=window.__mdTeams,used=new Set(Object.values(teams).flat().map(key));
+  const query=key($id('mdSearch')?.value);
+  $id('mdPlayerList').innerHTML=names.filter(n=>!query||key(n).includes(query)).map(n=>{
+   const other=['A','B','C'].find(x=>x!==t&&teams[x].some(p=>key(p)===key(n)));
+   return '<label><input type="checkbox" class="mdCheck" data-name="'+escapeHtml(n)+'" '+(teams[t].some(p=>key(p)===key(n))?'checked':'')+' '+(!admin||other?'disabled':'')+'><span>'+escapeHtml(n)+(other?' (Team '+other+')':'')+'</span></label>';
+  }).join('');
+  $id('mdPlayerList').querySelectorAll('.mdCheck').forEach(el=>el.onchange=()=>{
+   teams[t]=teams[t].filter(n=>key(n)!==key(el.dataset.name));if(el.checked)teams[t].push(el.dataset.name);renderMatchday();
+  });
+  $id('mdSelectedCount').textContent=used.size+' pemain dipilih';
+  $id('mdTeamSummary').textContent=['A','B','C'].map(x=>'Team '+x+': '+teams[x].length).join(' · ');
+  $id('mdStatus').textContent=allSessions()[date]?'Squad tersimpan':(s.inheritedFrom?'Draft dari '+s.inheritedFrom:'Draft baru');
+  $id('mdMatchProgress').textContent=cnt+' dari 6 pertandingan tercatat. '+(cnt===6?'MOTM dapat dipilih.':'MOTM terkunci.');
+  const winner=$id('mdWinner');
+  winner.innerHTML='<option value="">Pilih pemain...</option>'+(s.players||[]).map(n=>'<option value="'+escapeHtml(n)+'" '+(key(n)===key(s.motm)?'selected':'')+'>'+escapeHtml(n)+'</option>').join('');
+  winner.disabled=!admin||cnt!==6||!(s.players||[]).length;
+  $id('mdSaveWinner').disabled=winner.disabled;$id('mdClearWinner').disabled=!admin||!s.motm;
+  ['mdSaveSquad','mdSelectAll','mdClearAll'].forEach(id=>$id(id).disabled=!admin);
+  $id('mdHistory').innerHTML='<h3>Riwayat MOTM</h3>'+(Object.entries(allSessions()).filter(([d,v])=>v.motm).sort((a,b)=>b[0].localeCompare(a[0])).map(([d,v])=>'<div class="mdHistoryRow">🏆 <b>'+escapeHtml(v.motm)+'</b> — '+escapeHtml(d)+'</div>').join('')||'<p class="muted">Belum ada penghargaan.</p>');
+ };
+ window.initMatchday=function(){
+  const el=$id('mdDate');if(!el)return;el.value=new Date().toLocaleDateString('en-CA');
+  el.onchange=()=>{window.__mdDraftDate=null;renderMatchday()};
+  $id('mdTeam').onchange=renderMatchday;$id('mdSearch').oninput=renderMatchday;
+  $id('mdSelectAll').onclick=()=>{const t=$id('mdTeam').value,other=new Set(['A','B','C'].filter(x=>x!==t).flatMap(x=>window.__mdTeams[x]).map(key));window.__mdTeams[t]=allNames().filter(n=>!other.has(key(n)));renderMatchday()};
+  $id('mdClearAll').onclick=()=>{window.__mdTeams[$id('mdTeam').value]=[];renderMatchday()};
+  $id('mdSaveSquad').onclick=()=>{if(!isSuperAdmin())return showToast('Akses ditolak','Hanya Super Admin.','error');const date=el.value,teams=window.__mdTeams,players=Object.values(teams).flat();if(!players.length)return showToast('Pilih pemain','Minimal satu pemain.','error');const old=dateSession(date);if(old.motm&&!players.some(n=>key(n)===key(old.motm)))return showToast('MOTM masih terpilih','Ubah MOTM dahulu.','error');mdPersist(date,{...old,players,teams});showToast('Squad tersimpan','Team A/B/C berhasil disimpan.')};
+  $id('mdSaveWinner').onclick=()=>{if(!isSuperAdmin())return;const date=el.value,s=dateSession(date),winner=$id('mdWinner').value;if(mdCounts(date)!==6)return showToast('Belum 6 pertandingan','MOTM terkunci.','error');if(!winner||!(s.players||[]).some(n=>key(n)===key(winner)))return showToast('Pemain tidak valid','Pilih dari Matchday Squad.','error');mdPersist(date,{...s,motm:winner});showToast('MOTM tersimpan',winner+' menerima +2 kontribusi.')};
+  $id('mdClearWinner').onclick=()=>{if(!isSuperAdmin())return;const date=el.value,s=dateSession(date);if(!confirm('Batalkan MOTM '+date+'?'))return;mdPersist(date,{...s,motm:''});showToast('MOTM dibatalkan','Bonus dihapus.')};
+  renderMatchday();
+ };
+ function goalText(arr){const counts=new Map();for(const n of arr||[]){if(!n)continue;counts.set(n,(counts.get(n)||0)+1)}return [...counts].map(([n,c])=>n+(c>1?' ×'+c:''))}
+ function wrap(ctx,items,x,y,w,align='left',maxLines=4){
+  ctx.textAlign=align;let lines=0;
+  for(const entry of items){let words=String(entry).split(' '),line='';
+   for(const word of words){const next=line?line+' '+word:word;if(ctx.measureText(next).width>w&&line){ctx.fillText(line,x,y+lines*19);lines++;line=word}else line=next}
+   if(line){ctx.fillText(line,x,y+lines*19);lines++}
+   if(lines>=maxLines)break;
+  }
+  return lines;
+ }
+ function fit(ctx,text,maxWidth,size=17){let z=size;do{ctx.font='700 '+z+'px Arial';if(ctx.measureText(text).width<=maxWidth)break;z--}while(z>11);return z}
+ window.exportHistoryImageCompact=function(){
+  const date=$id('historyExportDate')?.value||$id('mdDate')?.value||new Date().toLocaleDateString('en-CA');
+  const matches=load().filter(m=>m.date===date);
+  if(!matches.length)return showToast('Tidak ada pertandingan','Pilih tanggal dengan riwayat pertandingan.','error');
+  const W=1080,H=1350,c=document.createElement('canvas');c.width=W;c.height=H;const ctx=c.getContext('2d');
+  ctx.fillStyle='#101827';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#e9c57a';ctx.font='bold 23px Arial';ctx.fillText('FC SOMBONG LEAGUE',42,47);
+  ctx.fillStyle='#fff';ctx.font='bold 41px Arial';ctx.fillText('MATCHDAY RECAP',42,95);
+  ctx.textAlign='right';ctx.fillStyle='#bcc9da';ctx.font='22px Arial';ctx.fillText(date,1038,65);
+  const motm=allSessions()[date]?.motm||'',top=137,bottom=motm?1195:1275,available=bottom-top;
+  const cardH=Math.min(205,Math.floor((available-12*(matches.length-1))/matches.length));
+  const spacing=12;
+  matches.forEach((m,i)=>{
+   const y=top+i*(cardH+spacing);
+   ctx.fillStyle='#1c2a3e';ctx.beginPath();ctx.roundRect(32,y,1016,cardH,14);ctx.fill();
+   ctx.textBaseline='alphabetic';ctx.fillStyle='#e9c57a';ctx.font='bold 17px Arial';
+   ctx.textAlign='left';ctx.fillText('MATCH '+String(i+1).padStart(2,'0')+' · '+m.home,53,y+30);
+   ctx.textAlign='right';ctx.fillText(m.away,1027,y+30);
+   ctx.fillStyle='#fff';ctx.textAlign='center';ctx.font='bold 32px Arial';ctx.fillText(m.hs+' – '+m.as,540,y+42);
+   ctx.fillStyle='#dce6f2';ctx.font='18px Arial';
+   const left=goalText(m.homeScorers),right=goalText(m.awayScorers);
+   const detailY=y+60;
+   wrap(ctx,left.length?left:['—'],53,detailY,385,'left',Math.max(2,Math.floor((cardH-95)/19)));
+   wrap(ctx,right.length?right:['—'],1027,detailY,385,'right',Math.max(2,Math.floor((cardH-95)/19)));
+   const yellows=(m.cards||[]).filter(x=>/yellow|kuning/i.test(x.type||'')).map(x=>x.player+' ('+x.team+')');
+   const reds=(m.cards||[]).filter(x=>/red|merah/i.test(x.type||'')).map(x=>x.player+' ('+x.team+')');
+   const og=[...(m.homeOwnGoals||[]),...(m.awayOwnGoals||[])].filter(Boolean);
+   const notes=[yellows.length?'KUNING: '+yellows.join(', '):'',reds.length?'MERAH: '+reds.join(', '):'',og.length?'OWN GOAL: '+og.join(', '):''].filter(Boolean).join('  •  ');
+   if(notes){ctx.fillStyle='#f4c96d';fit(ctx,notes,960,16);ctx.textAlign='left';ctx.fillText(notes,53,y+cardH-12)}
+  });
+  if(motm){const y=1220;ctx.fillStyle='#30291e';ctx.beginPath();ctx.roundRect(32,y,1016,79,12);ctx.fill();ctx.textAlign='center';ctx.fillStyle='#f3cc76';ctx.font='bold 23px Arial';ctx.fillText('🏆 MAN OF THE MATCH',540,y+30);ctx.fillStyle='#fff';ctx.font='bold 26px Arial';ctx.fillText(motm,540,y+61)}
+  ctx.textAlign='center';ctx.fillStyle='#9faec3';ctx.font='17px Arial';ctx.fillText('FC SOMBONG • OFFICIAL MATCHDAY RESULTS',540,1331);
+  safeDownloadCanvas(c,'fc-sombong-history-'+date+'.png');
+ };
+ function setup(){const d=$id('historyExportDate');if(d&&!d.value)d.value=new Date().toLocaleDateString('en-CA');const b=$id('exportHistoryImage');if(b)b.onclick=window.exportHistoryImageCompact}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup);else setup();
+})();
+</script>
 </body>
 </html>
