@@ -225,7 +225,7 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 .playerRatingBars{display:flex;gap:3px;align-items:center}
 .playerRatingBars span{height:15px;width:12px;min-width:8px;flex:1;background:#e2e8e4;border-radius:3px}
 .playerRatingBars span.filled{background:var(--rating-color,#21a36b)}
- .mdPlayerGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:9px;margin:14px 0}.mdPlayerGrid label{display:flex;align-items:center;gap:9px;border:1px solid #dce7dd;border-radius:12px;padding:10px;background:#f9fdfa;cursor:pointer}.mdPlayerGrid input{width:auto;margin:0}.mdToolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:16px}.mdHistoryRow{border-bottom:1px solid #e5e7eb;padding:10px 0} 
+ .mdPlayerGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:9px;margin:14px 0}.mdPlayerGrid label{display:flex;align-items:center;gap:9px;border:1px solid #dce7dd;border-radius:12px;padding:10px;background:#f9fdfa;cursor:pointer}.mdPlayerGrid input{width:20px;height:20px;margin:0;accent-color:#159447;flex-shrink:0}.mdPlayerGrid input[type="checkbox"]:checked{accent-color:#159447}.mdPlayerGrid input[type="checkbox"]:disabled{opacity:1;filter:none}.mdPlayerGrid label:has(input[type="checkbox"]:checked){background:#e8f8ed;border-color:#159447}.mdPlayerGrid label:has(input[type="checkbox"]:checked) span{color:#14532d;font-weight:700}.mdToolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:16px}.mdHistoryRow{border-bottom:1px solid #e5e7eb;padding:10px 0} 
 </style>
 </head>
 <body>
@@ -2159,7 +2159,9 @@ window.__stateReady.then(init).catch(init);
  window.mdSession=dateSession;
  window.renderMatchday=function(){
   const date=$id('mdDate')?.value;if(!date)return;
-  const s=dateSession(date),admin=isSuperAdmin(),cnt=mdCounts(date),t=$id('mdTeam')?.value||'A',names=allNames();
+  const s=dateSession(date),admin=isSuperAdmin(),cnt=mdCounts(date),t=$id('mdTeam')?.value||'A';
+  // Include saved squad names even if the roster on this device has not loaded yet.
+  const names=[...new Map([...allNames(),...(s.players||[]),...Object.values(s.teams||{}).flat()].filter(Boolean).map(n=>[key(n),n])).values()].sort((a,b)=>a.localeCompare(b,'id'));
   if(window.__mdDraftDate!==date){window.__mdDraftDate=date;window.__mdTeams={A:[...(s.teams?.A||(!s.teams?s.players||[]:[]))],B:[...(s.teams?.B||[])],C:[...(s.teams?.C||[])]}}
   const teams=window.__mdTeams,used=new Set(Object.values(teams).flat().map(key));
   const query=key($id('mdSearch')?.value);
