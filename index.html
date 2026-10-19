@@ -2159,7 +2159,9 @@ window.__stateReady.then(init).catch(init);
  window.mdSession=dateSession;
  window.renderMatchday=function(){
   const date=$id('mdDate')?.value;if(!date)return;
-  const s=dateSession(date),admin=isSuperAdmin(),cnt=mdCounts(date),t=$id('mdTeam')?.value||'A',names=allNames();
+  const s=dateSession(date),admin=isSuperAdmin(),cnt=mdCounts(date),t=$id('mdTeam')?.value||'A';
+  // Include saved squad names even if the roster on this device has not loaded yet.
+  const names=[...new Map([...allNames(),...(s.players||[]),...Object.values(s.teams||{}).flat()].filter(Boolean).map(n=>[key(n),n])).values()].sort((a,b)=>a.localeCompare(b,'id'));
   if(window.__mdDraftDate!==date){window.__mdDraftDate=date;window.__mdTeams={A:[...(s.teams?.A||(!s.teams?s.players||[]:[]))],B:[...(s.teams?.B||[])],C:[...(s.teams?.C||[])]}}
   const teams=window.__mdTeams,used=new Set(Object.values(teams).flat().map(key));
   const query=key($id('mdSearch')?.value);
