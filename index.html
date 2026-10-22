@@ -325,15 +325,6 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
           </div>
         </div>
 
-        <div class="panel" style="margin:12px 0;padding:12px">
-          <h3>Assist &amp; Gol Bunuh Diri (Own Goal)</h3>
-          <p class="muted">Isi nama pemain yang memberi assist atau melakukan gol bunuh diri. Opsional; pilih tim pemain yang bersangkutan.</p>
-          <div class="mdToolbar"><b>Assist</b><button type="button" class="smallBtn" id="addAssistRow">+ Tambah Assist</button></div>
-          <div id="assistRows"></div>
-          <div class="mdToolbar"><b>Gol Bunuh Diri</b><button type="button" class="smallBtn" id="addOwnGoalRow">+ Tambah Bunuh Diri</button></div>
-          <div id="ownGoalRows"></div>
-        </div>
-
         <div class="penaltyBox">
           <label>Penalty Winner Saat Seri<select id="penaltyWinner"><option value="">Tidak ada / belum pilih</option></select></label>
           <p class="muted">Muncul hanya untuk perhitungan poin saat skor seri.</p>
@@ -1211,8 +1202,8 @@ function playerStats(){
  Object.values(initialGoals()).forEach(g=>{const s=ensure(g.name,'Statistik awal'); if(s){s.initialGoals+=Number(g.goals)||0; s.goals += Number(g.goals)||0;}});
  load().forEach(m=>{
   const playedHome=new Set(), playedAway=new Set();
-  (m.homeScorers||[]).forEach(n=>{const s=ensure(n,m.home); if(s){s.goals++; playedHome.add(keyName(fcCanonicalPlayer(n)))}});
-  (m.awayScorers||[]).forEach(n=>{const s=ensure(n,m.away); if(s){s.goals++; playedAway.add(keyName(fcCanonicalPlayer(n)))}});
+  (m.homeScorers||[]).forEach(n=>{if(keyName(n)==='own goal')return;const s=ensure(n,m.home); if(s){s.goals++; playedHome.add(keyName(fcCanonicalPlayer(n)))}});
+  (m.awayScorers||[]).forEach(n=>{if(keyName(n)==='own goal')return;const s=ensure(n,m.away); if(s){s.goals++; playedAway.add(keyName(fcCanonicalPlayer(n)))}});
   // Own-goal fields are aligned with scoring slots. The player named here
   // is the defender responsible, not the scorer receiving the goal.
   for(const field of ['homeOwnGoals','awayOwnGoals']){
@@ -1238,26 +1229,51 @@ function refreshHistories(){
  $('homePlayerHistory').innerHTML=hp.map(n=>`<option value="${escapeHtml(n)}"></option>`).join('');
  $('awayPlayerHistory').innerHTML=ap.map(n=>`<option value="${escapeHtml(n)}"></option>`).join('');
 }
-function scorerRow(side,value=''){const list=side==='home'?'homePlayerHistory':'awayPlayerHistory';return `<div class="scorerRow"><input class="${side}Scorer scorerInput" list="${list}" placeholder="Nama pencetak goal ${side}" value="${escapeHtml(value)}"><button type="button" class="removeScorer">×</button></div>`}
-function syncSide(side){const score=+$(`${side}Score`).value||0, box=$(`${side}ScorerInputs`); const cls='.'+side+'Scorer'; const vals=[...box.querySelectorAll(cls)].map(i=>i.value).slice(0,score); box.innerHTML=''; for(let i=0;i<score;i++)box.insertAdjacentHTML('beforeend',scorerRow(side,vals[i]||'')); box.querySelectorAll('.removeScorer').forEach(b=>b.onclick=()=>{b.parentElement.querySelector('input').value='';}); const team=$(side+'Team')?.value; const names=[...new Set([...teamPlayers(team),...allPlayers()])].slice(0,12); if(score>0&&names.length){const sug=document.createElement('div'); sug.className='suggestBox'; sug.innerHTML=names.map(n=>`<button type="button" data-name="${escapeHtml(n)}">${escapeHtml(n)}</button>`).join(''); sug.querySelectorAll('button').forEach(btn=>btn.onclick=()=>{const empty=[...box.querySelectorAll(cls)].find(i=>!i.value.trim())||[...box.querySelectorAll(cls)].at(-1); if(empty){empty.value=btn.dataset.name; empty.focus();}}); box.appendChild(sug);} $(`${side}GoalInfo`).textContent=`Skor ${score} = wajib ${score} pencetak goal ${side}.`}
-function syncScorerInputs(){syncSide('home');syncSide('away');updatePenaltyOptions()}
-function addMatchExtraRow(type,entry={}){
- const wrap=$(type==='assist'?'assistRows':'ownGoalRows');if(!wrap)return;
- const row=document.createElement('div');row.className='cardRow matchExtraRow';
- const home=$('homeTeam').value,away=$('awayTeam').value;
- const playerNames=[...new Set([...mdAllPlayers(),...(entry.player?[entry.player]:[])])].sort((a,b)=>a.localeCompare(b,'id'));
- row.innerHTML='<select class="extraPlayer" aria-label="Pilih pemain"><option value="">-- Pilih nama pemain --</option>'+playerNames.map(n=>'<option value="'+escapeHtml(n)+'" '+(keyName(n)===keyName(entry.player||'')?'selected':'')+'>'+escapeHtml(n)+'</option>').join('')+'</select><select class="extraTeam"><option value="home">Home: '+escapeHtml(home)+'</option><option value="away">Away: '+escapeHtml(away)+'</option></select><button type="button" class="removeCard" aria-label="Hapus baris">×</button>';
- row.querySelector('.extraTeam').value=entry.side||'home';
- row.querySelector('.removeCard').onclick=()=>row.remove();wrap.appendChild(row);
+
+function scorerRow(side,detail={}){
+ const own=!!detail.ownGoal,scorer=detail.scorer||'',assist=detail.assist||'';
+ const team=$(side+'Team')?.value,opponent=$(side==='home'?'awayTeam':'homeTeam')?.value;
+ const ownNames=[...new Set([...teamPlayers(opponent),...allPlayers(),...(scorer?[scorer]:[])])].filter(n=>n&&keyName(n)!=='own goal');
+ const assistNames=[...new Set([...teamPlayers(team),...allPlayers(),...(assist?[assist]:[])])].filter(n=>n&&keyName(n)!=='own goal');
+ return '<div class="scorerRow goalDetailRow" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:7px;align-items:end;margin-bottom:12px">'
+ +'<label style="grid-column:1/-1;display:flex;gap:7px;align-items:center;font-size:12px"><input type="checkbox" class="goalIsOwn" '+(own?'checked':'')+'> Gol bunuh diri (Own Goal)</label>'
+ +'<label style="min-width:0;font-size:12px">Pencetak Gol / Pelaku OG<input class="'+side+'Scorer scorerInput" list="'+(own?(side==='home'?'awayPlayerHistory':'homePlayerHistory'):(side==='home'?'homePlayerHistory':'awayPlayerHistory'))+'" placeholder="'+(own?'Pemain tim lawan':'Pencetak gol')+'" value="'+escapeHtml(scorer)+'" style="width:100%;box-sizing:border-box"></label>'
+ +'<label class="goalAssistLabel" style="min-width:0;font-size:12px;'+(own?'display:none':'')+'">Assist<select class="goalAssist" style="width:100%;box-sizing:border-box"><option value="">Tanpa assist</option>'+assistNames.map(n=>'<option value="'+escapeHtml(n)+'" '+(keyName(n)===keyName(assist)?'selected':'')+'>'+escapeHtml(n)+'</option>').join('')+'</select></label>'
+ +'<div class="goalOwnHint" style="grid-column:1/-1;font-size:12px;'+(own?'':'display:none')+'">Pilih nama pemain dari tim lawan yang melakukan gol bunuh diri.</div>'
+ +'</div>';
 }
-function collectMatchExtras(type,side){
- const wrap=$(type==='assist'?'assistRows':'ownGoalRows');
- return [...(wrap?.querySelectorAll('.matchExtraRow')||[])].filter(r=>r.querySelector('.extraTeam').value===side).map(r=>normalizeName(r.querySelector('.extraPlayer').value)).filter(Boolean);
+function goalDetails(side){return [...$((side==='home'?'home':'away')+'ScorerInputs').querySelectorAll('.goalDetailRow')].map(row=>({scorer:normalizeName(row.querySelector('.scorerInput').value),assist:row.querySelector('.goalIsOwn').checked?'':normalizeName(row.querySelector('.goalAssist').value),ownGoal:row.querySelector('.goalIsOwn').checked}));}
+function syncSide(side){
+ const score=+$((side==='home'?'home':'away')+'Score').value||0,box=$(side+'ScorerInputs');
+ const vals=goalDetails(side).slice(0,score);box.innerHTML='';
+ for(let i=0;i<score;i++)box.insertAdjacentHTML('beforeend',scorerRow(side,vals[i]||{}));
+ box.querySelectorAll('.goalIsOwn').forEach(input=>input.onchange=()=>{
+  const row=input.closest('.goalDetailRow'),own=input.checked,player=row.querySelector('.scorerInput');
+  player.value='';player.setAttribute('list',own?(side==='home'?'awayPlayerHistory':'homePlayerHistory'):(side==='home'?'homePlayerHistory':'awayPlayerHistory'));
+  player.placeholder=own?'Pemain tim lawan':'Pencetak gol';
+  row.querySelector('.goalAssistLabel').style.display=own?'none':'';
+  row.querySelector('.goalOwnHint').style.display=own?'':'none';
+ });
+ $((side==='home'?'home':'away')+'GoalInfo').textContent='Skor '+score+' = '+score+' baris gol. Isi assist di samping gol terkait; centang Own Goal untuk memilih pemain lawan.';
+}
+function syncScorerInputs(){syncSide('home');syncSide('away');updatePenaltyOptions()}
+function matchGoalDetailsFromLegacy(m,side){
+ if(Array.isArray(m[side+'GoalDetails'])&&m[side+'GoalDetails'].length)return m[side+'GoalDetails'];
+ const scorers=m[side+'Scorers']||[],assists=m[side+'Assists']||[],ogs=m[side+'OwnGoals']||[];
+ let ai=0,oi=0;
+ return scorers.map(n=>{const own=keyName(n)==='own goal';return {scorer:own?(ogs[oi++]||''):n,assist:own?'':(assists[ai++]||''),ownGoal:own}});
 }
 function fillMatchExtras(m){
- for(const type of ['assist','ownGoal'])$(type==='assist'?'assistRows':'ownGoalRows').innerHTML='';
- for(const [type,field] of [['assist','Assists'],['ownGoal','OwnGoals']]){
-  for(const side of ['home','away'])for(const player of (m[side+field]||[]))addMatchExtraRow(type,{player,side});
+ for(const side of ['home','away']){
+  const rows=$((side==='home'?'home':'away')+'ScorerInputs'),details=matchGoalDetailsFromLegacy(m,side);
+  rows.innerHTML='';for(const d of details)rows.insertAdjacentHTML('beforeend',scorerRow(side,d));
+  rows.querySelectorAll('.goalIsOwn').forEach(input=>input.onchange=()=>{
+   const row=input.closest('.goalDetailRow'),own=input.checked,player=row.querySelector('.scorerInput');
+   player.value='';player.setAttribute('list',own?(side==='home'?'awayPlayerHistory':'homePlayerHistory'):(side==='home'?'homePlayerHistory':'awayPlayerHistory'));
+   player.placeholder=own?'Pemain tim lawan':'Pencetak gol';
+   row.querySelector('.goalAssistLabel').style.display=own?'none':'';
+   row.querySelector('.goalOwnHint').style.display=own?'':'none';
+  });
  }
 }
 function collectSide(side){return [...document.querySelectorAll('.'+side+'Scorer')].map(i=>normalizeName(i.value)).filter(Boolean)}
@@ -1281,7 +1297,7 @@ function syncRostersFromMatches(){
  const rosters=loadRosters();
  teams().forEach(t=>rosters[t]=rosters[t]||[]);
  const add=(team,name)=>{name=normalizeName(name); if(!team||!name||fcIsRetired(name))return; name=fcCanonicalPlayer(name); rosters[team]=rosters[team]||[]; if(!rosters[team].some(x=>keyName(x)===keyName(name)))rosters[team].push(name)};
- load().forEach(m=>{(m.homeScorers||[]).forEach(n=>add(m.home,n));(m.awayScorers||[]).forEach(n=>add(m.away,n));(m.cards||[]).forEach(c=>add(c.team,c.player));});
+ load().forEach(m=>{(m.homeScorers||[]).filter(n=>keyName(n)!=='own goal').forEach(n=>add(m.home,n));(m.awayScorers||[]).filter(n=>keyName(n)!=='own goal').forEach(n=>add(m.away,n));(m.cards||[]).forEach(c=>add(c.team,c.player));});
  saveRosters(rosters);
 }
 
@@ -2080,8 +2096,8 @@ function copyAiOutput(){const el=$('aiOutput'); if(!el||!el.value)return showToa
 
 function exportCsv(){const rows=[['Tanggal','Home','Away','Skor Home','Skor Away','Scorer Home','Scorer Away','Penalty Winner','Cards']]; load().forEach(m=>rows.push([m.date,m.home,m.away,m.hs,m.as,(m.homeScorers||[]).join('; '),(m.awayScorers||[]).join('; '),m.penaltyWinner||'',(m.cards||[]).map(c=>`${c.player}-${c.team}-${c.type}`).join('; ')])); const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n'); const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='riwayat_pertandingan.csv'; a.click(); URL.revokeObjectURL(a.href)}
 function init(){if(localStorage.getItem('retired_players_v1')===null)localStorage.setItem('retired_players_v1',JSON.stringify(FC_RETIRED_DEFAULT));fcApplyRosterCleanup();document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active')); b.classList.add('active'); document.querySelectorAll('.page').forEach(p=>p.classList.remove('show')); $(b.dataset.page).classList.add('show');if(b.dataset.page==='matchday'){renderMatchday();if(window.refreshMatchdayFromServer)window.refreshMatchdayFromServer().catch(e=>showToast('Sinkronisasi gagal',e.message,'error'));}}); $('matchDate').value=new Date().toISOString().slice(0,10); if($('weekDate'))$('weekDate').value=new Date().toISOString().slice(0,10); fillSelects(); updateAccessUI(); if($('loginBtn'))$('loginBtn').onclick=loginAccessUser; if($('logoutBtn'))$('logoutBtn').onclick=()=>{clearCurrentAccessUser(); updateAccessUI(); const active=document.querySelector('.page.show'); if(active?.id==='admin'){document.querySelector('.tabs button[data-page="dashboard"]')?.click();} showToast('Logout berhasil','Input match dikunci kembali.')}; if($('generateAccessUser'))$('generateAccessUser').onclick=createAccessUser; document.querySelectorAll('.scoreBtn').forEach(btn=>btn.onclick=()=>{const input=$(btn.dataset.score); const next=Math.max(0,(+input.value||0)+(+btn.dataset.delta||0)); input.value=next; input.dispatchEvent(new Event('input',{bubbles:true}));}); if($('showYearStandings'))$('showYearStandings').onclick=()=>{standingsMode='year';$('showYearStandings').classList.add('activeMode');$('showWeekStandings')?.classList.remove('activeMode');$('showMonthStandings')?.classList.remove('activeMode');render()}; if($('showMonthStandings'))$('showMonthStandings').onclick=()=>{standingsMode='month';$('showMonthStandings').classList.add('activeMode');$('showWeekStandings')?.classList.remove('activeMode');$('showYearStandings')?.classList.remove('activeMode');render()}; if($('showWeekStandings'))$('showWeekStandings').onclick=()=>{standingsMode='week';$('showWeekStandings').classList.add('activeMode');$('showMonthStandings')?.classList.remove('activeMode');$('showYearStandings')?.classList.remove('activeMode');render()}; if($('weekDate'))$('weekDate').onchange=()=>{if(standingsMode==='year')standingsMode='week';$('showWeekStandings')?.classList.toggle('activeMode',standingsMode==='week');$('showMonthStandings')?.classList.toggle('activeMode',standingsMode==='month');$('showYearStandings')?.classList.remove('activeMode');render()}; if($('exportStandingsImage'))$('exportStandingsImage').onclick=exportStandingsImage; if($('copyStandingsWA'))$('copyStandingsWA').onclick=copyStandingsWA; ['homeScore','awayScore','homeTeam','awayTeam'].forEach(id=>$(id).addEventListener('input',()=>{refreshHistories();syncScorerInputs()})); $('enableCards').onchange=e=>{$('cardsBlock').classList.toggle('hidden',!e.target.checked); if(e.target.checked&&!document.querySelector('.cardRow'))addCardRow()}; $('addCard').onclick=()=>addCardRow(); $('playerSearch').oninput=renderPlayers; initMatchday(); if($('savePlayers'))$('savePlayers').onclick=()=>{saveRosters(collectRosters()); refreshHistories(); renderPlayers(); showToast('Daftar pemain tersimpan','Autocomplete scorer dan kartu sudah diperbarui.');}; if($('cancelEditMatch'))$('cancelEditMatch').onclick=()=>{resetMatchEditMode(); $('matchForm').reset(); fillSelects();}; if($('chooseClubLogoBtn'))$('chooseClubLogoBtn').onclick=()=>$('clubLogoFile')?.click(); if($('clubLogoFile'))$('clubLogoFile').onchange=previewSelectedClubLogo; if($('saveClubLogo'))$('saveClubLogo').onclick=saveClubLogoFromForm; if($('clearClubLogo'))$('clearClubLogo').onclick=clearClubLogo; if($('addFinance'))$('addFinance').onclick=addFinance; if($('financeDate'))$('financeDate').value=new Date().toISOString().slice(0,10); if($('moreExportStandings'))$('moreExportStandings').onclick=exportStandingsImage; if($('moreCopyStandings'))$('moreCopyStandings').onclick=copyStandingsWA; if($('moreCopyTopScorer'))$('moreCopyTopScorer').onclick=copyTopScorerWA; if($('downloadBackupData'))$('downloadBackupData').onclick=downloadBackupData; if($('restoreBackupData'))$('restoreBackupData').onclick=restoreBackupData; $('exportCsv').onclick=exportCsv; $('exportPdf').onclick=()=>window.print(); bindExportButtonsForce();
- $('addAssistRow').onclick=()=>addMatchExtraRow('assist'); $('addOwnGoalRow').onclick=()=>addMatchExtraRow('ownGoal'); addMatchExtraRow('assist'); addMatchExtraRow('ownGoal');
- $('matchForm').onsubmit=e=>{e.preventDefault(); if(!canInputMatch())return showToast('Akses ditolak','Login terlebih dahulu untuk input hasil pertandingan.','error'); const m={date:$('matchDate').value,home:$('homeTeam').value,away:$('awayTeam').value,hs:+$('homeScore').value,as:+$('awayScore').value,homeScorers:collectSide('home'),awayScorers:collectSide('away'),homeAssists:collectMatchExtras('assist','home'),awayAssists:collectMatchExtras('assist','away'),homeOwnGoals:collectMatchExtras('ownGoal','home'),awayOwnGoals:collectMatchExtras('ownGoal','away'),penaltyWinner:$('penaltyWinner').value,cards:$('enableCards').checked?collectCards():[]}; if(m.home===m.away)return showToast('Input belum valid','Home dan Away tidak boleh club yang sama.','error'); if(m.homeScorers.length!==m.hs)return showToast('Pencetak goal Home belum sesuai',`Skor home ${m.hs}, maka wajib ${m.hs} nama. Terisi ${m.homeScorers.length}.`,'error'); if(m.awayScorers.length!==m.as)return showToast('Pencetak goal Away belum sesuai',`Skor away ${m.as}, maka wajib ${m.as} nama. Terisi ${m.awayScorers.length}.`,'error'); if(compSettings().drawRule==='penalty' && m.hs===m.as && !m.penaltyWinner)return showToast('Penalty winner wajib dipilih','Karena skor seri, pilih pemenang penalty untuk poin 2/1.','error'); if(compSettings().drawRule!=='penalty')m.penaltyWinner=''; const data=load(); const editIdx=editingMatchIndex!==null?editingMatchIndex:($('editMatchIndex')?.value!==''?+$('editMatchIndex').value:null); if(editIdx!==null && isSuperAdmin() && data[editIdx]){data[editIdx]=m; save(data); showToast('Match diperbarui',`${m.home} ${m.hs} - ${m.as} ${m.away}`);} else {save([...data,m]); showToast('Match berhasil disimpan',`${m.home} ${m.hs} - ${m.as} ${m.away}`);} syncRostersFromMatches(); e.target.reset(); resetMatchEditMode(); $('matchDate').value=new Date().toISOString().slice(0,10); $('awayTeam').selectedIndex=1; $('cardRows').innerHTML=''; $('assistRows').innerHTML=''; $('ownGoalRows').innerHTML=''; addMatchExtraRow('assist'); addMatchExtraRow('ownGoal'); $('cardsBlock').classList.add('hidden'); fillSelects(); render();};
+
+ $('matchForm').onsubmit=e=>{e.preventDefault(); if(!canInputMatch())return showToast('Akses ditolak','Login terlebih dahulu untuk input hasil pertandingan.','error'); const m={date:$('matchDate').value,home:$('homeTeam').value,away:$('awayTeam').value,hs:+$('homeScore').value,as:+$('awayScore').value,homeGoalDetails:goalDetails('home'),awayGoalDetails:goalDetails('away'),homeScorers:goalDetails('home').map(g=>g.ownGoal?'OWN GOAL':g.scorer),awayScorers:goalDetails('away').map(g=>g.ownGoal?'OWN GOAL':g.scorer),homeAssists:goalDetails('home').filter(g=>!g.ownGoal&&g.assist).map(g=>g.assist),awayAssists:goalDetails('away').filter(g=>!g.ownGoal&&g.assist).map(g=>g.assist),homeOwnGoals:goalDetails('home').filter(g=>g.ownGoal).map(g=>g.scorer),awayOwnGoals:goalDetails('away').filter(g=>g.ownGoal).map(g=>g.scorer),penaltyWinner:$('penaltyWinner').value,cards:$('enableCards').checked?collectCards():[]}; if(m.home===m.away)return showToast('Input belum valid','Home dan Away tidak boleh club yang sama.','error'); if(m.homeGoalDetails.some(g=>!g.scorer))return showToast('Pencetak gol Home belum lengkap','Isi nama pemain pada setiap gol.','error'); if(m.awayGoalDetails.some(g=>!g.scorer))return showToast('Pencetak gol Away belum lengkap','Isi nama pemain pada setiap gol.','error'); if(m.homeScorers.length!==m.hs)return showToast('Pencetak goal Home belum sesuai',`Skor home ${m.hs}, maka wajib ${m.hs} nama. Terisi ${m.homeScorers.length}.`,'error'); if(m.awayScorers.length!==m.as)return showToast('Pencetak goal Away belum sesuai',`Skor away ${m.as}, maka wajib ${m.as} nama. Terisi ${m.awayScorers.length}.`,'error'); if(compSettings().drawRule==='penalty' && m.hs===m.as && !m.penaltyWinner)return showToast('Penalty winner wajib dipilih','Karena skor seri, pilih pemenang penalty untuk poin 2/1.','error'); if(compSettings().drawRule!=='penalty')m.penaltyWinner=''; const data=load(); const editIdx=editingMatchIndex!==null?editingMatchIndex:($('editMatchIndex')?.value!==''?+$('editMatchIndex').value:null); if(editIdx!==null && isSuperAdmin() && data[editIdx]){data[editIdx]=m; save(data); showToast('Match diperbarui',`${m.home} ${m.hs} - ${m.as} ${m.away}`);} else {save([...data,m]); showToast('Match berhasil disimpan',`${m.home} ${m.hs} - ${m.as} ${m.away}`);} syncRostersFromMatches(); e.target.reset(); resetMatchEditMode(); $('matchDate').value=new Date().toISOString().slice(0,10); $('awayTeam').selectedIndex=1; $('cardRows').innerHTML=''; $('cardsBlock').classList.add('hidden'); fillSelects(); render();};
  $('saveSettings').onclick=()=>{const arr=$('teamSettings').value.split('\n').map(x=>x.trim()).filter(Boolean); if(arr.length<2)return showToast('Setting belum valid','Minimal input 2 club.','error'); const cfg=collectCompetitionSettings(); if(arr.length!==cfg.teamCount)return showToast('Jumlah team belum sesuai',`Setting jumlah team adalah ${cfg.teamCount}, tetapi daftar club berisi ${arr.length}.`,'error'); const oldRosters=loadRosters(); const unique=[...new Set(arr)]; const nextRosters={}; unique.forEach(t=>nextRosters[t]=oldRosters[t]||[]); saveTeams(unique); saveRosters(nextRosters); saveCompSettings(cfg); fillSelects(); render(); showToast('Setting kompetisi tersimpan','Format liga/piala, jumlah team, home-away, dan aturan seri sudah diperbarui.')}; if($('hardResetAll'))$('hardResetAll').onclick=hardResetAllData; if($('importInitialGoals'))$('importInitialGoals').onclick=importInitialGoals; if($('clearInitialGoals'))$('clearInitialGoals').onclick=clearInitialGoals; if($('drawRule'))$('drawRule').onchange=updatePenaltyOptions; $('resetData').onclick=()=>{localStorage.removeItem('matches_v2');render();fillSelects()}; render();}
 window.__stateReady.then(init).catch(init);
 
