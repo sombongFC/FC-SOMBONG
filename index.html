@@ -1171,23 +1171,94 @@ function allPlayers(){
  return Object.values(map).sort((a,b)=>a.localeCompare(b));
 }
 function teamPlayers(team){return rosterPlayers(team).sort((a,b)=>a.localeCompare(b))}
+// FC SOMBONG: klasemen poin sama mengikuti urutan head-to-head FIFA 2026.
+// Poin penalti 2/1 tetap menjadi aturan khusus kompetisi FC SOMBONG.
+function fcFairPlayPenalty(team,matches){
+ let points=0,hasCards=false;
+ for(const m of matches)for(const c of (m.cards||[])){
+  if(c.team!==team)continue;
+  hasCards=true;
+  const type=String(c.type||'').toLowerCase();
+  points+=type==='red'?4:1; // pendekatan disiplin lokal; hanya dipakai bila data kartu tersedia
+ }
+ return {points,hasCards};
+}
+function fcMiniTable(group,matches){
+ const names=new Set(group.map(t=>t.team));
+ const mini=Object.fromEntries(group.map(t=>[t.team,{pts:0,gf:0,ga:0,gd:0}]));
+ for(const m of matches){
+  if(!names.has(m.home)||!names.has(m.away))continue;
+  const h=mini[m.home],a=mini[m.away],pts=matchPoints(m);
+  h.pts+=pts[m.home]||0;a.pts+=pts[m.away]||0;
+  h.gf+=Number(m.hs)||0;h.ga+=Number(m.as)||0;
+  a.gf+=Number(m.as)||0;a.ga+=Number(m.hs)||0;
+ }
+ Object.values(mini).forEach(t=>t.gd=t.gf-t.ga);
+ return mini;
+}
+function fcSplitRank(group,metrics,keys,descending=true){
+ const sorted=group.slice().sort((a,b)=>{
+  for(const key of keys){
+   const diff=descending?metrics[b.team][key]-metrics[a.team][key]:metrics[a.team][key]-metrics[b.team][key];
+   if(diff)return diff;
+  }
+  return a.team.localeCompare(b.team);
+ });
+ const parts=[];
+ for(const t of sorted){
+  const previous=parts.at(-1);
+  if(previous&&keys.every(k=>metrics[previous[0].team][k]===metrics[t.team][k]))previous.push(t);
+  else parts.push([t]);
+ }
+ return parts;
+}
+function fcResolveTiedTeams(group,matches,round=0){
+ if(group.length<2)return group;
+ const mini=fcMiniTable(group,matches);
+ const groups=fcSplitRank(group,mini,['pts','gd','gf']);
+ if(groups.length>1){
+  // FIFA: kelompok yang masih imbang dihitung ulang secara head-to-head.
+  return groups.flatMap(g=>g.length===group.length?g:fcResolveTiedTeams(g,matches,round+1));
+ }
+ const overall=Object.fromEntries(group.map(t=>[t.team,t]));
+ const overallGroups=fcSplitRank(group,overall,['gd','gf']);
+ return overallGroups.flatMap(g=>{
+  if(g.length<2)return g;
+  const fair=Object.fromEntries(g.map(t=>[t.team,fcFairPlayPenalty(t.team,matches)]));
+  // Bila tidak ada data kartu untuk semua tim, jangan mengarang skor fair play.
+  if(g.every(t=>fair[t.team].hasCards)){
+   return fcSplitRank(g,fair,['points'],false).flatMap(x=>x.sort((a,b)=>a.team.localeCompare(b.team)));
+  }
+  return g.sort((a,b)=>a.team.localeCompare(b.team));
+ });
+}
 function standings(matches){
- const allowedTeams=activeTeams();
- const allowed=new Set(allowedTeams);
+ const allowedTeams=activeTeams(),allowed=new Set(allowedTeams);
  matches=matches.filter(m=>allowed.has(m.home)&&allowed.has(m.away));
  const table=Object.fromEntries(allowedTeams.map(t=>[t,{team:t,p:0,w:0,d:0,l:0,gf:0,ga:0,gd:0,pts:0,penW:0,penL:0}]));
- matches.forEach(m=>{if(!table[m.home])table[m.home]={team:m.home,p:0,w:0,d:0,l:0,gf:0,ga:0,gd:0,pts:0,penW:0,penL:0}; if(!table[m.away])table[m.away]={team:m.away,p:0,w:0,d:0,l:0,gf:0,ga:0,gd:0,pts:0,penW:0,penL:0};
-  let h=table[m.home],a=table[m.away]; h.p++; a.p++; h.gf+=m.hs; h.ga+=m.as; a.gf+=m.as; a.ga+=m.hs;
-  if(m.hs>m.as){h.w++;a.l++;h.pts+=3}else if(m.hs<m.as){a.w++;h.l++;a.pts+=3}else{h.d++;a.d++; const cfg=compSettings(); if(cfg.drawRule==='penalty'&&m.penaltyWinner===m.home){h.pts+=2;a.pts+=1;h.penW++;a.penL++}else if(cfg.drawRule==='penalty'&&m.penaltyWinner===m.away){a.pts+=2;h.pts+=1;a.penW++;h.penL++}else{h.pts++;a.pts++}}
+ const cfg=compSettings();
+ matches.forEach(m=>{
+  const h=table[m.home],a=table[m.away];h.p++;a.p++;
+  h.gf+=Number(m.hs)||0;h.ga+=Number(m.as)||0;
+  a.gf+=Number(m.as)||0;a.ga+=Number(m.hs)||0;
+  if(m.hs>m.as){h.w++;a.l++;h.pts+=3}
+  else if(m.hs<m.as){a.w++;h.l++;a.pts+=3}
+  else{
+   h.d++;a.d++;
+   if(cfg.drawRule==='penalty'&&m.penaltyWinner===m.home){h.pts+=2;a.pts++;h.penW++;a.penL++}
+   else if(cfg.drawRule==='penalty'&&m.penaltyWinner===m.away){a.pts+=2;h.pts++;a.penW++;h.penL++}
+   else{h.pts++;a.pts++}
+  }
  });
- Object.values(table).forEach(r=>r.gd=r.gf-r.ga);
- return Object.values(table).sort((a,b)=>
-  (b.pts-a.pts) ||
-  h2hCompare(a,b,matches) ||
-  (b.gd-a.gd) ||
-  (b.gf-a.gf) ||
-  a.team.localeCompare(b.team)
- );
+ const ranked=Object.values(table);
+ ranked.forEach(t=>t.gd=t.gf-t.ga);
+ ranked.sort((a,b)=>b.pts-a.pts||a.team.localeCompare(b.team));
+ const groups=[];
+ for(const t of ranked){
+  const prev=groups.at(-1);
+  if(prev&&prev[0].pts===t.pts)prev.push(t);else groups.push([t]);
+ }
+ return groups.flatMap(g=>fcResolveTiedTeams(g,matches));
 }
 function weeklyHallOfFame(matches){
  const groups={};
