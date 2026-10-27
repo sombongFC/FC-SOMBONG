@@ -227,6 +227,15 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 .playerRatingBars span.filled{background:var(--rating-color,#21a36b)}
  .mdPlayerGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:9px;margin:14px 0}.mdPlayerGrid label{display:flex;align-items:center;gap:9px;border:1px solid #dce7dd;border-radius:12px;padding:10px;background:#f9fdfa;cursor:pointer}.mdPlayerGrid input{width:20px;height:20px;margin:0;accent-color:#159447;flex-shrink:0}.mdPlayerGrid input[type="checkbox"]:checked{accent-color:#159447}.mdPlayerGrid input[type="checkbox"]:disabled{opacity:1;filter:none}.mdPlayerGrid label:has(input[type="checkbox"]:checked){background:#e8f8ed;border-color:#159447}.mdPlayerGrid label:has(input[type="checkbox"]:checked) span{color:#14532d;font-weight:700}.mdToolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:16px}.mdHistoryRow{border-bottom:1px solid #e5e7eb;padding:10px 0} 
 </style>
+<style>
+/* Pencetak gol di bawah tim masing-masing; informasi pertandingan di tengah */
+.fcMatchDetailGrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(130px,.8fr) minmax(0,1fr);gap:14px;align-items:start;margin-top:9px;font-size:13px;line-height:1.55}
+.fcMatchHomeDetails{text-align:left;min-width:0}
+.fcMatchAwayDetails{text-align:right;min-width:0}
+.fcMatchCenterDetails{text-align:center;color:#64748b;font-size:12px;min-width:0}
+.fcMatchScorers{overflow-wrap:anywhere}
+@media(max-width:600px){.fcMatchDetailGrid{grid-template-columns:minmax(0,1fr) minmax(80px,.65fr) minmax(0,1fr);gap:7px;font-size:12px}.fcMatchCenterDetails{font-size:11px}}
+</style>
 </head>
 <body>
 <header class="hero">
@@ -1386,15 +1395,39 @@ function fmtShortDate(dateStr){
  if(Number.isNaN(d.getTime())) return escapeHtml(dateStr||'-');
  return d.toLocaleDateString('id-ID',{day:'2-digit',month:'short'}).replace('.', '');
 }
-function renderMatches(matches, showActions=false){const all=load(); const reversed=matches.slice().reverse(); return reversed.map((m,revIdx)=>{let idx=-1; if(showActions && matches.length===all.length){idx=all.length-1-revIdx;} else if(showActions){idx=all.findIndex(x=>x.date===m.date&&x.home===m.home&&x.away===m.away&&+x.hs===+m.hs&&+x.as===+m.as&&JSON.stringify(x.homeScorers||[])===JSON.stringify(m.homeScorers||[])&&JSON.stringify(x.awayScorers||[])===JSON.stringify(m.awayScorers||[]));} const cards=(m.cards||[]).map(c=>`${escapeHtml(c.player)} (${c.type==='red'?'M':'K'})`).join(', ')||'-'; const meta=`${fmtShortDate(m.date)} • H: ${(m.homeScorers||[]).map(escapeHtml).join(', ')||'-'} • A: ${(m.awayScorers||[]).map(escapeHtml).join(', ')||'-'}${m.penaltyWinner?` • Pen: ${escapeHtml(m.penaltyWinner)}`:''} • Kartu: ${cards}`; const actions=showActions&&idx>-1?`<div class="adminActions"><button type="button" onclick="editMatch(${idx})">✏️ Edit</button><button type="button" class="dangerMini" onclick="deleteMatch(${idx})">🗑 Hapus</button></div>`:''; return `<div class="match compactMatch"><div class="matchMain"><div class="matchLine"><span class="teamName">${escapeHtml(m.home)}</span><span class="scoreInline">${m.hs} - ${m.as}</span><span class="teamName">${escapeHtml(m.away)}</span></div><div class="matchMeta">${meta}</div>${actions}</div></div>`}).join('')||'<p class="muted">Belum ada match.</p>'}
+function fcMatchScorerNames(m,side){
+ const details=m[side+'GoalDetails'];
+ if(Array.isArray(details)&&details.length){
+  return details.map(d=>d.ownGoal?'<span style="color:#b91c1c">🔴 OG: '+escapeHtml(d.scorer||'Pemain lawan')+'</span>':escapeHtml(d.scorer||'-')).join(', ')||'-';
+ }
+ const scorers=m[side+'Scorers']||[],own=m[side+'OwnGoals']||[];let oi=0;
+ return scorers.map(n=>keyName(n)==='own goal'?'<span style="color:#b91c1c">🔴 OG: '+escapeHtml(own[oi++]||'Pemain lawan')+'</span>':escapeHtml(n)).join(', ')||'-';
+}
+function fcMatchDetailColumns(m){
+ const home=fcMatchScorerNames(m,'home'),away=fcMatchScorerNames(m,'away');
+ const cards=(m.cards||[]).map(c=>escapeHtml(c.player)+' ('+(c.type==='red'?'M':'K')+')').join(', ');
+ return '<div class="fcMatchDetailGrid">'+
+  '<div class="fcMatchHomeDetails"><div class="fcMatchScorers">'+home+'</div></div>'+
+  '<div class="fcMatchCenterDetails">'+escapeHtml(fmtShortDate(m.date))+(m.penaltyWinner?'<div>Pen: '+escapeHtml(m.penaltyWinner)+'</div>':'')+(cards?'<div>Kartu: '+cards+'</div>':'')+'</div>'+
+  '<div class="fcMatchAwayDetails"><div class="fcMatchScorers">'+away+'</div></div>'+
+  '</div>';
+}
+function renderMatches(matches,showActions=false){
+ const all=load(),reversed=matches.slice().reverse();
+ return reversed.map((m,revIdx)=>{
+  let idx=-1;
+  if(showActions&&matches.length===all.length)idx=all.length-1-revIdx;
+  else if(showActions)idx=all.findIndex(x=>x.date===m.date&&x.home===m.home&&x.away===m.away&&+x.hs===+m.hs&&+x.as===+m.as&&JSON.stringify(x.homeScorers||[])===JSON.stringify(m.homeScorers||[])&&JSON.stringify(x.awayScorers||[])===JSON.stringify(m.awayScorers||[]));
+  const actions=showActions&&idx>-1?'<div class="adminActions"><button type="button" onclick="editMatch('+idx+')">✏️ Edit</button><button type="button" class="dangerMini" onclick="deleteMatch('+idx+')">🗑 Hapus</button></div>':'';
+  return '<div class="match compactMatch"><div class="matchMain"><div class="matchLine"><span class="teamName">'+escapeHtml(m.home)+'</span><span class="scoreInline">'+m.hs+' - '+m.as+'</span><span class="teamName">'+escapeHtml(m.away)+'</span></div>'+fcMatchDetailColumns(m)+actions+'</div></div>';
+ }).join('')||'<p class="muted">Belum ada match.</p>';
+}
 function renderAdminMatches(matches){
- if(!isSuperAdmin()) return '<div class="adminLocked">Login sebagai <b>superadmin</b> untuk melihat tombol edit dan hapus pertandingan.</div>';
+ if(!isSuperAdmin())return '<div class="adminLocked">Login sebagai <b>superadmin</b> untuk melihat tombol edit dan hapus pertandingan.</div>';
  const all=load();
  return matches.slice().reverse().map((m,revIdx)=>{
   const idx=all.length-1-revIdx;
-  const cards=(m.cards||[]).map(c=>`${escapeHtml(c.player)} (${c.type==='red'?'M':'K'})`).join(', ')||'-';
-  const meta=`${fmtShortDate(m.date)} • H: ${(m.homeScorers||[]).map(escapeHtml).join(', ')||'-'} • A: ${(m.awayScorers||[]).map(escapeHtml).join(', ')||'-'}${m.penaltyWinner?` • Pen: ${escapeHtml(m.penaltyWinner)}`:''} • Kartu: ${cards}`;
-  return `<div class="adminMatchCard"><div class="adminMatchTop"><span>${escapeHtml(m.home)}</span><span class="scoreInline">${m.hs} - ${m.as}</span><span class="away">${escapeHtml(m.away)}</span></div><div class="adminMatchMeta">${meta}</div><div class="adminActions"><button type="button" class="editBtn" onclick="editMatch(${idx})">✏️ Edit Pertandingan</button><button type="button" class="deleteBtn" onclick="deleteMatch(${idx})">🗑 Hapus Pertandingan</button></div></div>`;
+  return '<div class="adminMatchCard"><div class="adminMatchTop"><span>'+escapeHtml(m.home)+'</span><span class="scoreInline">'+m.hs+' - '+m.as+'</span><span class="away">'+escapeHtml(m.away)+'</span></div>'+fcMatchDetailColumns(m)+'<div class="adminActions"><button type="button" class="editBtn" onclick="editMatch('+idx+')">✏️ Edit Pertandingan</button><button type="button" class="deleteBtn" onclick="deleteMatch('+idx+')">🗑 Hapus Pertandingan</button></div></div>';
  }).join('')||'<p class="muted">Belum ada match.</p>';
 }
 function resetMatchEditMode(){editingMatchIndex=null; if($('editMatchIndex'))$('editMatchIndex').value=''; if($('editNotice'))$('editNotice').classList.add('hidden'); if($('cancelEditMatch'))$('cancelEditMatch').classList.add('hidden'); if($('saveMatchBtn'))$('saveMatchBtn').textContent='Save Match';}
