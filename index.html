@@ -459,6 +459,15 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
         <button type="button" class="secondary" id="copyTopScorerWA">Copy Teks WA</button>
       </div>
       <div id="scorerList"></div>
+      <div class="panel" style="margin-top:20px">
+        <h2>🎯 TOP ASSIST — 10 PEMAIN</h2>
+        <p class="muted">10 pemain aktif dengan assist terbanyak. Jumlah assist sama berbagi peringkat.</p>
+        <div class="topScorerTools">
+          <button type="button" id="exportTopAssistImage">Export Gambar Top Assist</button>
+          <button type="button" class="secondary" id="copyTopAssistWA">Copy Teks WA</button>
+        </div>
+        <div id="assistList"></div>
+      </div>
     </div>
   </section>
 
@@ -1459,7 +1468,7 @@ function render(){applyLeagueTitle(); const matches=load(), st=standings(matches
  renderStandingsTable(matches);
  renderTeamPlayerColumns();
  renderSponsor(); renderClubLogo(); renderBanner(); renderFinance();
- renderPlayers(); renderMatchday(); renderInitialGoalsForm(); renderAccessUsers(); updateAccessUI && false; $('scorerList').innerHTML=renderTopScorers(ps); bindTopScorerUploads(); bindTopScorerExport(); refreshHistories();}
+ renderPlayers(); renderMatchday(); renderInitialGoalsForm(); renderAccessUsers(); updateAccessUI && false; $('scorerList').innerHTML=renderTopScorers(ps); if($('assistList'))$('assistList').innerHTML=renderTopAssists(); bindTopScorerUploads(); bindTopScorerExport(); refreshHistories();}
 
 function renderStandingsTable(matches){
  const weekDate=$('weekDate')?.value || new Date().toISOString().slice(0,10);
@@ -1543,6 +1552,58 @@ function rankedTopScorerGroups(){
   }
  });
  return groups;
+}
+function rankedTopAssistPlayers(){
+ const players=playerStats().filter(p=>fcActiveName(p.name)).map(p=>({...p,assistTotal:performanceFor(p).assists}))
+  .filter(p=>p.assistTotal>0).sort((a,b)=>b.assistTotal-a.assistTotal||a.name.localeCompare(b.name,'id')).slice(0,10);
+ let rank=0,prev=null;
+ return players.map((p,i)=>{if(p.assistTotal!==prev){rank=i+1;prev=p.assistTotal;}return {...p,rank};});
+}
+function renderTopAssists(){
+ const list=rankedTopAssistPlayers();
+ if(!list.length)return '<p class="muted">Belum ada data assist.</p>';
+ const photos=playerPhotos();
+ return '<div class="topOtherList">'+list.map(p=>{
+  const src=fcPlayerPhoto(photos,p.name);
+  return '<div class="topOtherRow" style="display:flex;align-items:center;gap:12px"><span class="topOtherRank">#'+p.rank+'</span>'+
+   (src?'<img class="rankPhoto" style="width:44px;height:44px;object-fit:cover;border-radius:50%" src="'+escapeHtml(src)+'" alt="">':'')+
+   '<span class="topOtherNames" style="flex:1">'+escapeHtml(p.name)+'</span><span class="badge">'+p.assistTotal+' assist</span></div>';
+ }).join('')+'</div>';
+}
+function topAssistShareText(){
+ const list=rankedTopAssistPlayers();
+ return ['🎯 TOP 10 ASSIST FC SOMBONG','UPDATE '+topScorerUpdateDateLabel(),'',...(list.length?list.map(p=>p.rank+'. '+p.name+' — '+p.assistTotal+' assist'):['Belum ada data assist.']),'','Hanya pemain aktif.',location.origin||'https://fc-sombong.onrender.com'].join('\\n');
+}
+async function copyTopAssistWA(){
+ const value=topAssistShareText();
+ try{await navigator.clipboard.writeText(value);showToast('Teks disalin','Top Assist siap dibagikan ke WhatsApp.')}
+ catch(e){prompt('Copy teks ini:',value)}
+}
+async function exportTopAssistImage(){
+ const list=rankedTopAssistPlayers();
+ if(!list.length)return showToast('Belum ada data','Belum ada assist untuk diekspor.','error');
+ const W=1080,H=1420,c=document.createElement('canvas');c.width=W;c.height=H;
+ const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+ ctx.fillStyle='#111';ctx.textAlign='center';
+ ctx.font='900 36px Arial';ctx.fillText('FC SOMBONG',W/2,70);
+ ctx.font='900 92px Arial Black, Arial';ctx.fillText('TOP ASSIST',W/2,172);
+ ctx.font='900 32px Arial';ctx.fillText('ALL TIME • TOP 10 PEMAIN',W/2,220);
+ ctx.fillStyle='#555';ctx.font='700 25px Arial';ctx.fillText('UPDATE: '+topScorerUpdateDateLabel(),W/2,264);
+ const photos=playerPhotos(),rowH=91,startY=310;
+ for(let i=0;i<list.length;i++){
+  const p=list[i],y=startY+i*rowH;
+  ctx.fillStyle=i%2===0?'#f3f3f3':'#fff';ctx.fillRect(55,y,970,rowH-4);
+  ctx.fillStyle='#111';ctx.textAlign='left';ctx.font='900 44px Arial Black, Arial';ctx.fillText(String(p.rank),78,y+59);
+  const img=await loadCanvasImage(fcPlayerPhoto(photos,p.name)||null);
+  if(img)drawPlayerAvatar(ctx,p.name,180,y+44,32,img);
+  let fontSize=35;do{ctx.font='900 '+fontSize+'px Arial Black, Arial';if(ctx.measureText(p.name.toUpperCase()).width<620||fontSize<=21)break;fontSize-=2}while(true);
+  ctx.fillText(p.name.toUpperCase(),img?230:150,y+57);
+  ctx.textAlign='right';ctx.font='900 49px Arial Black, Arial';ctx.fillText(String(p.assistTotal),998,y+54);
+  ctx.font='700 17px Arial';ctx.fillText('ASSIST',998,y+77);
+ }
+ ctx.fillStyle='#555';ctx.textAlign='center';ctx.font='700 21px Arial';ctx.fillText('Assist sama = peringkat sama • Hanya pemain aktif',W/2,1265);
+ await drawSponsorFooter(ctx,W,H,{footerH:140});
+ if(safeDownloadCanvas(c,'top-assist-fc-sombong-'+new Date().toISOString().slice(0,10)+'.png'))showToast('Export berhasil','Gambar Top 10 Assist siap dibagikan ke WhatsApp.');
 }
 function topScorerUpdateDateLabel(){
  const v=$('topScorerExportDate')?.value || new Date().toISOString().slice(0,10);
@@ -1836,6 +1897,8 @@ function bindTopScorerExport(){
  if($('aiTodayDate') && !$('aiTodayDate').value) $('aiTodayDate').value=new Date().toISOString().slice(0,10);
  if($('exportTopScorerImage')) $('exportTopScorerImage').onclick=exportTopScorerImage;
  if($('copyTopScorerWA')) $('copyTopScorerWA').onclick=copyTopScorerWA;
+ if($('exportTopAssistImage'))$('exportTopAssistImage').onclick=exportTopAssistImage;
+ if($('copyTopAssistWA'))$('copyTopAssistWA').onclick=copyTopAssistWA;
  bindExportButtonsForce && bindExportButtonsForce();
 }
 
