@@ -236,6 +236,15 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 .fcMatchScorers{overflow-wrap:anywhere}
 @media(max-width:600px){.fcMatchDetailGrid{grid-template-columns:minmax(0,1fr) minmax(80px,.65fr) minmax(0,1fr);gap:7px;font-size:12px}.fcMatchCenterDetails{font-size:11px}}
 </style>
+<style>
+.fcMatchDateGroup{border:2px solid #cbd5e1;border-radius:16px;overflow:hidden;margin:18px 0 24px;background:#fff;box-shadow:0 3px 12px rgba(15,23,42,.055)}
+.fcMatchDateHeading{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;background:#eaf5ef;border-bottom:2px solid #b7dcc9;color:#07533d;font-size:16px;font-weight:800;text-transform:capitalize}
+.fcMatchDateCount{white-space:nowrap;font-size:12px;font-weight:700;color:#39715d;background:#fff;border:1px solid #c9e5d6;border-radius:20px;padding:5px 10px}
+.fcMatchDateBody{padding:4px 16px 8px}
+.fcMatchDateBody>.match,.fcMatchDateBody>.adminMatchCard{margin:0;border-radius:0;box-shadow:none}
+.fcMatchDateBody>.match:not(:last-child),.fcMatchDateBody>.adminMatchCard:not(:last-child){border-bottom:1px solid #e2e8f0}
+@media(max-width:600px){.fcMatchDateHeading{font-size:13px;padding:12px 10px}.fcMatchDateCount{font-size:10px;padding:4px 7px}.fcMatchDateBody{padding:2px 9px 6px}.fcMatchDateGroup{margin:14px 0 20px}}
+</style>
 </head>
 <body>
 <header class="hero">
@@ -1412,23 +1421,38 @@ function fcMatchDetailColumns(m){
   '<div class="fcMatchAwayDetails"><div class="fcMatchScorers">'+away+'</div></div>'+
   '</div>';
 }
+function fcGroupMatchesByDate(htmlRows,matches){
+ if(!htmlRows.length)return '';
+ const groups=[],byDate=new Map();
+ matches.forEach((m,i)=>{
+  const date=m.date||'';
+  if(!byDate.has(date)){const group={date,rows:[]};groups.push(group);byDate.set(date,group);}
+  byDate.get(date).rows.push(htmlRows[i]);
+ });
+ return groups.map(g=>{
+  const d=new Date(g.date+'T00:00:00');
+  const label=Number.isNaN(d.getTime())?(g.date||'Tanpa tanggal'):d.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  return '<section class="fcMatchDateGroup"><div class="fcMatchDateHeading"><span>📅 '+escapeHtml(label)+'</span><span class="fcMatchDateCount">'+g.rows.length+' pertandingan</span></div><div class="fcMatchDateBody">'+g.rows.join('')+'</div></section>';
+ }).join('');
+}
 function renderMatches(matches,showActions=false){
  const all=load(),reversed=matches.slice().reverse();
- return reversed.map((m,revIdx)=>{
+ return fcGroupMatchesByDate(reversed.map((m,revIdx)=>{
   let idx=-1;
   if(showActions&&matches.length===all.length)idx=all.length-1-revIdx;
   else if(showActions)idx=all.findIndex(x=>x.date===m.date&&x.home===m.home&&x.away===m.away&&+x.hs===+m.hs&&+x.as===+m.as&&JSON.stringify(x.homeScorers||[])===JSON.stringify(m.homeScorers||[])&&JSON.stringify(x.awayScorers||[])===JSON.stringify(m.awayScorers||[]));
   const actions=showActions&&idx>-1?'<div class="adminActions"><button type="button" onclick="editMatch('+idx+')">✏️ Edit</button><button type="button" class="dangerMini" onclick="deleteMatch('+idx+')">🗑 Hapus</button></div>':'';
   return '<div class="match compactMatch"><div class="matchMain"><div class="matchLine"><span class="teamName">'+escapeHtml(m.home)+'</span><span class="scoreInline">'+m.hs+' - '+m.as+'</span><span class="teamName">'+escapeHtml(m.away)+'</span></div>'+fcMatchDetailColumns(m)+actions+'</div></div>';
- }).join('')||'<p class="muted">Belum ada match.</p>';
+ }),reversed)||'<p class="muted">Belum ada match.</p>';
 }
 function renderAdminMatches(matches){
  if(!isSuperAdmin())return '<div class="adminLocked">Login sebagai <b>superadmin</b> untuk melihat tombol edit dan hapus pertandingan.</div>';
  const all=load();
- return matches.slice().reverse().map((m,revIdx)=>{
+ const reversed=matches.slice().reverse();
+ return fcGroupMatchesByDate(reversed.map((m,revIdx)=>{
   const idx=all.length-1-revIdx;
   return '<div class="adminMatchCard"><div class="adminMatchTop"><span>'+escapeHtml(m.home)+'</span><span class="scoreInline">'+m.hs+' - '+m.as+'</span><span class="away">'+escapeHtml(m.away)+'</span></div>'+fcMatchDetailColumns(m)+'<div class="adminActions"><button type="button" class="editBtn" onclick="editMatch('+idx+')">✏️ Edit Pertandingan</button><button type="button" class="deleteBtn" onclick="deleteMatch('+idx+')">🗑 Hapus Pertandingan</button></div></div>';
- }).join('')||'<p class="muted">Belum ada match.</p>';
+ }),reversed)||'<p class="muted">Belum ada match.</p>';
 }
 function resetMatchEditMode(){editingMatchIndex=null; if($('editMatchIndex'))$('editMatchIndex').value=''; if($('editNotice'))$('editNotice').classList.add('hidden'); if($('cancelEditMatch'))$('cancelEditMatch').classList.add('hidden'); if($('saveMatchBtn'))$('saveMatchBtn').textContent='Save Match';}
 function editMatch(idx){
