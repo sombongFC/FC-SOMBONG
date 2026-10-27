@@ -1530,7 +1530,7 @@ function clearInitialGoals(){
 
 
 function rankedTopScorerGroups(){
- const scorers=playerStats().filter(p=>p.goals>0).sort((a,b)=>(b.goals-a.goals)||a.name.localeCompare(b.name));
+ const scorers=playerStats().filter(p=>p.goals>0 && fcActiveName(p.name)).sort((a,b)=>(b.goals-a.goals)||a.name.localeCompare(b.name));
  const groups=[]; let prevGoals=null; let currentRank=0;
  scorers.forEach((p)=>{
   if(p.goals!==prevGoals){
