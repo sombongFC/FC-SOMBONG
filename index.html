@@ -1313,28 +1313,34 @@ function refreshHistories(){
 function scorerRow(side,detail={}){
  const own=!!detail.ownGoal,scorer=detail.scorer||'',assist=detail.assist||'';
  const team=$(side+'Team')?.value,opponent=$(side==='home'?'awayTeam':'homeTeam')?.value;
- const ownNames=[...new Set([...teamPlayers(opponent),...allPlayers(),...(scorer?[scorer]:[])])].filter(n=>n&&keyName(n)!=='own goal');
  const assistNames=[...new Set([...teamPlayers(team),...allPlayers(),...(assist?[assist]:[])])].filter(n=>n&&keyName(n)!=='own goal');
- return '<div class="scorerRow goalDetailRow" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:7px;align-items:end;margin-bottom:12px">'
- +'<label style="grid-column:1/-1;display:flex;gap:7px;align-items:center;font-size:12px"><input type="checkbox" class="goalIsOwn" '+(own?'checked':'')+'> Gol bunuh diri (Own Goal)</label>'
- +'<label style="min-width:0;font-size:12px">Pencetak Gol / Pelaku OG<input class="'+side+'Scorer scorerInput" list="'+(own?(side==='home'?'awayPlayerHistory':'homePlayerHistory'):(side==='home'?'homePlayerHistory':'awayPlayerHistory'))+'" placeholder="'+(own?'Pemain tim lawan':'Pencetak gol')+'" value="'+escapeHtml(scorer)+'" style="width:100%;box-sizing:border-box"></label>'
- +'<label class="goalAssistLabel" style="min-width:0;font-size:12px;'+(own?'display:none':'')+'">Assist<select class="goalAssist" style="width:100%;box-sizing:border-box"><option value="">Tanpa assist</option>'+assistNames.map(n=>'<option value="'+escapeHtml(n)+'" '+(keyName(n)===keyName(assist)?'selected':'')+'>'+escapeHtml(n)+'</option>').join('')+'</select></label>'
- +'<div class="goalOwnHint" style="grid-column:1/-1;font-size:12px;'+(own?'':'display:none')+'">Pilih nama pemain dari tim lawan yang melakukan gol bunuh diri.</div>'
+ const scorerList=own?(side==='home'?'awayPlayerHistory':'homePlayerHistory'):(side==='home'?'homePlayerHistory':'awayPlayerHistory');
+ return '<div class="scorerRow goalDetailRow" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:9px;align-items:end;margin-bottom:16px">'
+ +'<label class="goalScorerLabel" style="min-width:0;font-size:12px">'+(own?'Pelaku Own Goal (Tim Lawan)':'Pencetak Gol')+'<input class="'+side+'Scorer scorerInput" list="'+scorerList+'" placeholder="'+(own?'Pilih pemain tim lawan':'Pencetak gol')+'" value="'+escapeHtml(scorer)+'" style="width:100%;box-sizing:border-box"></label>'
+ +'<label class="goalAssistLabel" style="min-width:0;font-size:12px">Assist<select class="goalAssist" '+(own?'disabled':'')+' style="width:100%;box-sizing:border-box"><option value="">Tanpa assist</option>'+assistNames.map(n=>'<option value="'+escapeHtml(n)+'" '+(!own&&keyName(n)===keyName(assist)?'selected':'')+'>'+escapeHtml(n)+'</option>').join('')+'</select></label>'
+ +'<label style="grid-column:1/-1;display:flex;gap:8px;align-items:center;font-size:12px;font-weight:600;margin:0;padding:2px 0"><input type="checkbox" class="goalIsOwn" '+(own?'checked':'')+' style="width:18px;height:18px;flex:none;margin:0"> Own Goal (gol bunuh diri)</label>'
+ +'<div class="goalOwnHint" style="grid-column:1/-1;font-size:12px;color:#64748b;'+(own?'':'display:none')+'">Pilih pemain tim lawan pada kolom kiri. Assist tidak berlaku untuk Own Goal.</div>'
  +'</div>';
+}
+function bindOwnGoalRows(side){
+ const box=$(side+'ScorerInputs');
+ box.querySelectorAll('.goalIsOwn').forEach(input=>input.onchange=()=>{
+  const row=input.closest('.goalDetailRow'),own=input.checked,player=row.querySelector('.scorerInput'),assist=row.querySelector('.goalAssist');
+  player.value='';
+  player.setAttribute('list',own?(side==='home'?'awayPlayerHistory':'homePlayerHistory'):(side==='home'?'homePlayerHistory':'awayPlayerHistory'));
+  player.placeholder=own?'Pilih pemain tim lawan':'Pencetak gol';
+  row.querySelector('.goalScorerLabel').firstChild.textContent=own?'Pelaku Own Goal (Tim Lawan)':'Pencetak Gol';
+  assist.value='';assist.disabled=own;
+  row.querySelector('.goalOwnHint').style.display=own?'':'none';
+ });
 }
 function goalDetails(side){return [...$((side==='home'?'home':'away')+'ScorerInputs').querySelectorAll('.goalDetailRow')].map(row=>({scorer:normalizeName(row.querySelector('.scorerInput').value),assist:row.querySelector('.goalIsOwn').checked?'':normalizeName(row.querySelector('.goalAssist').value),ownGoal:row.querySelector('.goalIsOwn').checked}));}
 function syncSide(side){
  const score=+$((side==='home'?'home':'away')+'Score').value||0,box=$(side+'ScorerInputs');
  const vals=goalDetails(side).slice(0,score);box.innerHTML='';
  for(let i=0;i<score;i++)box.insertAdjacentHTML('beforeend',scorerRow(side,vals[i]||{}));
- box.querySelectorAll('.goalIsOwn').forEach(input=>input.onchange=()=>{
-  const row=input.closest('.goalDetailRow'),own=input.checked,player=row.querySelector('.scorerInput');
-  player.value='';player.setAttribute('list',own?(side==='home'?'awayPlayerHistory':'homePlayerHistory'):(side==='home'?'homePlayerHistory':'awayPlayerHistory'));
-  player.placeholder=own?'Pemain tim lawan':'Pencetak gol';
-  row.querySelector('.goalAssistLabel').style.display=own?'none':'';
-  row.querySelector('.goalOwnHint').style.display=own?'':'none';
- });
- $((side==='home'?'home':'away')+'GoalInfo').textContent='Skor '+score+' = '+score+' baris gol. Isi assist di samping gol terkait; centang Own Goal untuk memilih pemain lawan.';
+ bindOwnGoalRows(side);
+ $((side==='home'?'home':'away')+'GoalInfo').textContent='Skor '+score+' = '+score+' baris gol. Pilih pencetak dan assist, atau centang Own Goal untuk memilih pemain lawan.';
 }
 function syncScorerInputs(){syncSide('home');syncSide('away');updatePenaltyOptions()}
 function matchGoalDetailsFromLegacy(m,side){
@@ -1345,15 +1351,9 @@ function matchGoalDetailsFromLegacy(m,side){
 }
 function fillMatchExtras(m){
  for(const side of ['home','away']){
-  const rows=$((side==='home'?'home':'away')+'ScorerInputs'),details=matchGoalDetailsFromLegacy(m,side);
-  rows.innerHTML='';for(const d of details)rows.insertAdjacentHTML('beforeend',scorerRow(side,d));
-  rows.querySelectorAll('.goalIsOwn').forEach(input=>input.onchange=()=>{
-   const row=input.closest('.goalDetailRow'),own=input.checked,player=row.querySelector('.scorerInput');
-   player.value='';player.setAttribute('list',own?(side==='home'?'awayPlayerHistory':'homePlayerHistory'):(side==='home'?'homePlayerHistory':'awayPlayerHistory'));
-   player.placeholder=own?'Pemain tim lawan':'Pencetak gol';
-   row.querySelector('.goalAssistLabel').style.display=own?'none':'';
-   row.querySelector('.goalOwnHint').style.display=own?'':'none';
-  });
+  const rows=$(side+'ScorerInputs'),details=matchGoalDetailsFromLegacy(m,side);
+  rows.innerHTML='';for(const detail of details)rows.insertAdjacentHTML('beforeend',scorerRow(side,detail));
+  bindOwnGoalRows(side);
  }
 }
 function collectSide(side){return [...document.querySelectorAll('.'+side+'Scorer')].map(i=>normalizeName(i.value)).filter(Boolean)}
