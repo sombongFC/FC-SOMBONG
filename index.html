@@ -1297,7 +1297,7 @@ function weeklyHallOfFame(matches){
 }
 function playerStats(){
  const map={}; const ensure=(name,team='')=>{name=normalizeName(name); if(!name)return null; name=fcCanonicalPlayer(name); const k=keyName(name); if(!map[k])map[k]={name,teams:new Set(),appearances:0,goals:0,initialGoals:0,yellow:0,red:0,assists:0,ownGoals:0,goalRate:0}; if(team)map[k].teams.add(team); return map[k]};
- Object.values(initialGoals()).forEach(g=>{const s=ensure(g.name,'Statistik awal'); if(s){s.initialGoals+=Number(g.goals)||0; s.goals += Number(g.goals)||0;}});
+ Object.values(initialGoals()).forEach(g=>{const s=ensure(g.name); if(s){s.initialGoals+=Number(g.goals)||0; s.goals += Number(g.goals)||0;}});
  load().forEach(m=>{
   const playedHome=new Set(), playedAway=new Set();
   (m.homeScorers||[]).forEach(n=>{if(keyName(n)==='own goal')return;const s=ensure(n,m.home); if(s){s.goals++; playedHome.add(keyName(fcCanonicalPlayer(n)))}});
