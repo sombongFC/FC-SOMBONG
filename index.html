@@ -332,12 +332,12 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
 
         <div class="scorerSplit">
           <div class="goalInputBlock homeGoalBlock">
-            <div class="goalInputHeader"><label>Pencetak Goal Home</label></div>
+            <div class="goalInputHeader"><label id="homeGoalHeading">Pencetak Goal Home</label></div>
             <p class="muted" id="homeGoalInfo"></p>
             <div id="homeScorerInputs" class="scorerInputs"></div>
           </div>
           <div class="goalInputBlock awayGoalBlock">
-            <div class="goalInputHeader"><label>Pencetak Goal Away</label></div>
+            <div class="goalInputHeader"><label id="awayGoalHeading">Pencetak Goal Away</label></div>
             <p class="muted" id="awayGoalInfo"></p>
             <div id="awayScorerInputs" class="scorerInputs"></div>
           </div>
@@ -1360,7 +1360,12 @@ function syncSide(side){
  bindOwnGoalRows(side);
  $((side==='home'?'home':'away')+'GoalInfo').textContent='Skor '+score+' = '+score+' baris gol. Pilih pencetak dan assist, atau centang Own Goal untuk memilih pemain lawan.';
 }
-function syncScorerInputs(){syncSide('home');syncSide('away');updatePenaltyOptions()}
+function updateGoalTeamHeadings(){
+ const home=$('homeTeam')?.value||'-',away=$('awayTeam')?.value||'-';
+ if($('homeGoalHeading'))$('homeGoalHeading').textContent='Pencetak Goal Home ('+home+')';
+ if($('awayGoalHeading'))$('awayGoalHeading').textContent='Pencetak Goal Away ('+away+')';
+}
+function syncScorerInputs(){updateGoalTeamHeadings();syncSide('home');syncSide('away');updatePenaltyOptions()}
 function matchGoalDetailsFromLegacy(m,side){
  if(Array.isArray(m[side+'GoalDetails'])&&m[side+'GoalDetails'].length)return m[side+'GoalDetails'];
  const scorers=m[side+'Scorers']||[],assists=m[side+'Assists']||[],ogs=m[side+'OwnGoals']||[];
