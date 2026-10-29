@@ -2505,6 +2505,11 @@ window.__stateReady.then(init).catch(init);
     .filter(name=>name.length>0&&!/^(undefined|null|none|n\/a|—|-|false|0)$/i.test(name));
   });
   // Pasangkan assist dengan setiap gol; untuk data lama tanpa pasangan gol gunakan nama pencetak saja.
+  // Gunakan nama lengkap resmi saat ekspor; alias Koko dari input lama = Koko Lobang.
+  const recapPlayerName=name=>{
+   const value=String(name||'').trim();
+   return fcPlayerKey(value)==='KOKO'?'Koko Lobang':value;
+  };
   // Goal baru: assist per gol. Data lama: tampilkan assist tim tanpa menebak pasangan gol.
   const goalRows=(m,side)=>{
    const detailed=m[side+'GoalDetails'];
@@ -2512,17 +2517,17 @@ window.__stateReady.then(init).catch(init);
    const assists=m[side+'Assists']||[];
    if(Array.isArray(detailed)&&detailed.length){
     const rows=detailed.map((g,i)=>{
-     const scorer=String(g.scorer||scorers[i]||'').trim();
-     const assist=!g.ownGoal?String(g.assist||'').trim():'';
+     const scorer=recapPlayerName(g.scorer||scorers[i]||'');
+     const assist=!g.ownGoal?recapPlayerName(g.assist||''):'';
      return {scorer:g.ownGoal?'OWN GOAL ('+scorer+')':scorer,assist};
     });
     // Bila assist historis tersimpan terpisah dan tidak tercantum pada detail,
     // cantumkan sebagai assist tim tanpa membuat asosiasi gol yang tidak diketahui.
     if(!rows.some(g=>g.assist)&&assists.some(a=>String(a||'').trim()))
-     rows.push({scorer:'',assistTeam:assists.filter(Boolean).join(', ')});
+     rows.push({scorer:'',assistTeam:assists.filter(Boolean).map(recapPlayerName).join(', ')});
     return rows;
    }
-   const rows=scorers.map(n=>({scorer:String(n||''),assist:''}));
+   const rows=scorers.map(n=>({scorer:recapPlayerName(n),assist:''}));
    if(assists.some(a=>String(a||'').trim()))
     rows.push({scorer:'',assistTeam:assists.filter(Boolean).join(', ')});
    return rows;
