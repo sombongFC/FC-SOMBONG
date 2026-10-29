@@ -2504,9 +2504,24 @@ window.__stateReady.then(init).catch(init);
     .map(name=>String(name).trim())
     .filter(name=>name.length>0&&!/^(undefined|null|none|n\/a|—|-|false|0)$/i.test(name));
   });
-  const scorerLines=m=>Math.max(goalText(m.homeScorers).length,goalText(m.awayScorers).length,1);
+  // Pasangkan assist dengan setiap gol; untuk data lama tanpa pasangan gol gunakan nama pencetak saja.
+  const goalRows=(m,side)=>{
+   const detailed=m[side+'GoalDetails'];
+   const scorers=m[side+'Scorers']||[];
+   const assists=m[side+'Assists']||[];
+   if(Array.isArray(detailed)&&detailed.length){
+    return detailed.map((g,i)=>{
+     const scorer=String(g.scorer||scorers[i]||'').trim();
+     const assist=!g.ownGoal?String(g.assist||'').trim():'';
+     return {scorer:g.ownGoal?'OWN GOAL ('+scorer+')':scorer,assist};
+    });
+   }
+   // Legacy assists are not indexed to goals; do not guess the association.
+   return scorers.map(n=>({scorer:String(n||''),assist:''}));
+  };
+  const scorerLines=m=>Math.max(goalRows(m,'home').reduce((n,g)=>n+(g.assist?2:1),0),goalRows(m,'away').reduce((n,g)=>n+(g.assist?2:1),0),1);
   const details=m=>(m.cards||[]).filter(x=>/yellow|kuning|red|merah/i.test(x.type||'')).length+ownGoalNames(m).length+(Number(m.hs)===Number(m.as)&&m.penaltyWinner?1:0);
-  const heights=matches.map(m=>Math.max(109,64+scorerLines(m)*22+(details(m)?28:0)));
+  const heights=matches.map(m=>Math.max(109,64+scorerLines(m)*19+(details(m)?34:0)));
   const top=126,gap=9,motmHeight=motm?188:0,footer=45;
   const natural=heights.reduce((x,y)=>x+y,0)+gap*(matches.length-1);
   const available=H-top-motmHeight-footer-(motm?17:0);
@@ -2528,12 +2543,22 @@ window.__stateReady.then(init).catch(init);
    ctx.fillStyle=white;ctx.font='900 40px Arial';drawText(m.hs+' – '+m.as,540,y+41,200,'center');
    ctx.fillStyle=muted;ctx.font='bold 15px Arial';drawText('FT',540,y+62,90,'center');
    ctx.fillStyle='#e1e9f4';ctx.font='19px Arial';
-   const left=goalText(m.homeScorers),right=goalText(m.awayScorers),count=Math.max(left.length,right.length,1);
-   for(let j=0;j<count;j++){
-    const yy=y+57+j*22*scale;
-    if(left[j])drawText(left[j],151,yy,300,'left');
-    if(right[j])drawText(right[j],1025,yy,300,'right');
-   }
+   const left=goalRows(m,'home'),right=goalRows(m,'away'),count=Math.max(left.length,right.length,1);
+   const drawGoalSide=(rows,x,align)=>{
+    let offset=0;
+    for(const g of rows){
+     const yy=y+57+offset*19*scale;
+     ctx.fillStyle='#e1e9f4';ctx.font='18px Arial';
+     if(g.scorer)drawText(g.scorer,x,yy,300,align);
+     offset++;
+     if(g.assist){
+      ctx.fillStyle='#91d5b5';ctx.font='italic 14px Arial';
+      drawText('↳ Assist: '+g.assist,x,y+57+offset*19*scale,300,align);
+      offset++;
+     }
+    }
+   };
+   drawGoalSide(left,151,'left');drawGoalSide(right,1025,'right');
    const yellows=(m.cards||[]).filter(x=>/yellow|kuning/i.test(x.type||''));
    const reds=(m.cards||[]).filter(x=>/red|merah/i.test(x.type||''));
    const og=ownGoalNames(m);
@@ -2545,7 +2570,7 @@ window.__stateReady.then(init).catch(init);
     ...og.map(x=>({type:'own',label:'OWN GOAL: '+x}))
    ];
    if(penaltyWinner){
-    const py=y+Math.min(h-16,75+count*11*scale);
+    const py=y+Math.min(h-16,75+scorerLines(m)*9*scale);
     ctx.textAlign='center';ctx.fillStyle='#e4b64d';ctx.font='bold 16px Arial';
     const caption='PEMENANG ADU PENALTI: '+String(penaltyWinner).toUpperCase();
     const bw=Math.min(470,ctx.measureText(caption).width+42);
