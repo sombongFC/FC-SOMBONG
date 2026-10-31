@@ -1161,6 +1161,8 @@ function updateAccessUI(){
  if($('adminLocked')) $('adminLocked').classList.toggle('hidden',superOn);
  if($('adminMatchList')) $('adminMatchList').innerHTML=renderAdminMatches(load());
  renderAccessUsers();
+ // Segarkan tombol Edit Statistik segera setelah login/logout Super Admin.
+ if($('playersTable') && $('playerSearch'))renderPlayers();
 }
 function renderAccessUsers(){
  const table=$('accessUsersTable'); if(!table)return;
