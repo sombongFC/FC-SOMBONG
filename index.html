@@ -2526,12 +2526,77 @@ window.__stateReady.then(init).catch(init);
   return lines;
  }
  function fit(ctx,text,maxWidth,size=17){let z=size;do{ctx.font='700 '+z+'px Arial';if(ctx.measureText(text).width<=maxWidth)break;z--}while(z>11);return z}
+
+ // Read-only historical achievements: no changes to match, player or tab data.
+ function fcRecapAchievements(date){
+  const games=load().filter(m=>m&&m.date&&m.home&&m.away).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  const days=[...new Set(games.map(m=>m.date))].sort(),events=[],totals={goals:0,assists:0,matches:0};
+  const records=new Map(),name=n=>{const v=String(n||'').trim();return fcPlayerKey(v)==='KOKO'?'Koko Lobang':v};
+  const add=(day,title,value,holder,kind='record')=>{if(day===date)events.push({title,value:String(value),holder:String(holder||''),kind})};
+  const bump=(day,code,value,title,holder,unit)=>{
+   if(!Number.isFinite(value)||value<=0)return;
+   const prior=records.get(code)||0;
+   if(value>prior){if(prior>0)add(day,title,value+' '+unit,holder);records.set(code,value)}
+   else if(value===prior&&prior>0)add(day,title+' • RECORD EQUALED',value+' '+unit,holder,'equal');
+  };
+  for(const day of days){
+   const matches=games.filter(m=>m.date===day);
+   const playerGoals=new Map(),playerAssists=new Map(),playerYellows=new Map(),playerOwn=new Map(),teamGF=new Map(),teamGA=new Map();
+   const inc=(map,k,n=1)=>{if(k)map.set(k,(map.get(k)||0)+n)};
+   let dayGoals=0,dayAssists=0;
+   for(const m of matches){
+    totals.matches++;
+    if(totals.matches>=150&&(totals.matches-150)%50===0)add(day,'MATCH MILESTONE',totals.matches+'th match',m.home+' vs '+m.away,'milestone');
+    const hs=Number(m.hs),as=Number(m.as);
+    if(Number.isFinite(hs)&&Number.isFinite(as)&&hs>=0&&as>=0){
+     dayGoals+=hs+as;inc(teamGF,m.home,hs);inc(teamGF,m.away,as);inc(teamGA,m.home,as);inc(teamGA,m.away,hs);
+     bump(day,'match_goals',hs+as,'MOST GOALS • SINGLE MATCH',m.home+' vs '+m.away,'goals');
+     bump(day,'margin',Math.abs(hs-as),'BIGGEST VICTORY',hs>as?m.home:as>hs?m.away:'','goal margin');
+    }
+    for(const side of ['home','away']){
+     const detail=m[side+'GoalDetails'],scorers=m[side+'Scorers']||[],assists=m[side+'Assists']||[];
+     const goals=Array.isArray(detail)&&detail.length?detail.map((g,i)=>({name:g.scorer||scorers[i],own:!!g.ownGoal,assist:g.assist||''})):scorers.map(n=>({name:n,own:false,assist:''}));
+     for(const g of goals){if(g.name&&!g.own)inc(playerGoals,name(g.name))}
+     // Legacy assists are separate lists, not matched to individual goals.
+     const asNames=Array.isArray(detail)&&detail.some(g=>g.assist)?detail.map(g=>g.ownGoal?'':g.assist).filter(Boolean):assists.filter(Boolean);
+     for(const a of asNames){inc(playerAssists,name(a));dayAssists++}
+    }
+    const cardPlayers=(m.cards||[]).filter(c=>/yellow|kuning/i.test(c.type||''));
+    for(const card of cardPlayers)inc(playerYellows,name(card.player));
+    const ownPlayers=['homeOwnGoals','awayOwnGoals'].flatMap(f=>Array.isArray(m[f])?m[f]:[]).map(x=>name(typeof x==='string'?x:x?.player||x?.name)).filter(n=>n&&!/^(undefined|null|none|n\/a|—|-|false|0)$/i.test(n));
+    for(const n of ownPlayers)inc(playerOwn,n);
+   }
+   const oldGoals=totals.goals,oldAssists=totals.assists;
+   totals.goals+=dayGoals;totals.assists+=dayAssists;
+   // A milestone inside a matchday with several events has no verifiable scorer
+   // without event timestamps/order. Do not guess the historic individual.
+   for(let n=100;n<=totals.goals;n+=100)if(n>oldGoals){
+    const one=matches.length===1&&dayGoals===1?[...playerGoals.keys()][0]:'';
+    add(day,'GOAL MILESTONE','Goal #'+n,one||'Scorer order not verified','milestone');
+   }
+   for(let n=50;n<=totals.assists;n+=50)if(n>oldAssists){
+    const one=matches.length===1&&dayAssists===1?[...playerAssists.keys()][0]:'';
+    add(day,'ASSIST MILESTONE','Assist #'+n,one||'Assist order not verified','milestone');
+   }
+   const leaders=(map,code,title,unit)=>{for(const [holder,v] of map)bump(day,code,v,title,holder,unit)};
+   leaders(playerGoals,'player_day_goals','MOST GOALS • PLAYER / MATCHDAY','goals');
+   leaders(playerAssists,'player_day_assists','MOST ASSISTS • PLAYER / MATCHDAY','assists');
+   leaders(teamGF,'team_day_goals','MOST GOALS SCORED • TEAM / MATCHDAY','goals');
+   leaders(teamGA,'team_day_conceded','MOST GOALS CONCEDED • TEAM / MATCHDAY','goals');
+   leaders(playerYellows,'player_day_yellow','MOST YELLOW CARDS • MATCHDAY','cards');
+   leaders(playerOwn,'player_day_own','MOST OWN GOALS • MATCHDAY','own goals');
+  }
+  // Suppress trivial opening records and duplicate cards on the same day.
+  return events.filter(e=>e.kind==='milestone'||e.kind==='equal'||!days.length||days.indexOf(date)>0).slice(0,12);
+ }
  window.exportHistoryImageCompact=async function(){
   const date=$id('historyExportDate')?.value||$id('mdDate')?.value||new Date().toLocaleDateString('en-CA');
   const matches=load().filter(m=>m.date===date);
   if(!matches.length)return showToast('Tidak ada pertandingan','Pilih tanggal dengan riwayat pertandingan.','error');
   const motm=allSessions()[date]?.motm||'';
-  const W=1080,H=1350,c=document.createElement('canvas');c.width=W;c.height=H;const ctx=c.getContext('2d');
+  const achievements=fcRecapAchievements(date);
+  const recordRows=Math.ceil(achievements.length/2),recordHeight=achievements.length?75+recordRows*112:0;
+  const W=1080,H=achievements.length?1350+recordHeight:Math.max(950,1350-(motm?0:210)),c=document.createElement('canvas');c.width=W;c.height=H;const ctx=c.getContext('2d');
   const gold='#f4c765',white='#f8fafc',muted='#b9c8db',red='#ff666c';
   ctx.fillStyle='#071526';ctx.fillRect(0,0,W,H);
   ctx.fillStyle=gold;ctx.font='900 27px Arial';ctx.textAlign='left';ctx.fillText('FC SOMBONG LEAGUE',38,46);
@@ -2675,7 +2740,19 @@ window.__stateReady.then(init).catch(init);
    const team=Object.keys(teams).find(t=>Array.isArray(teams[t])&&teams[t].some(n=>keyName(n)===keyName(motm)));
    if(team){ctx.fillStyle=white;ctx.font='bold 23px Arial';ctx.fillText('TEAM '+team.replace(/^TEAM\s*/i,''),622,fy+fh-18)}
   }
-  ctx.textAlign='center';ctx.fillStyle='#aab8cc';ctx.font='17px Arial';ctx.fillText('FC SOMBONG • OFFICIAL MATCHDAY RESULTS',540,1330);
+  if(achievements.length){
+   const base=1350;
+   ctx.fillStyle=gold;ctx.textAlign='left';ctx.font='900 28px Arial';ctx.fillText('LEAGUE RECORDS & HISTORIC MOMENTS',38,base+43);
+   ctx.font='16px Arial';ctx.fillStyle=muted;ctx.fillText('NEW MILESTONES & RECORDS • '+date,38,base+67);
+   for(let i=0;i<achievements.length;i++){
+    const a=achievements[i],col=i%2,row=Math.floor(i/2),x=30+col*515,yy=base+82+row*112;
+    ctx.fillStyle='#10253c';ctx.strokeStyle='#294967';ctx.lineWidth=1.2;ctx.beginPath();ctx.roundRect(x,yy,505,101,11);ctx.fill();ctx.stroke();
+    ctx.fillStyle=gold;ctx.textAlign='left';ctx.font='bold 14px Arial';ctx.fillText(a.title,x+16,yy+23,470);
+    ctx.fillStyle=white;ctx.font='900 27px Arial';ctx.fillText(a.value,x+16,yy+57,468);
+    ctx.fillStyle='#b9c8db';ctx.font='17px Arial';ctx.fillText(a.holder,x+16,yy+83,468);
+   }
+  }
+  ctx.textAlign='center';ctx.fillStyle='#aab8cc';ctx.font='17px Arial';ctx.fillText('FC SOMBONG • OFFICIAL MATCHDAY RESULTS',540,H-20);
   safeDownloadCanvas(c,'fc-sombong-history-'+date+'.png');
  };
  function setup(){const d=$id('historyExportDate');if(d&&!d.value)d.value=new Date().toLocaleDateString('en-CA');const b=$id('exportHistoryImage');if(b)b.onclick=window.exportHistoryImageCompact}
