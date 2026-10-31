@@ -684,7 +684,7 @@ button,input,select,textarea{-webkit-tap-highlight-color:transparent;touch-actio
       </div>
     </div>
 
-    <div class="panel">
+    <div class="panel" style="display:none" aria-hidden="true">
       <h2>Import Top Skor Lama / Statistik Awal</h2>
       <p class="muted">Masukkan data top skor lama dari catatan/foto. Format: satu baris satu pemain, <b>Nama,Goal</b>. Data ini akan ditambahkan ke goal dari pertandingan baru tanpa membuat riwayat match palsu.</p>
       <textarea id="initialGoalsInput" rows="12" placeholder="Alin,29
@@ -1313,7 +1313,14 @@ function playerStats(){
   (m.cards||[]).forEach(c=>{const s=ensure(c.player,c.team); if(s){if(c.type==='red')s.red++; else s.yellow++; (c.team===m.home?playedHome:playedAway).add(keyName(fcCanonicalPlayer(c.player)))}});
   playedHome.forEach(k=>{if(map[k])map[k].appearances++}); playedAway.forEach(k=>{if(map[k])map[k].appearances++});
  });
- return Object.values(map).map(p=>({...p,teams:[...p.teams].join(', '),goalPerMatch:p.appearances?(p.goals/p.appearances).toFixed(2):'0.00'})).sort((a,b)=>b.goals-a.goals||b.appearances-a.appearances||a.name.localeCompare(b.name));
+ return Object.values(map).map(p=>{
+  const extra=performanceExtras()[keyName(p.name)]||{};
+  // Override hanya angka tampilan agregat, bukan riwayat match.
+  for(const [field,override] of [['goals','goals'],['yellow','yellow'],['red','red'],['assists','assists'],['ownGoals','ownGoals']]){
+   if(extra[override]!==undefined&&extra[override]!==null&&Number.isInteger(Number(extra[override]))&&Number(extra[override])>=0)p[field]=Number(extra[override]);
+  }
+  return {...p,teams:[...p.teams].join(', '),goalPerMatch:p.appearances?(p.goals/p.appearances).toFixed(2):'0.00'};
+ }).sort((a,b)=>b.goals-a.goals||b.appearances-a.appearances||a.name.localeCompare(b.name));
 }
 function fillSelects(){
  applyLeagueTitle();
@@ -2106,10 +2113,10 @@ function initMatchday(){const el=$('mdDate');if(!el)return;el.value=new Date().t
 function performanceExtras(){try{return JSON.parse(localStorage.getItem('player_performance_extra_v1')||'{}')||{}}catch(e){return {}}}
 function performanceFor(p){
  const e=performanceExtras()[keyName(p.name)]||{};
- const assists=Math.max(p.assists||0,Number(e.assists)||0);
- const ownGoals=Math.max(p.ownGoals||0,Number(e.ownGoals)||0);
+ const assists=e.assists!==undefined?Number(e.assists):p.assists||0;
+ const ownGoals=e.ownGoals!==undefined?Number(e.ownGoals):p.ownGoals||0;
  // Verified appearances must be entered as actual matches played; being on a matchday squad alone does not count as six appearances.
- const verified=Number.isInteger(Number(e.matches)) && e.matches!==undefined && e.matches!==null && Number(e.matches)>=p.appearances && Number(e.matches)>0;
+ const verified=Number.isInteger(Number(e.matches)) && e.matches!==undefined && e.matches!==null && Number(e.matches)>=0;
  const played=verified?Number(e.matches):(p.appearances||0);
  const recentGoals=Math.max(0,p.goals-(p.initialGoals||0));
  const motm=mdAwards(p.name);
@@ -2130,13 +2137,23 @@ function performanceFor(p){
 function editPerformance(name){
  if(!isSuperAdmin())return showToast('Akses ditolak','Login superadmin untuk mengubah statistik.','error');
  const p=playerStats().find(x=>keyName(x.name)===keyName(name));if(!p)return;
- const all=performanceExtras(), k=keyName(p.name), old=all[k]||{};
- const a=prompt('Assist '+p.name+' (isi jumlah total, bukan penambahan)',Math.max(p.assists||0,Number(old.assists)||0));if(a===null)return;
- const o=prompt('Own Goal '+p.name+' (jumlah total)',Math.max(p.ownGoals||0,Number(old.ownGoals)||0));if(o===null)return;
- const m=prompt('Total pertandingan dimainkan '+p.name+' (data lama hanya menghitung match dengan gol/kartu, jadi masukkan jumlah sebenarnya)',old.matches??String(p.appearances));if(m===null)return;
- if(![a,o,m].every(x=>/^\d+$/.test(x.trim())))return showToast('Angka tidak valid','Gunakan bilangan bulat nol atau lebih.','error');
- if(Number(m)<p.appearances)return showToast('Jumlah main tidak valid','Tidak boleh lebih kecil dari match yang sudah terdeteksi.','error');
- all[k]={assists:+a,ownGoals:+o,matches:+m};localStorage.setItem('player_performance_extra_v1',JSON.stringify(all));renderPlayers();showToast('Statistik tersimpan',p.name);
+ const x=performanceFor(p),all=performanceExtras(),k=keyName(p.name),old=all[k]||{};
+ const fields=[
+  ['matches','MAIN',x.played],['goals','GOAL',p.goals],
+  ['assists','ASSIST',x.assists],['ownGoals','OWN GOAL',x.ownGoals],
+  ['yellow','KUNING',p.yellow],['red','MERAH',p.red]
+ ];
+ const changes={};
+ for(const [field,label,current] of fields){
+  const input=prompt('Edit '+label+' — '+p.name+'\\nMasukkan jumlah TOTAL (bukan penambahan).\\nTekan Batal untuk membatalkan seluruh perubahan.',String(current));
+  if(input===null)return;
+  if(!/^\\d+$/.test(input.trim()))return showToast('Angka tidak valid',label+' harus bilangan bulat 0 atau lebih.','error');
+  changes[field]=Number(input.trim());
+ }
+ if(!confirm('Simpan perubahan statistik '+p.name+'?\\n'+fields.map(([key,label])=>label+': '+changes[key]).join('\\n')))return;
+ all[k]={...old,...changes};
+ localStorage.setItem('player_performance_extra_v1',JSON.stringify(all));
+ render();showToast('Statistik tersimpan',p.name+' — 6 statistik berhasil diperbarui.');
 }
 async function exportPlayerPerformance(name){
  const p=playerStats().find(x=>keyName(x.name)===keyName(name));if(!p)return;
