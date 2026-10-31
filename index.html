@@ -2544,6 +2544,10 @@ window.__stateReady.then(init).catch(init);
    const playerGoals=new Map(),playerAssists=new Map(),playerYellows=new Map(),playerOwn=new Map(),teamGF=new Map(),teamGA=new Map();
    const inc=(map,k,n=1)=>{if(k)map.set(k,(map.get(k)||0)+n)};
    let dayGoals=0,dayAssists=0;
+   const matchPlayerGoals=new Map(),pairCounts=new Map();
+   const scoringStreaks=window.__fcRecapScoringStreaks||(window.__fcRecapScoringStreaks=new Map());
+   const unbeatenStreaks=window.__fcRecapUnbeatenStreaks||(window.__fcRecapUnbeatenStreaks=new Map());
+   const dayScorers=new Set(),dayTeams=new Set();
    for(const m of matches){
     totals.matches++;
     if(totals.matches>=150&&(totals.matches-150)%50===0)add(day,'MATCH MILESTONE',totals.matches+'th match',m.home+' vs '+m.away,'milestone');
@@ -2556,7 +2560,13 @@ window.__stateReady.then(init).catch(init);
     for(const side of ['home','away']){
      const detail=m[side+'GoalDetails'],scorers=m[side+'Scorers']||[],assists=m[side+'Assists']||[];
      const goals=Array.isArray(detail)&&detail.length?detail.map((g,i)=>({name:g.scorer||scorers[i],own:!!g.ownGoal,assist:g.assist||''})):scorers.map(n=>({name:n,own:false,assist:''}));
-     for(const g of goals){if(g.name&&!g.own)inc(playerGoals,name(g.name))}
+     const perMatch=new Map();
+     for(const g of goals){
+      if(g.name&&!g.own){const scorer=name(g.name);inc(playerGoals,scorer);inc(perMatch,scorer);dayScorers.add(scorer)}
+      if(g.name&&!g.own&&g.assist){const scorer=name(g.name),assister=name(g.assist);if(scorer!==assister)inc(pairCounts,scorer+' + '+assister)}
+     }
+     for(const [scorer,n] of perMatch){bump(day,'player_match_goals',n,'MOST GOALS • PLAYER / MATCH',scorer,'goals');if(n>=3)bump(day,'hat_tricks_match',Math.floor(n/3),'MOST HAT-TRICKS • SINGLE MATCH',scorer,'hat-tricks')}
+     for(const [scorer,n] of perMatch)inc(matchPlayerGoals,scorer,n);
      // Legacy assists are separate lists, not matched to individual goals.
      const asNames=Array.isArray(detail)&&detail.some(g=>g.assist)?detail.map(g=>g.ownGoal?'':g.assist).filter(Boolean):assists.filter(Boolean);
      for(const a of asNames){inc(playerAssists,name(a));dayAssists++}
@@ -2566,7 +2576,24 @@ window.__stateReady.then(init).catch(init);
     const ownPlayers=['homeOwnGoals','awayOwnGoals'].flatMap(f=>Array.isArray(m[f])?m[f]:[]).map(x=>name(typeof x==='string'?x:x?.player||x?.name)).filter(n=>n&&!/^(undefined|null|none|n\/a|—|-|false|0)$/i.test(n));
     for(const n of ownPlayers)inc(playerOwn,n);
    }
-   const oldGoals=totals.goals,oldAssists=totals.assists;
+   // Consecutive matchdays with goals; an absent player breaks the sequence.
+   for(const player of new Set([...scoringStreaks.keys(),...dayScorers])){
+    const next=dayScorers.has(player)?(scoringStreaks.get(player)||0)+1:0;
+    scoringStreaks.set(player,next);
+    if(next>=2)bump(day,'scoring_streak',next,'LONGEST SCORING STREAK',player,'matchdays');
+   }
+   // Team streak: each match played that day must be unbeaten in regulation time.
+   for(const team of ['Team A','Team B','Team C']){
+    const played=matches.filter(m=>String(m.home).toUpperCase()===team.toUpperCase()||String(m.away).toUpperCase()===team.toUpperCase());
+    if(!played.length)continue;
+    const unbeaten=played.every(m=>{const hs=Number(m.hs),as=Number(m.as);return Number.isFinite(hs)&&Number.isFinite(as)&&(String(m.home).toUpperCase()===team.toUpperCase()?hs>=as:as>=hs)});
+    const next=unbeaten?(unbeatenStreaks.get(team)||0)+played.length:0;
+    unbeatenStreaks.set(team,next);
+    if(next>=2)bump(day,'unbeaten_streak',next,'LONGEST UNBEATEN STREAK',team,'matches');
+   }
+   // Partnership records require verified scorer-assist pairs.
+   for(const [pair,n] of pairCounts)bump(day,'goal_assist_pair_day',n,'BEST GOAL–ASSIST PARTNERSHIP',pair,'combinations');
+      const oldGoals=totals.goals,oldAssists=totals.assists;
    totals.goals+=dayGoals;totals.assists+=dayAssists;
    // A milestone inside a matchday with several events has no verifiable scorer
    // without event timestamps/order. Do not guess the historic individual.
