@@ -2139,23 +2139,48 @@ function performanceFor(p){
 function editPerformance(name){
  if(!isSuperAdmin())return showToast('Akses ditolak','Login superadmin untuk mengubah statistik.','error');
  const p=playerStats().find(x=>keyName(x.name)===keyName(name));if(!p)return;
- const x=performanceFor(p),all=performanceExtras(),k=keyName(p.name),old=all[k]||{};
- const fields=[
+ const x=performanceFor(p),fields=[
   ['matches','MAIN',x.played],['goals','GOAL',p.goals],
   ['assists','ASSIST',x.assists],['ownGoals','OWN GOAL',x.ownGoals],
   ['yellow','KUNING',p.yellow],['red','MERAH',p.red]
  ];
- const changes={};
- for(const [field,label,current] of fields){
-  const input=prompt('Edit '+label+' — '+p.name+'\\nMasukkan jumlah TOTAL (bukan penambahan).\\nTekan Batal untuk membatalkan seluruh perubahan.',String(current));
-  if(input===null)return;
-  if(!/^\\d+$/.test(input.trim()))return showToast('Angka tidak valid',label+' harus bilangan bulat 0 atau lebih.','error');
-  changes[field]=Number(input.trim());
+ document.getElementById('fcStatEditOverlay')?.remove();
+ const overlay=document.createElement('div');
+ overlay.id='fcStatEditOverlay';
+ overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:16px';
+ const panel=document.createElement('form');
+ panel.style.cssText='background:#fff;color:#15181c;border-radius:16px;padding:24px;width:min(520px,100%);max-height:90vh;overflow:auto;box-shadow:0 12px 50px #0005';
+ const heading=document.createElement('h2');heading.textContent='Edit Statistik — '+p.name;heading.style.margin='0 0 8px';panel.appendChild(heading);
+ const note=document.createElement('p');note.textContent='Isi jumlah TOTAL untuk setiap statistik. Nilai 0 diperbolehkan. Koreksi tidak mengubah riwayat pertandingan.';note.style.cssText='font-size:13px;color:#555;margin:0 0 18px';panel.appendChild(note);
+ const grid=document.createElement('div');grid.style.cssText='display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px';
+ const inputs={};
+ for(const [key,label,value] of fields){
+  const wrap=document.createElement('label');wrap.style.cssText='display:flex;flex-direction:column;gap:5px;font-weight:700;font-size:13px';
+  wrap.textContent=label;
+  const input=document.createElement('input');input.type='number';input.min='0';input.step='1';input.required=true;input.value=String(value);input.style.cssText='width:100%;padding:10px;border:1px solid #aaa;border-radius:8px;color:#111;background:#fff';
+  inputs[key]=input;wrap.appendChild(input);grid.appendChild(wrap);
  }
- if(!confirm('Simpan perubahan statistik '+p.name+'?\\n'+fields.map(([key,label])=>label+': '+changes[key]).join('\\n')))return;
- all[k]={...old,...changes};
- localStorage.setItem('player_performance_extra_v1',JSON.stringify(all));
- render();showToast('Statistik tersimpan',p.name+' — 6 statistik berhasil diperbarui.');
+ panel.appendChild(grid);
+ const actions=document.createElement('div');actions.style.cssText='display:flex;gap:10px;justify-content:flex-end;margin-top:20px';
+ const cancel=document.createElement('button');cancel.type='button';cancel.textContent='Batal';cancel.className='secondary';cancel.onclick=()=>overlay.remove();
+ const saveBtn=document.createElement('button');saveBtn.type='submit';saveBtn.textContent='Simpan 6 Statistik';
+ actions.append(cancel,saveBtn);panel.appendChild(actions);
+ panel.onsubmit=e=>{
+  e.preventDefault();
+  if(!isSuperAdmin()){overlay.remove();return showToast('Akses ditolak','Login Super Admin diperlukan.','error');}
+  const changes={};
+  for(const [key,label] of fields){
+   const raw=inputs[key].value.trim(),n=Number(raw);
+   if(!/^[0-9]+$/.test(raw)||!Number.isSafeInteger(n))return showToast('Angka tidak valid',label+' harus bilangan bulat 0 atau lebih.','error');
+   changes[key]=n;
+  }
+  const all=performanceExtras(),k=keyName(p.name);
+  all[k]={...(all[k]||{}),...changes};
+  localStorage.setItem('player_performance_extra_v1',JSON.stringify(all));
+  overlay.remove();render();showToast('Statistik tersimpan',p.name+' — semua 6 statistik diperbarui.');
+ };
+ overlay.appendChild(panel);overlay.addEventListener('click',e=>{if(e.target===overlay)overlay.remove()});
+ document.body.appendChild(overlay);inputs.matches.focus();
 }
 async function exportPlayerPerformance(name){
  const p=playerStats().find(x=>keyName(x.name)===keyName(name));if(!p)return;
