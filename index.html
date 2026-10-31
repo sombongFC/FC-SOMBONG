@@ -1526,14 +1526,10 @@ function render(){applyLeagueTitle(); const matches=load(), st=standings(matches
  $('miniTopScorers').innerHTML=topGroups.length?topGroups.map((g)=>{
   const names=g.names.map(escapeHtml).join(', ');
   let avatars='';
-  if(g.rank<=3){
-   avatars='<span class="miniTopPhotos">'+g.players.map((p)=>{
-    const img=fcPlayerPhoto(photos,p.name);
-    return img?`<img class="miniTopAvatar" src="${img}" alt="${escapeHtml(p.name)}">`:`<span class="miniTopAvatar placeholder">👤</span>`;
-   }).join('')+'</span>';
-  } else {
-   avatars='<span class="miniTopPhotos"><span class="miniTopAvatar placeholder">#</span></span>';
-  }
+  avatars='<span class="miniTopPhotos">'+g.players.map(p=>{
+   const img=fcPlayerPhoto(photos,p.name);
+   return img?`<img class="miniTopAvatar" src="${escapeHtml(img)}" alt="${escapeHtml(p.name)}" loading="lazy" onerror="this.onerror=null;this.style.display='none';this.insertAdjacentHTML('afterend','<span class=&quot;miniTopAvatar placeholder&quot;>👤</span>')">`:`<span class="miniTopAvatar placeholder" title="${escapeHtml(p.name)}">👤</span>`;
+  }).join('')+'</span>';
   return `<div class="miniTopRow"><span class="miniTopRank">${g.rank}</span>${avatars}<span class="miniTopName">${names}</span><span class="miniTopGoals">${g.goals}</span></div>`;
  }).join(''):'<p class="muted">Belum ada top skor.</p>';
  renderStandingsTable(matches);
