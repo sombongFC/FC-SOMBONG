@@ -2531,13 +2531,12 @@ window.__stateReady.then(init).catch(init);
  function fcRecapAchievements(date){
   const games=load().filter(m=>m&&m.date&&m.home&&m.away).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)));
   const days=[...new Set(games.map(m=>m.date))].sort(),events=[],totals={goals:0,assists:0,matches:0};
-  const records=new Map(),name=n=>{const v=String(n||'').trim();return fcPlayerKey(v)==='KOKO'?'Koko Lobang':v};
+  const records=new Map(),partnershipTotals=new Map(),scoringStreaks=new Map(),unbeatenStreaks=new Map(),name=n=>{const v=String(n||'').trim();return fcPlayerKey(v)==='KOKO'?'Koko Lobang':v};
   const add=(day,title,value,holder,kind='record')=>{if(day===date)events.push({title,value:String(value),holder:String(holder||''),kind})};
   const bump=(day,code,value,title,holder,unit)=>{
    if(!Number.isFinite(value)||value<=0)return;
    const prior=records.get(code)||0;
    if(value>prior){if(prior>0)add(day,title,value+' '+unit,holder);records.set(code,value)}
-   else if(value===prior&&prior>0)add(day,title+' • RECORD EQUALED',value+' '+unit,holder,'equal');
   };
   for(const day of days){
    const matches=games.filter(m=>m.date===day);
@@ -2545,8 +2544,7 @@ window.__stateReady.then(init).catch(init);
    const inc=(map,k,n=1)=>{if(k)map.set(k,(map.get(k)||0)+n)};
    let dayGoals=0,dayAssists=0;
    const matchPlayerGoals=new Map(),pairCounts=new Map();
-   const scoringStreaks=window.__fcRecapScoringStreaks||(window.__fcRecapScoringStreaks=new Map());
-   const unbeatenStreaks=window.__fcRecapUnbeatenStreaks||(window.__fcRecapUnbeatenStreaks=new Map());
+   // Streak state is recalculated afresh on each export.
    const dayScorers=new Set(),dayTeams=new Set();
    for(const m of matches){
     totals.matches++;
@@ -2592,7 +2590,13 @@ window.__stateReady.then(init).catch(init);
     if(next>=2)bump(day,'unbeaten_streak',next,'LONGEST UNBEATEN STREAK',team,'matches');
    }
    // Partnership records require verified scorer-assist pairs.
-   for(const [pair,n] of pairCounts)bump(day,'goal_assist_pair_day',n,'BEST GOAL–ASSIST PARTNERSHIP',pair,'combinations');
+   // Partnership milestones: 10, 20, 30 ... verified combinations per duo, all-time.
+   for(const [pair,n] of pairCounts){
+    const before=partnershipTotals.get(pair)||0,after=before+n;
+    partnershipTotals.set(pair,after);
+    for(let threshold=(Math.floor(before/10)+1)*10;threshold<=after;threshold+=10)
+     add(day,'GOAL–ASSIST PARTNERSHIP MILESTONE',threshold+' combinations',pair,'milestone');
+   }
       const oldGoals=totals.goals,oldAssists=totals.assists;
    totals.goals+=dayGoals;totals.assists+=dayAssists;
    // A milestone inside a matchday with several events has no verifiable scorer
@@ -2607,14 +2611,17 @@ window.__stateReady.then(init).catch(init);
    }
    const leaders=(map,code,title,unit)=>{for(const [holder,v] of map)bump(day,code,v,title,holder,unit)};
    leaders(playerGoals,'player_day_goals','MOST GOALS • PLAYER / MATCHDAY','goals');
-   leaders(playerAssists,'player_day_assists','MOST ASSISTS • PLAYER / MATCHDAY','assists');
+   // Assist record: minimum 5, only multiples of five and only if above prior record.
+   for(const [holder,v] of playerAssists){
+    if(v>=5&&v%5===0)bump(day,'player_day_assists_5',v,'MOST ASSISTS • PLAYER / MATCHDAY',holder,'assists');
+   }
    leaders(teamGF,'team_day_goals','MOST GOALS SCORED • TEAM / MATCHDAY','goals');
    leaders(teamGA,'team_day_conceded','MOST GOALS CONCEDED • TEAM / MATCHDAY','goals');
    leaders(playerYellows,'player_day_yellow','MOST YELLOW CARDS • MATCHDAY','cards');
    leaders(playerOwn,'player_day_own','MOST OWN GOALS • MATCHDAY','own goals');
   }
   // Suppress trivial opening records and duplicate cards on the same day.
-  return events.filter(e=>e.kind==='milestone'||e.kind==='equal'||!days.length||days.indexOf(date)>0).slice(0,12);
+  return events.filter(e=>e.kind==='milestone'||(e.kind==='record'&&days.indexOf(date)>0)).slice(0,12);
  }
  window.exportHistoryImageCompact=async function(){
   const date=$id('historyExportDate')?.value||$id('mdDate')?.value||new Date().toLocaleDateString('en-CA');
